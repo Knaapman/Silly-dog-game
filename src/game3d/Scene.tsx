@@ -1,5 +1,6 @@
 import { Physics, RigidBody } from '@react-three/rapier';
 import { Sky } from '@react-three/drei';
+import { Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { Dog } from './Dog';
 import { Cat } from './Cat';
@@ -175,13 +176,70 @@ function Butterflies() {
   );
 }
 
+function ZoneBeacons() {
+  const zones = [
+    { label: 'Rustzone', pos: [-48, 5.5, -4] as [number, number, number] },
+    { label: 'Onderhoudsdepot', pos: [-28, 5.5, -36] as [number, number, number] },
+    { label: 'Bezoekerscentrum', pos: [0, 6, -38] as [number, number, number] },
+    { label: 'Agility Course', pos: [-12, 5.5, -22] as [number, number, number] },
+    { label: 'Graafduinen', pos: [36, 5.5, -22] as [number, number, number] },
+    { label: 'Wereldwijde Wandeling', pos: [35, 5.5, 0] as [number, number, number] },
+    { label: 'Innovatiepark', pos: [33, 5.5, 22] as [number, number, number] },
+    { label: 'Snuffeltuin', pos: [10, 4.5, 37] as [number, number, number] },
+    { label: 'Gezondheidscentrum', pos: [31, 5, 41] as [number, number, number] },
+    { label: 'Zwemmeer', pos: [0, 4.5, 8] as [number, number, number] }
+  ];
+
+  return (
+    <group>
+      {zones.map((zone) => (
+        <Text
+          key={zone.label}
+          position={zone.pos}
+          fontSize={1.7}
+          color="#ffffff"
+          outlineColor="#1f2937"
+          outlineWidth={0.12}
+          anchorX="center"
+          anchorY="middle"
+        >
+          {zone.label}
+        </Text>
+      ))}
+    </group>
+  );
+}
+
+function RestAndDepot() {
+  return (
+    <group>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-28, 2, -34]} castShadow receiveShadow>
+          <boxGeometry args={[14, 4, 8]} />
+          <meshStandardMaterial color="#82674c" />
+        </mesh>
+      </RigidBody>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-45, 1.2, -2]} castShadow receiveShadow>
+          <boxGeometry args={[10, 2.4, 7]} />
+          <meshStandardMaterial color="#7f8c62" />
+        </mesh>
+      </RigidBody>
+      <mesh position={[-44, 2.8, -2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[7, 2]} />
+        <meshStandardMaterial color="#f5f5dc" />
+      </mesh>
+    </group>
+  );
+}
+
 export function Scene() {
   // Generate random positions for entities
   const trees = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 60; i++) {
-      const x = (Math.random() - 0.5) * 180;
-      const z = (Math.random() - 0.5) * 180;
+      const x = (Math.random() - 0.5) * 132;
+      const z = (Math.random() - 0.5) * 132;
       if (Math.abs(x) < 8 || Math.abs(z) < 8 || Math.sqrt(x*x + z*z) < 20) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
     }
@@ -191,8 +249,8 @@ export function Scene() {
   const bushes = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 40; i++) {
-      const x = (Math.random() - 0.5) * 180;
-      const z = (Math.random() - 0.5) * 180;
+      const x = (Math.random() - 0.5) * 132;
+      const z = (Math.random() - 0.5) * 132;
       if (Math.abs(x) < 6 || Math.abs(z) < 6 || Math.sqrt(x*x + z*z) < 18) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
     }
@@ -202,8 +260,8 @@ export function Scene() {
   const rocks = useMemo(() => {
     const arr = [];
     for (let i = 0; i < 20; i++) {
-      const x = (Math.random() - 0.5) * 180;
-      const z = (Math.random() - 0.5) * 180;
+      const x = (Math.random() - 0.5) * 132;
+      const z = (Math.random() - 0.5) * 132;
       if (Math.abs(x) < 5 || Math.abs(z) < 5 || Math.sqrt(x*x + z*z) < 15) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number], scale: Math.random() * 1.5 + 0.5 });
     }
@@ -212,24 +270,24 @@ export function Scene() {
   
   const cats = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
     id: i,
-    pos: [(Math.random() - 0.5) * 160, 2, (Math.random() - 0.5) * 160] as [number, number, number],
+    pos: [(Math.random() - 0.5) * 124, 2, (Math.random() - 0.5) * 124] as [number, number, number],
     color: ['#ff9900', '#333333', '#ffffff'][Math.floor(Math.random() * 3)]
   })), []);
   
   const birds = useMemo(() => Array.from({ length: 40 }).map((_, i) => ({
     id: i,
-    pos: [(Math.random() - 0.5) * 160, 0.5, (Math.random() - 0.5) * 160] as [number, number, number]
+    pos: [(Math.random() - 0.5) * 124, 0.5, (Math.random() - 0.5) * 124] as [number, number, number]
   })), []);
   
   const balls = useMemo(() => Array.from({ length: 8 }).map((_, i) => ({
     id: i,
-    pos: [(Math.random() - 0.5) * 80, 2, (Math.random() - 0.5) * 80] as [number, number, number],
+    pos: [(Math.random() - 0.5) * 96, 2, (Math.random() - 0.5) * 96] as [number, number, number],
     color: ['#adff2f', '#ff4500', '#1e90ff'][Math.floor(Math.random() * 3)]
   })), []);
 
   const frisbees = useMemo(() => Array.from({ length: 4 }).map((_, i) => ({
     id: i,
-    pos: [(Math.random() - 0.5) * 60, 2, (Math.random() - 0.5) * 60] as [number, number, number],
+    pos: [(Math.random() - 0.5) * 88, 2, (Math.random() - 0.5) * 88] as [number, number, number],
     color: ['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)]
   })), []);
 
@@ -241,12 +299,12 @@ export function Scene() {
   const isTwoPlayer = useGameStore(s => s.isTwoPlayer);
 
   const benches = useMemo(() => [
-    { pos: [10, 0, 10], rot: Math.PI / 4 },
-    { pos: [-10, 0, 10], rot: -Math.PI / 4 },
-    { pos: [10, 0, -10], rot: 3 * Math.PI / 4 },
-    { pos: [-10, 0, -10], rot: -3 * Math.PI / 4 },
-    { pos: [0, 0, 15], rot: 0 },
-    { pos: [0, 0, -15], rot: Math.PI },
+    { pos: [-44, 0, -6], rot: Math.PI / 3 },
+    { pos: [-50, 0, 4], rot: Math.PI / 2.2 },
+    { pos: [-41, 0, 14], rot: Math.PI / 2.8 },
+    { pos: [18, 0, 49], rot: Math.PI },
+    { pos: [-7, 0, 57], rot: Math.PI },
+    { pos: [45, 0, 33], rot: -Math.PI / 2 },
   ] as { pos: [number, number, number], rot: number }[], []);
 
   return (
@@ -259,50 +317,52 @@ export function Scene() {
         {/* Ground */}
         <RigidBody type="fixed" friction={1}>
           <mesh receiveShadow position={[0, -0.5, 0]}>
-            <boxGeometry args={[200, 1, 200]} />
+            <boxGeometry args={[140, 1, 140]} />
             <meshStandardMaterial color="#689f38" />
           </mesh>
         </RigidBody>
 
         {/* Walls */}
-        <RigidBody type="fixed" position={[0, 5, -100]}>
-          <mesh><boxGeometry args={[200, 10, 1]} /><meshStandardMaterial visible={false} /></mesh>
+        <RigidBody type="fixed" position={[0, 5, -70]}>
+          <mesh><boxGeometry args={[140, 10, 1]} /><meshStandardMaterial visible={false} /></mesh>
         </RigidBody>
-        <RigidBody type="fixed" position={[0, 5, 100]}>
-          <mesh><boxGeometry args={[200, 10, 1]} /><meshStandardMaterial visible={false} /></mesh>
+        <RigidBody type="fixed" position={[0, 5, 70]}>
+          <mesh><boxGeometry args={[140, 10, 1]} /><meshStandardMaterial visible={false} /></mesh>
         </RigidBody>
-        <RigidBody type="fixed" position={[-100, 5, 0]}>
-          <mesh><boxGeometry args={[1, 10, 200]} /><meshStandardMaterial visible={false} /></mesh>
+        <RigidBody type="fixed" position={[-70, 5, 0]}>
+          <mesh><boxGeometry args={[1, 10, 140]} /><meshStandardMaterial visible={false} /></mesh>
         </RigidBody>
-        <RigidBody type="fixed" position={[100, 5, 0]}>
-          <mesh><boxGeometry args={[1, 10, 200]} /><meshStandardMaterial visible={false} /></mesh>
+        <RigidBody type="fixed" position={[70, 5, 0]}>
+          <mesh><boxGeometry args={[1, 10, 140]} /><meshStandardMaterial visible={false} /></mesh>
         </RigidBody>
 
         {/* Hedges (Visible Borders) */}
-        <Hedge position={[0, 0, -99]} rotation={0} length={200} />
-        <Hedge position={[0, 0, 99]} rotation={0} length={200} />
-        <Hedge position={[-99, 0, 0]} rotation={Math.PI / 2} length={200} />
-        <Hedge position={[99, 0, 0]} rotation={Math.PI / 2} length={200} />
+        <Hedge position={[0, 0, -69]} rotation={0} length={140} />
+        <Hedge position={[0, 0, 69]} rotation={0} length={140} />
+        <Hedge position={[-69, 0, 0]} rotation={Math.PI / 2} length={140} />
+        <Hedge position={[69, 0, 0]} rotation={Math.PI / 2} length={140} />
 
         {/* Park Elements */}
         <ParkPath />
         <Zwemmeer position={[0, 0, 0]} />
-        <AgilityCourse position={[-40, 0, -40]} />
-        <Graafduinen position={[40, 0, -40]} />
-        <Bezoekerscentrum position={[0, 0, -60]} />
-        <WereldwijdeWandeling position={[50, 0, 0]} />
-        <InnovatiePark position={[50, 0, 40]} />
-        <GezondheidsCentrum position={[20, 0, 60]} />
-        <Snuffeltuin position={[-30, 0, 60]} />
-        <EntranceGate position={[0, 0, 80]} />
+        <group scale={[0.75, 0.75, 0.75]}><AgilityCourse position={[-16, 0, -24]} /></group>
+        <group scale={[0.75, 0.75, 0.75]}><Graafduinen position={[37, 0, -23]} /></group>
+        <group scale={[0.85, 0.85, 0.85]}><Bezoekerscentrum position={[0, 0, -40]} /></group>
+        <group scale={[0.7, 0.7, 0.7]}><WereldwijdeWandeling position={[37, 0, 0]} /></group>
+        <group scale={[0.75, 0.75, 0.75]}><InnovatiePark position={[37, 0, 23]} /></group>
+        <group scale={[0.7, 0.7, 0.7]}><GezondheidsCentrum position={[33, 0, 42]} /></group>
+        <group scale={[0.6, 0.6, 0.6]}><Snuffeltuin position={[10, 0, 38]} /></group>
+        <EntranceGate position={[0, 0, 60]} />
         
         {benches.map((b, i) => <Bench key={`bench-${i}`} position={b.pos} rotation={b.rot} />)}
+        <RestAndDepot />
+        <ZoneBeacons />
         
         <Butterflies />
 
         {/* Players */}
-        <Dog playerIndex={0} color="#ff4444" position={[-5, 2, 20]} />
-        {isTwoPlayer && <Dog playerIndex={1} color="#4444ff" position={[5, 2, 20]} />}
+        <Dog playerIndex={0} color="#ff4444" position={[-3, 2, 55]} />
+        {isTwoPlayer && <Dog playerIndex={1} color="#4444ff" position={[3, 2, 55]} />}
 
         {/* Entities */}
         {trees.map(t => <Tree key={`tree-${t.id}`} position={t.pos} />)}

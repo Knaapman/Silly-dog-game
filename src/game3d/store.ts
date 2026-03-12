@@ -2,6 +2,71 @@ import { create } from 'zustand';
 import * as THREE from 'three';
 import { playStarSound } from './audio';
 
+const zoneSpawnAnchors = {
+  bezoekerscentrum: { x: 0, z: -40, radius: 10 },
+  agility: { x: -16, z: -24, radius: 10 },
+  graafduinen: { x: 37, z: -23, radius: 10 },
+  wandeling: { x: 37, z: 0, radius: 9 },
+  innovatie: { x: 37, z: 23, radius: 10 },
+  snuffeltuin: { x: 10, z: 38, radius: 9 },
+  gezondheid: { x: 33, z: 42, radius: 10 },
+  centralePlaza: { x: 0, z: 10, radius: 12 }
+} as const;
+
+function spawnNear(zone: keyof typeof zoneSpawnAnchors, y = 0): [number, number, number] {
+  const anchor = zoneSpawnAnchors[zone];
+  const angle = Math.random() * Math.PI * 2;
+  const distance = Math.random() * anchor.radius;
+  return [
+    anchor.x + Math.cos(angle) * distance,
+    y,
+    anchor.z + Math.sin(angle) * distance
+  ];
+}
+
+function createFoodSpawns() {
+  const route: (keyof typeof zoneSpawnAnchors)[] = [
+    'bezoekerscentrum',
+    'agility',
+    'graafduinen',
+    'wandeling',
+    'snuffeltuin',
+    'gezondheid',
+    'centralePlaza'
+  ];
+  return route.slice(0, 6).map((zone, i) => ({
+    id: i,
+    pos: spawnNear(zone, 0)
+  }));
+}
+
+function createDigSpots() {
+  const route: (keyof typeof zoneSpawnAnchors)[] = [
+    'agility',
+    'graafduinen',
+    'snuffeltuin',
+    'wandeling',
+    'innovatie',
+    'gezondheid',
+    'bezoekerscentrum',
+    'centralePlaza'
+  ];
+  return route.map((zone, i) => ({
+    id: i,
+    pos: spawnNear(zone, 0),
+    active: true
+  }));
+}
+
+function createTrashCanSpawns() {
+  const route: (keyof typeof zoneSpawnAnchors)[] = ['bezoekerscentrum', 'wandeling', 'snuffeltuin', 'gezondheid'];
+  return route.map((zone, i) => ({
+    id: i,
+    pos: spawnNear(zone, 0),
+    knocked: false
+  }));
+}
+
 interface GameState {
   dogPositions: [THREE.Vector3, THREE.Vector3];
   dogRotations: [number, number];
@@ -145,10 +210,7 @@ export const useGameStore = create<GameState>((set) => ({
     return { throwEvents: [...recentEvents, { type, id, time: now, dogIndex }] };
   }),
 
-  foods: Array.from({ length: 5 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 60, 0, (Math.random() - 0.5) * 60] as [number, number, number]
-  })),
+  foods: createFoodSpawns(),
   poops: [],
   addPoop: (pos) => set((state) => {
     const newPoops = [...state.poops, { id: Date.now(), pos }];
@@ -160,27 +222,14 @@ export const useGameStore = create<GameState>((set) => ({
   removeFood: (id) => set((state) => ({
     foods: state.foods.filter(f => f.id !== id)
   })),
-  resetFood: () => set(() => ({
-    foods: Array.from({ length: 5 }).map((_, i) => ({
-      id: i,
-      pos: [(Math.random() - 0.5) * 60, 0, (Math.random() - 0.5) * 60] as [number, number, number]
-    }))
-  })),
+  resetFood: () => set(() => ({ foods: createFoodSpawns() })),
 
-  digSpots: Array.from({ length: 8 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 50, 0, (Math.random() - 0.5) * 50] as [number, number, number],
-    active: true
-  })),
+  digSpots: createDigSpots(),
   digSpot: (id) => set((state) => ({
     digSpots: state.digSpots.map(s => s.id === id ? { ...s, active: false } : s)
   })),
 
-  trashCans: Array.from({ length: 4 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 40, 0, (Math.random() - 0.5) * 40] as [number, number, number],
-    knocked: false
-  })),
+  trashCans: createTrashCanSpawns(),
   knockTrashCan: (id) => set((state) => ({
     trashCans: state.trashCans.map(t => t.id === id ? { ...t, knocked: true } : t)
   })),
@@ -191,16 +240,9 @@ export const useGameStore = create<GameState>((set) => ({
     return { stars: state.stars + 1 };
   }),
   resetEnvironment: () => set((state) => ({ 
-    digSpots: state.digSpots.map(s => ({ ...s, active: true })),
-    trashCans: state.trashCans.map(c => ({ ...c, knocked: false })),
-    foods: Array.from({ length: 5 }).map((_, i) => ({
-      id: Date.now() + i,
-      pos: [
-        (Math.random() - 0.5) * 40,
-        0.2,
-        (Math.random() - 0.5) * 40
-      ] as [number, number, number]
-    }))
+    digSpots: createDigSpots(),
+    trashCans: createTrashCanSpawns(),
+    foods: createFoodSpawns().map((food, i) => ({ ...food, id: Date.now() + i }))
   })),
 
   uiAction: null,

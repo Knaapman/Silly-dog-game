@@ -32,6 +32,14 @@ export default function App() {
 
   const progress = stars % 10;
   const level = Math.floor(stars / 10) + 1;
+  const activityLoop = [
+    'Sprint to the Agility Course and jump over ramps.',
+    'Sniff in the Snuffeltuin, then dig where the marker gets hotter.',
+    'Swim in the Zwemmeer and drink at the shoreline for a cooldown.',
+    'Visit Graafduinen and uncover a buried bone.',
+    'Complete the loop by eating or delivering found treats.'
+  ];
+  const loopStep = stars % activityLoop.length;
 
   return (
     <div className={`w-full h-screen overflow-hidden transition-colors duration-1000 ${isNight ? 'bg-[#0B1026]' : 'bg-[#87CEEB]'}`}>
@@ -71,6 +79,16 @@ export default function App() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="absolute top-36 left-5 pointer-events-none max-w-[28rem]">
+        <div className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border-2 border-emerald-300 shadow-lg">
+          <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Guided park loop</p>
+          <p className="text-sm sm:text-base font-semibold text-slate-800 leading-snug mt-1">
+            {activityLoop[loopStep]}
+          </p>
+          <p className="text-xs text-slate-600 mt-1">Earn stars to advance to the next route step.</p>
         </div>
       </div>
 
