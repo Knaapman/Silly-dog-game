@@ -8,6 +8,11 @@ import { playBarkSound, playPoopSound, playJumpSound, playDigSound, playEatSound
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 
+type ZzzParticle = {id: number, time: number, x: number, y: number};
+type DigParticle = {id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number};
+type DustParticle = {id: number, time: number, x: number, y: number, z: number, scale: number};
+type SplashParticle = {id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number, scale: number};
+
 function lerpAngle(start: number, end: number, t: number) {
   let diff = end - start;
   while (diff > Math.PI) diff -= Math.PI * 2;
@@ -50,21 +55,30 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   const addPoop = useGameStore(s => s.addPoop);
   const stars = useGameStore(s => s.stars);
 
-  const [barking, setBarking] = useState(0);
-  const [eating, setEating] = useState(0);
+  const [isBarking, setIsBarking] = useState(false);
+  const [isEating, setIsEating] = useState(false);
   const [isSitting, setIsSitting] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const [isLyingDown, setIsLyingDown] = useState(false);
   const [isSniffing, setIsSniffing] = useState(false);
   const [isDigging, setIsDigging] = useState(false);
   const [isDrinking, setIsDrinking] = useState(false);
-  const [digTimer, setDigTimer] = useState(0);
-  const [sniffTimer, setSniffTimer] = useState(0);
-  const [poopCooldown, setPoopCooldown] = useState(0);
-  const [zzzParticles, setZzzParticles] = useState<{id: number, time: number, x: number, y: number}[]>([]);
-  const [digParticles, setDigParticles] = useState<{id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number}[]>([]);
-  const [dustParticles, setDustParticles] = useState<{id: number, time: number, x: number, y: number, z: number, scale: number}[]>([]);
-  const [splashParticles, setSplashParticles] = useState<{id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number, scale: number}[]>([]);
+  const digTimerRef = useRef(0);
+  const sniffTimerRef = useRef(0);
+  const poopCooldownRef = useRef(0);
+  const barkTimerRef = useRef(0);
+  const eatTimerRef = useRef(0);
+  const zzzParticlesRef = useRef<ZzzParticle[]>([]);
+  const digParticlesRef = useRef<DigParticle[]>([]);
+  const dustParticlesRef = useRef<DustParticle[]>([]);
+  const splashParticlesRef = useRef<SplashParticle[]>([]);
+  const particleSyncAccumulator = useRef(0);
+  const [particleRenderState, setParticleRenderState] = useState({
+    zzzParticles: [] as ZzzParticle[],
+    digParticles: [] as DigParticle[],
+    dustParticles: [] as DustParticle[],
+    splashParticles: [] as SplashParticle[]
+  });
   const wasSwimming = useRef(false);
   const sleepStartTime = useRef(0);
   const lastSleepStarTime = useRef(0);
@@ -93,9 +107,67 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   });
   const idleTimer = useRef(0);
 
+  const setBarkActive = (active: boolean) => setIsBarking(prev => prev === active ? prev : active);
+  const setEatActive = (active: boolean) => setIsEating(prev => prev === active ? prev : active);
+
+  const updateSniffAction = (delta: number, currentPos: THREE.Vector3) => {
+    if (!isSniffing) {
+      sniffTimerRef.current = 0;
+      return;
+    }
+    sniffTimerRef.current += delta;
+    if (sniffTimerRef.current <= 1) return;
+    sniffTimerRef.current = 0;
+
+    const digSpots = useGameStore.getState().digSpots;
+    let nearestDist = Infinity;
+    for (const spot of digSpots) {
+      if (!spot.active) continue;
+      const dist = currentPos.distanceTo(new THREE.Vector3(spot.pos[0], spot.pos[1], spot.pos[2]));
+      if (dist < nearestDist) nearestDist = dist;
+    }
+
+    if (nearestDist < 3) {
+      emitFeedback({ type: 'found_digspot', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❗', text: 'Dig here!', major: true, playerIndex });
+    } else if (nearestDist < 10) {
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🐾', text: 'Getting warm', playerIndex });
+    } else if (nearestDist < 25) {
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🔎', text: 'Getting closer', playerIndex });
+    } else {
+      emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❓', text: 'Cold trail', playerIndex });
+    }
+  };
+
+  const updateInteraction = (currentPos: THREE.Vector3) => {
+    const heldBall = heldBalls[playerIndex];
+    const heldBone = heldBones[playerIndex];
+    const heldFrisbee = heldFrisbees[playerIndex];
+
+    if (heldBall != null) {
+      triggerThrow(playerIndex, 'ball', heldBall);
+      dropBall(playerIndex);
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🎾', text: 'Ball thrown', playerIndex });
+      return;
+    }
+    if (heldBone != null) {
+      triggerThrow(playerIndex, 'bone', heldBone);
+      dropBone(playerIndex);
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🦴', text: 'Bone thrown', playerIndex });
+      return;
+    }
+    if (heldFrisbee != null) {
+      triggerThrow(playerIndex, 'frisbee', heldFrisbee);
+      dropFrisbee(playerIndex);
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🥏', text: 'Frisbee thrown', playerIndex });
+      return;
+    }
+  };
+
   useFrame((state, delta) => {
     if (!rb.current || !group.current) return;
     const input = getInput();
+    const eating = eatTimerRef.current;
+    const barking = barkTimerRef.current;
     
     // Handle UI Actions
     const uiAction = useGameStore.getState().uiAction;
@@ -171,24 +243,24 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         if (!wasSwimming.current) {
           // Big splash on enter
           for(let i=0; i<10; i++) {
-            setSplashParticles(p => [...p, {
+            splashParticlesRef.current.push({
               id: Date.now() + Math.random(), time: 0.5 + Math.random() * 0.5,
               x: currentPos.x + (Math.random() - 0.5), y: 0.2, z: currentPos.z + (Math.random() - 0.5),
               vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 4, vz: (Math.random() - 0.5) * 4,
               scale: 0.2 + Math.random() * 0.4
-            }]);
+            });
           }
         }
         wasSwimming.current = true;
       }
       // Small splashes while moving in water
       if ((input.x !== 0 || input.z !== 0) && Math.random() < 0.2) {
-        setSplashParticles(p => [...p, {
+        splashParticlesRef.current.push({
           id: Date.now() + Math.random(), time: 0.3 + Math.random() * 0.3,
           x: currentPos.x + (Math.random() - 0.5), y: 0.2, z: currentPos.z + (Math.random() - 0.5),
           vx: (Math.random() - 0.5) * 2, vy: 1 + Math.random() * 2, vz: (Math.random() - 0.5) * 2,
           scale: 0.1 + Math.random() * 0.2
-        }]);
+        });
       }
     } else {
       if (wasSwimming.current) {
@@ -552,510 +624,184 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     }
 
     if (input.justSniffed) {
-      setIsSniffing(!isSniffing);
-      setSniffTimer(1); // Trigger immediately on start
+      const nextSniffing = !isSniffing;
+      setIsSniffing(nextSniffing);
+      sniffTimerRef.current = nextSniffing ? 1 : 0;
     }
+    updateSniffAction(delta, currentPos);
 
-    if (isSniffing) {
-      setSniffTimer(t => t + delta);
-      if (sniffTimer > 1) {
-        setSniffTimer(0);
-        
-        // Find nearest dig spot
-        const digSpots = useGameStore.getState().digSpots;
-        let nearestDist = Infinity;
-        for (const spot of digSpots) {
-          if (spot.active) {
-            const spotPos = new THREE.Vector3(spot.pos[0], spot.pos[1], spot.pos[2]);
-            const dist = currentPos.distanceTo(spotPos);
-            if (dist < nearestDist) nearestDist = dist;
-          }
-        }
-        
-        if (nearestDist < 3) {
-          emitFeedback({
-            type: 'found_digspot',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '❗',
-            text: 'Dig here!',
-            major: true,
-            playerIndex
-          });
-        } else if (nearestDist < 10) {
-          emitFeedback({
-            type: 'action_success',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🐾',
-            text: 'Getting warm',
-            playerIndex
-          });
-        } else if (nearestDist < 25) {
-          emitFeedback({
-            type: 'action_success',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🔎',
-            text: 'Getting closer',
-            playerIndex
-          });
-        } else {
-          emitFeedback({
-            type: 'action_fail',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '❓',
-            text: 'Cold trail',
-            playerIndex
-          });
-        }
-      }
-    } else {
-      setSniffTimer(0);
-    }
-
-    if (input.justRolled && !isSitting && !isLyingDown && eating <= 0) {
+    if (input.justRolled && !isSitting && !isLyingDown && eatTimerRef.current <= 0) {
       const newRolling = !isRolling;
       setIsRolling(newRolling);
       setIsSniffing(false);
-      if (newRolling) {
-        rb.current.applyImpulse({ x: 0, y: 5, z: 0 }, true); // Little hop start
-      } else {
-        rb.current.applyImpulse({ x: 0, y: 5, z: 0 }, true); // Little hop end
-      }
+      sniffTimerRef.current = 0;
+      rb.current.applyImpulse({ x: 0, y: 5, z: 0 }, true);
     }
 
-    if (poopCooldown > 0) {
-      setPoopCooldown(c => c - delta);
-    }
+    if (poopCooldownRef.current > 0) poopCooldownRef.current = Math.max(0, poopCooldownRef.current - delta);
 
     if (input.justPooped && !isJumping && !isMoving) {
-      if (poopCooldown <= 0) {
-        // Spawn poop behind dog
+      if (poopCooldownRef.current <= 0) {
         const backDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y);
         const poopPos = currentPos.clone().add(backDir.multiplyScalar(1.5));
         addPoop([poopPos.x, poopPos.y, poopPos.z]);
-        setPoopCooldown(5); // 5 seconds cooldown
+        poopCooldownRef.current = 5;
         playPoopSound();
       } else {
-        emitFeedback({
-          type: 'action_fail',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '❌',
-          text: 'Too soon',
-          playerIndex
-        });
+        emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❌', text: 'Too soon', playerIndex });
       }
     }
 
-    if (input.justDug && !isJumping && !isMoving && !isSitting && !isLyingDown && !isRolling && !isDrinking) {
-      setIsDigging(true);
-      setDigTimer(2.0); // Dig for 2 seconds
-      emitFeedback({
-        type: 'action_success',
-        position: [currentPos.x, currentPos.y, currentPos.z],
-        icon: '⛏️',
-        text: 'Digging...',
-        playerIndex
-      });
-    }
-
-    if (isDigging) {
-      if (digTimer > 0) {
-        setDigTimer(t => t - delta);
-        // Spawn dirt particles
+    const updateDigAction = () => {
+      if (input.justDug && !isJumping && !isMoving && !isSitting && !isLyingDown && !isRolling && !isDrinking && !isDigging) {
+        setIsDigging(true);
+        digTimerRef.current = 2;
+        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⛏️', text: 'Digging...', playerIndex });
+      }
+      if (!isDigging) return;
+      if (digTimerRef.current > 0) {
+        digTimerRef.current -= delta;
         if (Math.random() < 0.3) {
           const forwardDir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y);
           const pPos = currentPos.clone().add(forwardDir.multiplyScalar(0.5));
-          setDigParticles(p => [...p, {
-            id: Date.now() + Math.random(),
-            time: 0.5 + Math.random() * 0.5,
-            x: pPos.x + (Math.random() - 0.5) * 0.5,
-            y: pPos.y,
-            z: pPos.z + (Math.random() - 0.5) * 0.5,
-            vx: (Math.random() - 0.5) * 4,
-            vy: 2 + Math.random() * 3,
-            vz: (Math.random() - 0.5) * 4
-          }]);
+          digParticlesRef.current.push({ id: Date.now() + Math.random(), time: 0.5 + Math.random() * 0.5, x: pPos.x + (Math.random() - 0.5) * 0.5, y: pPos.y, z: pPos.z + (Math.random() - 0.5) * 0.5, vx: (Math.random() - 0.5) * 4, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 4 });
         }
-      } else {
-        setIsDigging(false);
-        
-        // Check for dig spots
-        const digSpots = useGameStore.getState().digSpots;
-        const digSpot = useGameStore.getState().digSpot;
-        
-        const forwardDir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y);
-        const digPos = currentPos.clone().add(forwardDir.multiplyScalar(1.5));
-        
-        let foundSpot = false;
-        for (const spot of digSpots) {
-          if (spot.active) {
-            const spotPos = new THREE.Vector3(spot.pos[0], spot.pos[1], spot.pos[2]);
-            if (digPos.distanceTo(spotPos) < 2.5) {
-              digSpot(spot.id);
-              addBone([spotPos.x, spotPos.y + 1, spotPos.z]);
-              emitFeedback({
-                type: 'found_digspot',
-                position: [spotPos.x, spotPos.y, spotPos.z],
-                icon: '🦴',
-                text: 'Treasure found!',
-                major: true,
-                playerIndex
-              });
-              emitFeedback({
-                type: 'collect_star',
-                position: [spotPos.x, spotPos.y, spotPos.z],
-                icon: '⭐',
-                text: '+1 Star',
-                major: true,
-                playerIndex
-              });
-              useGameStore.getState().addStar(); // Good dog!
-              foundSpot = true;
-              break;
-            }
-          }
-        }
-        
-        if (!foundSpot) {
-          emitFeedback({
-            type: 'empty_dig',
-            position: [digPos.x, digPos.y, digPos.z],
-            icon: '❔',
-            text: 'Nothing here',
-            playerIndex
-          });
+        return;
+      }
+      setIsDigging(false);
+      const digSpots = useGameStore.getState().digSpots;
+      const digSpot = useGameStore.getState().digSpot;
+      const forwardDir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y);
+      const digPos = currentPos.clone().add(forwardDir.multiplyScalar(1.5));
+      let foundSpot = false;
+      for (const spot of digSpots) {
+        if (!spot.active) continue;
+        const spotPos = new THREE.Vector3(spot.pos[0], spot.pos[1], spot.pos[2]);
+        if (digPos.distanceTo(spotPos) < 2.5) {
+          digSpot(spot.id);
+          addBone([spotPos.x, spotPos.y + 1, spotPos.z]);
+          emitFeedback({ type: 'found_digspot', position: [spotPos.x, spotPos.y, spotPos.z], icon: '🦴', text: 'Treasure found!', major: true, playerIndex });
+          emitFeedback({ type: 'collect_star', position: [spotPos.x, spotPos.y, spotPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
+          useGameStore.getState().addStar();
+          foundSpot = true;
+          break;
         }
       }
+      if (!foundSpot) emitFeedback({ type: 'empty_dig', position: [digPos.x, digPos.y, digPos.z], icon: '❔', text: 'Nothing here', playerIndex });
+    };
+    updateDigAction();
+
+    if (isRunning && !isJumping && Math.random() < 0.2) {
+      dustParticlesRef.current.push({ id: Date.now() + Math.random(), time: 0.5, x: currentPos.x + (Math.random() - 0.5) * 0.5, y: currentPos.y - 0.4, z: currentPos.z + (Math.random() - 0.5) * 0.5, scale: 0.2 + Math.random() * 0.3 });
+    }
+    if (isLyingDown && Math.random() < 0.02) {
+      zzzParticlesRef.current.push({ id: Date.now(), time: 2, x: (Math.random() - 0.5) * 0.5, y: 0 });
     }
 
-    // Update Dig Particles
-    setDigParticles(p => p.map(d => ({
-      ...d,
-      time: d.time - delta,
-      x: d.x + d.vx * delta,
-      y: d.y + d.vy * delta,
-      z: d.z + d.vz * delta,
-      vy: d.vy - 9.8 * delta // Gravity
-    })).filter(d => d.time > 0));
+    digParticlesRef.current = digParticlesRef.current.map(d => ({ ...d, time: d.time - delta, x: d.x + d.vx * delta, y: d.y + d.vy * delta, z: d.z + d.vz * delta, vy: d.vy - 9.8 * delta })).filter(d => d.time > 0);
+    dustParticlesRef.current = dustParticlesRef.current.map(d => ({ ...d, time: d.time - delta, y: d.y + delta * 0.5, scale: d.scale + delta * 0.5 })).filter(d => d.time > 0);
+    splashParticlesRef.current = splashParticlesRef.current.map(d => ({ ...d, time: d.time - delta, x: d.x + d.vx * delta, y: d.y + d.vy * delta, z: d.z + d.vz * delta, vy: d.vy - 15 * delta, scale: d.scale * 0.95 })).filter(d => d.time > 0 && d.y > 0);
+    zzzParticlesRef.current = zzzParticlesRef.current.map(z => ({ ...z, time: z.time - delta, y: z.y + delta * 0.5 })).filter(z => z.time > 0);
 
-    // Dust Particles when running
-    if (isRunning && !isJumping) {
-      if (Math.random() < 0.2) {
-        setDustParticles(p => [...p, {
-          id: Date.now() + Math.random(),
-          time: 0.5,
-          x: currentPos.x + (Math.random() - 0.5) * 0.5,
-          y: currentPos.y - 0.4,
-          z: currentPos.z + (Math.random() - 0.5) * 0.5,
-          scale: 0.2 + Math.random() * 0.3
-        }]);
-      }
+    particleSyncAccumulator.current += delta;
+    if (particleSyncAccumulator.current > 1 / 30) {
+      particleSyncAccumulator.current = 0;
+      setParticleRenderState({ zzzParticles: [...zzzParticlesRef.current], digParticles: [...digParticlesRef.current], dustParticles: [...dustParticlesRef.current], splashParticles: [...splashParticlesRef.current] });
     }
-    
-    // Update Dust Particles
-    setDustParticles(p => p.map(d => ({
-      ...d,
-      time: d.time - delta,
-      y: d.y + delta * 0.5,
-      scale: d.scale + delta * 0.5
-    })).filter(d => d.time > 0));
 
-    // Update Splash Particles
-    setSplashParticles(p => p.map(d => ({
-      ...d,
-      time: d.time - delta,
-      x: d.x + d.vx * delta,
-      y: d.y + d.vy * delta,
-      z: d.z + d.vz * delta,
-      vy: d.vy - 15 * delta, // Gravity
-      scale: d.scale * 0.95
-    })).filter(d => d.time > 0 && d.y > 0));
-
-    // Zzz Particles when sleeping
-    if (isLyingDown) {
-      if (Math.random() < 0.02) {
-        setZzzParticles(p => [...p, { id: Date.now(), time: 2, x: (Math.random() - 0.5) * 0.5, y: 0 }]);
-      }
-    }
-    setZzzParticles(p => p.map(z => ({ ...z, time: z.time - delta, y: z.y + delta * 0.5 })).filter(z => z.time > 0));
-
-    // Barking
     if (input.justBarked) {
       addBark(currentPos);
-      setBarking(0.5); // show bark bubble for 0.5s
+      barkTimerRef.current = 0.5;
+      setBarkActive(true);
       playBarkSound();
-      emitFeedback({
-        type: 'action_success',
-        position: [currentPos.x, currentPos.y, currentPos.z],
-        icon: '🗣️',
-        text: 'Woof!',
-        playerIndex
-      });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🗣️', text: 'Woof!', playerIndex });
     }
+    if (barkTimerRef.current > 0) barkTimerRef.current -= delta;
+    if (barkTimerRef.current <= 0 && isBarking) setBarkActive(false);
 
-    if (barking > 0) {
-      setBarking(b => b - delta);
-    }
-    
-    if (eating > 0) {
-      setEating(e => e - delta);
-    }
-    
-    if (isDrinking) {
-      // Stop drinking if we move or jump
-      if (input.x !== 0 || input.z !== 0 || input.jump) {
-        setIsDrinking(false);
-      }
-    }
+    if (eatTimerRef.current > 0) eatTimerRef.current -= delta;
+    if (eatTimerRef.current <= 0 && isEating) setEatActive(false);
 
-    // Interaction (Grab / Throw)
+    if (isDrinking && (input.x !== 0 || input.z !== 0 || input.jump)) setIsDrinking(false);
+
     if (input.justInteracted) {
-      const heldBall = heldBalls[playerIndex];
-      const heldBone = heldBones[playerIndex];
-      const heldFrisbee = heldFrisbees[playerIndex];
-
-      if (heldBall != null) {
-        triggerThrow(playerIndex, 'ball', heldBall);
-        dropBall(playerIndex);
-        emitFeedback({
-          type: 'action_success',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '🎾',
-          text: 'Ball thrown',
-          playerIndex
-        });
-      } else if (heldBone != null) {
-        triggerThrow(playerIndex, 'bone', heldBone);
-        dropBone(playerIndex);
-        emitFeedback({
-          type: 'action_success',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '🦴',
-          text: 'Bone thrown',
-          playerIndex
-        });
-      } else if (heldFrisbee != null) {
-        triggerThrow(playerIndex, 'frisbee', heldFrisbee);
-        dropFrisbee(playerIndex);
-        emitFeedback({
-          type: 'action_success',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '🥏',
-          text: 'Frisbee thrown',
-          playerIndex
-        });
-      } else {
-        // Try to grab a ball, bone, or frisbee
-        let nearestBallId: number | null = null;
-        let minBallDist = 4; // grab radius
+      const hadHeldItem = heldBalls[playerIndex] != null || heldBones[playerIndex] != null || heldFrisbees[playerIndex] != null;
+      updateInteraction(currentPos);
+      if (!hadHeldItem) {
+        let nearestBallId: number | null = null; let minBallDist = 4;
         for (const [idStr, bPos] of Object.entries(ballPositions)) {
           const id = Number(idStr);
           if (Object.values(heldBalls).includes(id)) continue;
           const dist = currentPos.distanceTo(bPos);
-          if (dist < minBallDist) {
-            minBallDist = dist;
-            nearestBallId = id;
-          }
+          if (dist < minBallDist) { minBallDist = dist; nearestBallId = id; }
         }
-        
-        let nearestBoneId: number | null = null;
-        let minBoneDist = 4; // grab radius
+        let nearestBoneId: number | null = null; let minBoneDist = 4;
         for (const [idStr, bPos] of Object.entries(bonePositions)) {
           const id = Number(idStr);
           if (Object.values(heldBones).includes(id)) continue;
           const dist = currentPos.distanceTo(bPos);
-          if (dist < minBoneDist) {
-            minBoneDist = dist;
-            nearestBoneId = id;
-          }
+          if (dist < minBoneDist) { minBoneDist = dist; nearestBoneId = id; }
         }
-
-        let nearestFrisbeeId: number | null = null;
-        let minFrisbeeDist = 4; // grab radius
+        let nearestFrisbeeId: number | null = null; let minFrisbeeDist = 4;
         for (const [idStr, bPos] of Object.entries(frisbeePositions)) {
           const id = Number(idStr);
           if (Object.values(heldFrisbees).includes(id)) continue;
           const dist = currentPos.distanceTo(bPos);
-          if (dist < minFrisbeeDist) {
-            minFrisbeeDist = dist;
-            nearestFrisbeeId = id;
-          }
+          if (dist < minFrisbeeDist) { minFrisbeeDist = dist; nearestFrisbeeId = id; }
         }
-
-        // Find the absolute closest item
         let closestType: 'ball' | 'bone' | 'frisbee' | null = null;
         let closestDist = 4;
-        
-        if (nearestBallId != null && minBallDist < closestDist) {
-          closestType = 'ball';
-          closestDist = minBallDist;
-        }
-        if (nearestBoneId != null && minBoneDist < closestDist) {
-          closestType = 'bone';
-          closestDist = minBoneDist;
-        }
-        if (nearestFrisbeeId != null && minFrisbeeDist < closestDist) {
-          closestType = 'frisbee';
-          closestDist = minFrisbeeDist;
-        }
-
-        if (closestType === 'ball' && nearestBallId != null) {
-          grabBall(playerIndex, nearestBallId);
-          emitFeedback({
-            type: 'action_success',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🎾',
-            text: 'Grabbed ball',
-            playerIndex
-          });
-        } else if (closestType === 'bone' && nearestBoneId != null) {
-          grabBone(playerIndex, nearestBoneId);
-          emitFeedback({
-            type: 'action_success',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🦴',
-            text: 'Grabbed bone',
-            playerIndex
-          });
-        } else if (closestType === 'frisbee' && nearestFrisbeeId != null) {
-          grabFrisbee(playerIndex, nearestFrisbeeId);
-          emitFeedback({
-            type: 'action_success',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🥏',
-            text: 'Grabbed frisbee',
-            playerIndex
-          });
-        } else {
-          emitFeedback({
-            type: 'action_fail',
-            position: [currentPos.x, currentPos.y, currentPos.z],
-            icon: '🙅',
-            text: 'Nothing to grab',
-            playerIndex
-          });
-        }
+        if (nearestBallId != null && minBallDist < closestDist) { closestType = 'ball'; closestDist = minBallDist; }
+        if (nearestBoneId != null && minBoneDist < closestDist) { closestType = 'bone'; closestDist = minBoneDist; }
+        if (nearestFrisbeeId != null && minFrisbeeDist < closestDist) { closestType = 'frisbee'; }
+        if (closestType === 'ball' && nearestBallId != null) { grabBall(playerIndex, nearestBallId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🎾', text: 'Grabbed ball', playerIndex }); }
+        else if (closestType === 'bone' && nearestBoneId != null) { grabBone(playerIndex, nearestBoneId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🦴', text: 'Grabbed bone', playerIndex }); }
+        else if (closestType === 'frisbee' && nearestFrisbeeId != null) { grabFrisbee(playerIndex, nearestFrisbeeId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🥏', text: 'Grabbed frisbee', playerIndex }); }
+        else { emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🙅', text: 'Nothing to grab', playerIndex }); }
       }
     }
 
-    // Eating & Drinking
     if (input.justAte) {
       const heldBone = heldBones[playerIndex];
+      let ate = false;
       if (heldBone != null) {
-        // Eat held bone
         removeBone(heldBone);
         dropBone(playerIndex);
-        setEating(1.5);
-        setBarking(0);
-        setIsSitting(false);
-        emitFeedback({
-          type: 'action_success',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '🍖',
-          text: 'Chomp!',
-          playerIndex
-        });
-        emitFeedback({
-          type: 'collect_star',
-          position: [currentPos.x, currentPos.y, currentPos.z],
-          icon: '⭐',
-          text: '+1 Star',
-          major: true,
-          playerIndex
-        });
-        useGameStore.getState().addStar(); // Good dog!
+        ate = true;
       } else {
-        // Check for food on ground
-        let ate = false;
         const currentFoods = useGameStore.getState().foods;
         for (const food of currentFoods) {
           const foodPos = new THREE.Vector3(food.pos[0], food.pos[1], food.pos[2]);
-          if (currentPos.distanceTo(foodPos) < 2) {
-            removeFood(food.id);
-            ate = true;
-            setEating(1.5);
-            setBarking(0);
-            setIsSitting(false);
-            emitFeedback({
-              type: 'action_success',
-              position: [currentPos.x, currentPos.y, currentPos.z],
-              icon: '🍽️',
-              text: 'Yum!',
-              playerIndex
-            });
-            emitFeedback({
-              type: 'collect_star',
-              position: [currentPos.x, currentPos.y, currentPos.z],
-              icon: '⭐',
-              text: '+1 Star',
-              major: true,
-              playerIndex
-            });
-            useGameStore.getState().addStar(); // Good dog!
-            break;
-          }
+          if (currentPos.distanceTo(foodPos) < 2) { removeFood(food.id); ate = true; break; }
         }
-
         if (!ate) {
-          // Check for bones on ground
           for (const [idStr, bPos] of Object.entries(bonePositions)) {
             const id = Number(idStr);
             if (Object.values(heldBones).includes(id)) continue;
-            if (currentPos.distanceTo(bPos) < 2) {
-              removeBone(id);
-              ate = true;
-              setEating(1.5);
-              setBarking(0);
-              setIsSitting(false);
-              emitFeedback({
-                type: 'action_success',
-                position: [currentPos.x, currentPos.y, currentPos.z],
-                icon: '🦴',
-                text: 'Bone snack!',
-                playerIndex
-              });
-              emitFeedback({
-                type: 'collect_star',
-                position: [currentPos.x, currentPos.y, currentPos.z],
-                icon: '⭐',
-                text: '+1 Star',
-                major: true,
-                playerIndex
-              });
-              useGameStore.getState().addStar(); // Good dog!
-              break;
-            }
-          }
-        }
-
-        if (!ate) {
-          // Check for pond drinking
-          const distToPond = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
-          if (distToPond < 8.5 && distToPond > 6) {
-            const angleToPond = Math.atan2(-currentPos.x, -currentPos.z);
-            group.current.rotation.y = angleToPond;
-            setIsDrinking(true);
-            setIsSitting(false);
-            setIsLyingDown(false);
-            emitFeedback({
-              type: 'action_success',
-              position: [currentPos.x, currentPos.y, currentPos.z],
-              icon: '💧',
-              text: 'Refreshing!',
-              playerIndex
-            });
-          } else {
-            emitFeedback({
-              type: 'action_fail',
-              position: [currentPos.x, currentPos.y, currentPos.z],
-              icon: '🍽️',
-              text: 'Nothing to eat',
-              playerIndex
-            });
+            if (currentPos.distanceTo(bPos) < 2) { removeBone(id); ate = true; break; }
           }
         }
       }
+      if (ate) {
+        eatTimerRef.current = 1.5;
+        barkTimerRef.current = 0;
+        setEatActive(true);
+        setBarkActive(false);
+        setIsSitting(false);
+        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍖', text: 'Chomp!', playerIndex });
+        emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
+        useGameStore.getState().addStar();
+      } else {
+        const pondDist = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
+        if (pondDist < 8.5 && pondDist > 6) {
+          group.current.rotation.y = Math.atan2(-currentPos.x, -currentPos.z);
+          setIsDrinking(true); setIsSitting(false); setIsLyingDown(false);
+          emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '💧', text: 'Refreshing!', playerIndex });
+        } else {
+          emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍽️', text: 'Nothing to eat', playerIndex });
+        }
+      }
     }
-
     const barks = useGameStore.getState().barks;
     
     if (otherDogPos) {
@@ -1089,7 +835,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           <meshStandardMaterial color={color} />
         </mesh>
         
-        {zzzParticles.map(z => (
+        {particleRenderState.zzzParticles.map(z => (
           <Text
             key={z.id}
             position={[z.x, 1.5 + z.y, 0.5]}
@@ -1177,18 +923,18 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           <meshStandardMaterial color={color} />
         </mesh>
       </group>
-      {barking > 0 && (
+      {isBarking && (
         <Text position={[0, 2, 0]} fontSize={0.5} color="white" outlineWidth={0.05} outlineColor="black">
           WOOF!
         </Text>
       )}
-      {eating > 0 && (
+      {isEating && (
         <Text position={[0, 2, 0]} fontSize={0.5} color="#ffeb3b" outlineWidth={0.05} outlineColor="black">
           YUM!
         </Text>
       )}
       {/* Dust Particles */}
-      {dustParticles.map(p => (
+      {particleRenderState.dustParticles.map(p => (
         <mesh key={p.id} position={[p.x, p.y, p.z]} scale={p.scale}>
           <sphereGeometry args={[0.5, 8, 8]} />
           <meshBasicMaterial color="#d7ccc8" transparent opacity={p.time * 2} />
@@ -1196,7 +942,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       ))}
 
       {/* Dig Particles */}
-      {digParticles.map(p => (
+      {particleRenderState.digParticles.map(p => (
         <mesh key={p.id} position={[p.x, p.y, p.z]}>
           <boxGeometry args={[0.2, 0.2, 0.2]} />
           <meshStandardMaterial color="#5d4037" />
@@ -1204,7 +950,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       ))}
 
       {/* Splash Particles */}
-      {splashParticles.map(p => (
+      {particleRenderState.splashParticles.map(p => (
         <mesh key={p.id} position={[p.x, p.y, p.z]} scale={p.scale}>
           <sphereGeometry args={[0.3, 8, 8]} />
           <meshBasicMaterial color="#ffffff" transparent opacity={p.time * 2} />
