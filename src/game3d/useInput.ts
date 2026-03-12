@@ -1,18 +1,57 @@
 import { useEffect, useRef } from 'react';
-import { useGameStore } from './store';
+import { useGameStore, type UiActionType } from './store';
+
+const GAMEPAD_DEADZONE = 0.18;
+const JOYSTICK_DEADZONE = 0.12;
+const ANALOG_RESPONSE_CURVE = 1.6;
+const JUMP_BUFFER_MS = 130;
+const COYOTE_TIME_MS = 110;
+
+type InputSampleOptions = {
+  grounded?: boolean;
+};
+
+type ActionState = Record<UiActionType, boolean>;
+
+function createActionState(): ActionState {
+  return {
+    bark: false,
+    dig: false,
+    lieDown: false,
+    poop: false,
+    interact: false,
+    eat: false,
+    jump: false,
+    sit: false,
+    roll: false,
+    sniff: false
+  };
+}
+
+function shapeAnalogInput(x: number, y: number, deadzone: number) {
+  const magnitude = Math.hypot(x, y);
+  if (magnitude <= deadzone) {
+    return { x: 0, y: 0, magnitude: 0 };
+  }
+
+  const normalizedMagnitude = (magnitude - deadzone) / (1 - deadzone);
+  const curvedMagnitude = Math.pow(Math.min(1, normalizedMagnitude), ANALOG_RESPONSE_CURVE);
+  const scale = curvedMagnitude / magnitude;
+
+  return {
+    x: x * scale,
+    y: y * scale,
+    magnitude: curvedMagnitude
+  };
+}
 
 export function useInput(playerIndex: number) {
   const keys = useRef<Record<string, boolean>>({});
-  const prevBark = useRef(false);
-  const prevInteract = useRef(false);
-  const prevJump = useRef(false);
-  const prevSit = useRef(false);
-  const prevRoll = useRef(false);
-  const prevPoop = useRef(false);
-  const prevLieDown = useRef(false);
-  const prevSniff = useRef(false);
-  const prevDig = useRef(false);
-  const prevEat = useRef(false);
+  const prevActions = useRef<ActionState>(createActionState());
+  const prevGamepadActions = useRef<ActionState>(createActionState());
+  const jumpBufferUntil = useRef(0);
+  const coyoteUntil = useRef(0);
+  const jumpConsumed = useRef(false);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current[e.code] = true; };
@@ -25,78 +64,80 @@ export function useInput(playerIndex: number) {
     };
   }, []);
 
-  return () => {
+  return ({ grounded = false }: InputSampleOptions = {}) => {
     let x = 0;
     let z = 0;
-    let bark = false;
-    let interact = false;
-    let jump = false;
-    let sit = false;
-    let roll = false;
-    let poop = false;
-    let lieDown = false;
-    let sniff = false;
-    let dig = false;
     let run = false;
-    let eat = false;
+    const actions = createActionState();
+    const gamepadActions = createActionState();
 
     if (playerIndex === 0) {
       if (keys.current['KeyA']) x -= 1;
       if (keys.current['KeyD']) x += 1;
       if (keys.current['KeyW']) z -= 1;
       if (keys.current['KeyS']) z += 1;
-      if (keys.current['KeyF']) bark = true;
-      if (keys.current['KeyE']) eat = true; // E for Eat
-      if (keys.current['KeyT']) interact = true; // T for Throw
-      if (keys.current['Space']) jump = true;
-      if (keys.current['KeyQ']) sit = true;
-      if (keys.current['KeyR']) roll = true;
-      if (keys.current['KeyZ']) poop = true;
-      if (keys.current['KeyC']) lieDown = true;
-      if (keys.current['KeyV']) sniff = true;
-      if (keys.current['KeyX']) dig = true;
+      if (keys.current['KeyF']) actions.bark = true;
+      if (keys.current['KeyE']) actions.eat = true;
+      if (keys.current['KeyT']) actions.interact = true;
+      if (keys.current['Space']) actions.jump = true;
+      if (keys.current['KeyQ']) actions.sit = true;
+      if (keys.current['KeyR']) actions.roll = true;
+      if (keys.current['KeyZ']) actions.poop = true;
+      if (keys.current['KeyC']) actions.lieDown = true;
+      if (keys.current['KeyV']) actions.sniff = true;
+      if (keys.current['KeyX']) actions.dig = true;
       if (keys.current['ShiftLeft']) run = true;
     } else if (playerIndex === 1) {
       if (keys.current['ArrowLeft']) x -= 1;
       if (keys.current['ArrowRight']) x += 1;
       if (keys.current['ArrowUp']) z -= 1;
       if (keys.current['ArrowDown']) z += 1;
-      if (keys.current['Enter']) bark = true;
-      if (keys.current['Slash']) eat = true; // Slash for Eat
-      if (keys.current['Quote']) interact = true; // Quote for Throw
-      if (keys.current['ControlRight']) jump = true;
-      if (keys.current['Period']) sit = true;
-      if (keys.current['Comma']) roll = true;
-      if (keys.current['KeyM']) poop = true;
-      if (keys.current['KeyL']) lieDown = true;
-      if (keys.current['Semicolon']) sniff = true;
-      if (keys.current['KeyU']) dig = true;
+      if (keys.current['Enter']) actions.bark = true;
+      if (keys.current['Slash']) actions.eat = true;
+      if (keys.current['Quote']) actions.interact = true;
+      if (keys.current['ControlRight']) actions.jump = true;
+      if (keys.current['Period']) actions.sit = true;
+      if (keys.current['Comma']) actions.roll = true;
+      if (keys.current['KeyM']) actions.poop = true;
+      if (keys.current['KeyL']) actions.lieDown = true;
+      if (keys.current['Semicolon']) actions.sniff = true;
+      if (keys.current['KeyU']) actions.dig = true;
       if (keys.current['ShiftRight']) run = true;
     }
 
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = gamepads[playerIndex];
     if (gp) {
-      if (Math.abs(gp.axes[0]) > 0.1) x += gp.axes[0];
-      if (Math.abs(gp.axes[1]) > 0.1) z += gp.axes[1];
-      if (gp.buttons[0]?.pressed) jump = true; // A
-      if (gp.buttons[1]?.pressed) bark = true; // B
-      if (gp.buttons[2]?.pressed) interact = true; // X
-      if (gp.buttons[3]?.pressed) poop = true; // Y
-      if (gp.buttons[4]?.pressed) sit = true; // LB
-      if (gp.buttons[5]?.pressed) roll = true; // RB
-      if (gp.buttons[6]?.pressed) lieDown = true; // LT
-      if (gp.buttons[7]?.pressed) run = true; // RT (Sprint)
-      if (gp.buttons[8]?.pressed) dig = true; // Select/Back
-      if (gp.buttons[12]?.pressed) sniff = true; // D-Pad Up
+      const leftStick = shapeAnalogInput(gp.axes[0] ?? 0, gp.axes[1] ?? 0, GAMEPAD_DEADZONE);
+      x += leftStick.x;
+      z += leftStick.y;
+
+      gamepadActions.jump = !!gp.buttons[0]?.pressed;
+      gamepadActions.bark = !!gp.buttons[1]?.pressed;
+      gamepadActions.interact = !!gp.buttons[2]?.pressed;
+      gamepadActions.poop = !!gp.buttons[3]?.pressed;
+      gamepadActions.sit = !!gp.buttons[4]?.pressed;
+      gamepadActions.roll = !!gp.buttons[5]?.pressed;
+      gamepadActions.lieDown = !!gp.buttons[6]?.pressed;
+      run = run || !!gp.buttons[7]?.pressed;
+      gamepadActions.dig = !!gp.buttons[8]?.pressed;
+      gamepadActions.sniff = !!gp.buttons[12]?.pressed;
     }
 
-    // Read virtual joystick
     const joystick = useGameStore.getState().joystick;
     if (playerIndex === 0 && joystick.active) {
-      x += joystick.x;
-      z += joystick.y;
+      const shapedJoystick = shapeAnalogInput(joystick.x, joystick.y, JOYSTICK_DEADZONE);
+      x += shapedJoystick.x;
+      z += shapedJoystick.y;
     }
+
+    (Object.keys(gamepadActions) as UiActionType[]).forEach((action) => {
+      if (gamepadActions[action] && !prevGamepadActions.current[action]) {
+        useGameStore.getState().triggerInputFeedback(action, 'gamepad', playerIndex);
+      }
+      prevGamepadActions.current[action] = gamepadActions[action];
+      actions[action] = actions[action] || gamepadActions[action];
+    });
 
     const len = Math.hypot(x, z);
     if (len > 1) {
@@ -104,49 +145,64 @@ export function useInput(playerIndex: number) {
       z /= len;
     }
 
-    const justBarked = bark && !prevBark.current;
-    prevBark.current = bark;
+    const now = performance.now();
+    if (grounded) {
+      coyoteUntil.current = now + COYOTE_TIME_MS;
+    }
 
-    const justInteracted = interact && !prevInteract.current;
-    prevInteract.current = interact;
+    const jumpPressedThisFrame = actions.jump && !prevActions.current.jump;
+    if (jumpPressedThisFrame) {
+      jumpBufferUntil.current = now + JUMP_BUFFER_MS;
+    }
 
-    // We don't need to override justJumped here because it's handled in Dog.tsx, but let's keep it clean
-    let finalJustJumped = jump && !prevJump.current;
-    prevJump.current = jump;
+    const canConsumeBufferedJump = !jumpConsumed.current
+      && jumpBufferUntil.current > now
+      && coyoteUntil.current > now;
 
-    const justSat = sit && !prevSit.current;
-    prevSit.current = sit;
+    const justJumped = canConsumeBufferedJump;
+    if (justJumped) {
+      jumpConsumed.current = true;
+      jumpBufferUntil.current = 0;
+      coyoteUntil.current = 0;
+    } else if (!actions.jump) {
+      jumpConsumed.current = false;
+    }
 
-    const justRolled = roll && !prevRoll.current;
-    prevRoll.current = roll;
+    const justBarked = actions.bark && !prevActions.current.bark;
+    const justInteracted = actions.interact && !prevActions.current.interact;
+    const justSat = actions.sit && !prevActions.current.sit;
+    const justRolled = actions.roll && !prevActions.current.roll;
+    const justPooped = actions.poop && !prevActions.current.poop;
+    const justLayDown = actions.lieDown && !prevActions.current.lieDown;
+    const justSniffed = actions.sniff && !prevActions.current.sniff;
+    const justDug = actions.dig && !prevActions.current.dig;
+    const justAte = actions.eat && !prevActions.current.eat;
 
-    const justPooped = poop && !prevPoop.current;
-    prevPoop.current = poop;
+    prevActions.current = { ...actions };
 
-    const justLayDown = lieDown && !prevLieDown.current;
-    prevLieDown.current = lieDown;
-
-    const justSniffed = sniff && !prevSniff.current;
-    prevSniff.current = sniff;
-
-    const justDug = dig && !prevDig.current;
-    prevDig.current = dig;
-
-    const justAte = eat && !prevEat.current;
-    prevEat.current = eat;
-
-    return { 
-      x, z, 
-      bark, justBarked, 
-      interact, justInteracted, 
-      jump, justJumped: finalJustJumped, 
-      sit, justSat, 
-      roll, justRolled, 
-      poop, justPooped,
-      lieDown, justLayDown,
-      sniff, justSniffed,
-      dig, justDug,
-      eat, justAte,
+    return {
+      x,
+      z,
+      bark: actions.bark,
+      justBarked,
+      interact: actions.interact,
+      justInteracted,
+      jump: actions.jump,
+      justJumped,
+      sit: actions.sit,
+      justSat,
+      roll: actions.roll,
+      justRolled,
+      poop: actions.poop,
+      justPooped,
+      lieDown: actions.lieDown,
+      justLayDown,
+      sniff: actions.sniff,
+      justSniffed,
+      dig: actions.dig,
+      justDug,
+      eat: actions.eat,
+      justAte,
       run
     };
   };

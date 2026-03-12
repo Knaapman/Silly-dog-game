@@ -132,9 +132,9 @@ function CameraController() {
       zoom = 15;
     }
 
-    const beatActive = levelBeat && levelBeat.endsAt > Date.now();
-    const beatLift = beatActive ? (levelBeat.phase === 'outro' ? 4.5 : 3) : 0;
-    const beatZoom = beatActive ? (levelBeat.phase === 'outro' ? 5 : 3.5) : 0;
+    const activeBeat = levelBeat && levelBeat.endsAt > Date.now() ? levelBeat : null;
+    const beatLift = activeBeat ? (activeBeat.phase === 'outro' ? 4.5 : 3) : 0;
+    const beatZoom = activeBeat ? (activeBeat.phase === 'outro' ? 5 : 3.5) : 0;
 
     // Smooth camera movement
     const targetPos = new THREE.Vector3(midX, zoom + beatLift, midZ + (zoom + beatZoom) * 0.8);
@@ -143,10 +143,10 @@ function CameraController() {
       targetPos.y += (Math.random() - 0.5) * cameraKick.current * 0.7;
       targetPos.z += (Math.random() - 0.5) * cameraKick.current;
     }
-    const lerpFactor = 1 - Math.exp(-(beatActive ? 3.2 : 5) * delta);
+    const lerpFactor = 1 - Math.exp(-(activeBeat ? 3.2 : 5) * delta);
     state.camera.position.lerp(targetPos, lerpFactor);
     
-    const targetLookAt = new THREE.Vector3(midX, beatActive ? 1.4 : 0, midZ);
+    const targetLookAt = new THREE.Vector3(midX, activeBeat ? 1.4 : 0, midZ);
     lookAtTarget.current.lerp(targetLookAt, lerpFactor);
     state.camera.lookAt(lookAtTarget.current);
   });

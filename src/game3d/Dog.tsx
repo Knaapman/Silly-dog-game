@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, CuboidCollider, useRapier } from '@react-three/rapier';
 import { useInput } from './useInput';
-import { useGameStore } from './store';
+import { useGameStore, type UiActionType } from './store';
 import { useFeedbackStore } from './feedbackStore';
 import { playBarkSound, playPoopSound, playJumpSound, playDigSound, playEatSound, playDrinkSound, playSniffSound, playSleepSound, playPantSound } from './audio';
 import * as THREE from 'three';
@@ -18,6 +18,22 @@ function lerpAngle(start: number, end: number, t: number) {
   while (diff > Math.PI) diff -= Math.PI * 2;
   while (diff < -Math.PI) diff += Math.PI * 2;
   return start + diff * t;
+}
+
+function applyUiActionToInput(
+  input: ReturnType<ReturnType<typeof useInput>>,
+  action: UiActionType
+) {
+  if (action === 'bark') input.justBarked = true;
+  else if (action === 'dig') input.justDug = true;
+  else if (action === 'lieDown') input.justLayDown = true;
+  else if (action === 'poop') input.justPooped = true;
+  else if (action === 'interact') input.justInteracted = true;
+  else if (action === 'eat') input.justAte = true;
+  else if (action === 'jump') input.justJumped = true;
+  else if (action === 'sit') input.justSat = true;
+  else if (action === 'roll') input.justRolled = true;
+  else if (action === 'sniff') input.justSniffed = true;
 }
 
 export function Dog({ playerIndex, color, position }: { playerIndex: number, color: string, position: [number, number, number] }) {
@@ -54,6 +70,9 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   const removeBone = useGameStore(s => s.removeBone);
   const addPoop = useGameStore(s => s.addPoop);
   const stars = useGameStore(s => s.stars);
+  const controlsLockedUntil = useGameStore(s => s.controlsLockedUntil);
+  const levelModifier = useGameStore(s => s.levelModifier);
+  const recordObjectiveEvent = useGameStore(s => s.recordObjectiveEvent);
 
   const [isBarking, setIsBarking] = useState(false);
   const [isEating, setIsEating] = useState(false);
@@ -118,6 +137,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     sniffTimerRef.current += delta;
     if (sniffTimerRef.current <= 1) return;
     sniffTimerRef.current = 0;
+    recordObjectiveEvent('sniff');
 
     const digSpots = useGameStore.getState().digSpots;
     let nearestDist = Infinity;
@@ -165,7 +185,36 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
 
   useFrame((state, delta) => {
     if (!rb.current || !group.current) return;
-    const input = getInput();
+    const pos = rb.current.translation();
+    const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+    const distToPond = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
+    const isSwimming = distToPond < 6;
+    const groundRay = new rapier.Ray(
+      { x: currentPos.x, y: currentPos.y + 0.1, z: currentPos.z },
+      { x: 0, y: -1, z: 0 }
+    );
+    const groundHit = world.castRay(groundRay, 0.5, true, undefined, undefined, undefined, rb.current);
+    const isGrounded = !isSwimming && !!groundHit && groundHit.toi < 0.3;
+    const baseInput = getInput({ grounded: isGrounded });
+    const controlsLocked = Date.now() < controlsLockedUntil;
+    const input = controlsLocked ? {
+      ...baseInput,
+      x: 0,
+      z: 0,
+      jump: false,
+      justJumped: false,
+      run: false,
+      justBarked: false,
+      justInteracted: false,
+      justAte: false,
+      justSat: false,
+      justLayDown: false,
+      justRolled: false,
+      justDug: false,
+      justPooped: false,
+      sniff: false,
+      justSniffed: false
+    } : baseInput;
     const eating = eatTimerRef.current;
     const barking = barkTimerRef.current;
     
@@ -173,22 +222,14 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     const uiAction = useGameStore.getState().uiAction;
     if (uiAction && uiAction.playerIndex === playerIndex && uiAction.time > lastProcessedUiActionTime.current) {
       lastProcessedUiActionTime.current = uiAction.time;
-      if (uiAction.action === 'bark') input.justBarked = true;
-      else if (uiAction.action === 'dig') input.justDug = true;
-      else if (uiAction.action === 'sleep') input.justLayDown = true;
-      else if (uiAction.action === 'poop') input.justPooped = true;
-      else if (uiAction.action === 'throw') input.justInteracted = true;
-      else if (uiAction.action === 'interact') input.justAte = true;
-      else if (uiAction.action === 'jump') input.justJumped = true;
+      applyUiActionToInput(input, uiAction.action);
     }
 
-    const pos = rb.current.translation();
-    const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
-    const distToPond = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
-    const isSwimming = distToPond < 6;
-
     // Movement
-    const speed = isSwimming ? 6 : (isSniffing ? 5 : (input.run ? 22 : 12));
+    const tunedWalkSpeed = 12 * levelModifier.movement.walkSpeedMultiplier;
+    const tunedSprintSpeed = 22 * levelModifier.movement.sprintSpeedMultiplier;
+    const tunedSniffSpeed = 5 * levelModifier.movement.sniffSpeedMultiplier;
+    const speed = isSwimming ? 6 : (isSniffing ? tunedSniffSpeed : (input.run ? tunedSprintSpeed : tunedWalkSpeed));
     const vel = rb.current.linvel();
     
     if (isRolling) {
@@ -219,17 +260,10 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
 
       // Jump
       if (input.justJumped && !isSwimming) {
-        // Ground check
-        const rayOrigin = { x: currentPos.x, y: currentPos.y + 0.1, z: currentPos.z };
-        const rayDir = { x: 0, y: -1, z: 0 };
-        const ray = new rapier.Ray(rayOrigin, rayDir);
-        const hit = world.castRay(ray, 0.5, true, undefined, undefined, undefined, rb.current);
-
-        if (hit && (hit as any).toi < 0.3) {
-          rb.current.applyImpulse({ x: 0, y: 10, z: 0 }, true); // Increased impulse for better jump height
-          setIsSniffing(false); // Stop sniffing if jumping
-          playJumpSound();
-        }
+        rb.current.applyImpulse({ x: 0, y: 10 * levelModifier.movement.jumpImpulseMultiplier, z: 0 }, true);
+        setIsSniffing(false);
+        playJumpSound();
+        recordObjectiveEvent('jump');
       }
     }
 
@@ -655,7 +689,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     const updateDigAction = () => {
       if (input.justDug && !isJumping && !isMoving && !isSitting && !isLyingDown && !isRolling && !isDrinking && !isDigging) {
         setIsDigging(true);
-        digTimerRef.current = 2;
+        digTimerRef.current = 2 * levelModifier.movement.digDurationMultiplier;
         emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⛏️', text: 'Digging...', playerIndex });
       }
       if (!isDigging) return;
@@ -682,6 +716,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           addBone([spotPos.x, spotPos.y + 1, spotPos.z]);
           emitFeedback({ type: 'found_digspot', position: [spotPos.x, spotPos.y, spotPos.z], icon: '🦴', text: 'Treasure found!', major: true, playerIndex });
           emitFeedback({ type: 'collect_star', position: [spotPos.x, spotPos.y, spotPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
+          recordObjectiveEvent('dig');
           useGameStore.getState().addStar();
           foundSpot = true;
           break;
@@ -788,6 +823,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         setEatActive(true);
         setBarkActive(false);
         setIsSitting(false);
+        recordObjectiveEvent('eat');
         emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍖', text: 'Chomp!', playerIndex });
         emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
         useGameStore.getState().addStar();
@@ -796,6 +832,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         if (pondDist < 8.5 && pondDist > 6) {
           group.current.rotation.y = Math.atan2(-currentPos.x, -currentPos.z);
           setIsDrinking(true); setIsSitting(false); setIsLyingDown(false);
+          recordObjectiveEvent('drink');
           emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '💧', text: 'Refreshing!', playerIndex });
         } else {
           emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍽️', text: 'Nothing to eat', playerIndex });

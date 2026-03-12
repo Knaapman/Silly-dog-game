@@ -94,6 +94,34 @@ type LevelBeatState = {
   endsAt: number;
 };
 
+export type UiActionType =
+  | 'bark'
+  | 'dig'
+  | 'lieDown'
+  | 'poop'
+  | 'interact'
+  | 'eat'
+  | 'jump'
+  | 'sit'
+  | 'roll'
+  | 'sniff';
+
+export type InputFeedbackSource = 'touch' | 'gamepad';
+
+type UiActionEvent = {
+  action: UiActionType;
+  time: number;
+  playerIndex: number;
+  source: InputFeedbackSource | 'keyboard';
+};
+
+type InputFeedbackEvent = {
+  action: UiActionType;
+  time: number;
+  playerIndex: number;
+  source: InputFeedbackSource;
+};
+
 const BASE_SPAWN_PROFILE: SpawnProfile = {
   foodCount: 6,
   digSpotCount: 8,
@@ -351,6 +379,17 @@ function createObjectiveState(loopIndex: number, modifier: LevelModifier, now = 
   };
 }
 
+function refreshObjectiveForModifier(objective: ObjectiveState, modifier: LevelModifier, now = Date.now()): ObjectiveState {
+  const refreshed = createObjectiveState(objective.loopIndex, modifier, now);
+  return {
+    ...refreshed,
+    requirements: refreshed.requirements.map((requirement) => ({
+      ...requirement,
+      progress: objective.requirements.find((current) => current.event === requirement.event)?.progress ?? 0
+    }))
+  };
+}
+
 interface GameState {
   dogPositions: [THREE.Vector3, THREE.Vector3];
   dogRotations: [number, number];
@@ -411,8 +450,10 @@ interface GameState {
   levelBeat: LevelBeatState | null;
   recordObjectiveEvent: (event: ObjectiveEvent) => void;
 
-  uiAction: { action: string, time: number, playerIndex: number } | null;
-  triggerUiAction: (action: string, playerIndex?: number) => void;
+  uiAction: UiActionEvent | null;
+  triggerUiAction: (action: UiActionType, playerIndex?: number) => void;
+  inputFeedback: InputFeedbackEvent | null;
+  triggerInputFeedback: (action: UiActionType, source: InputFeedbackSource, playerIndex?: number) => void;
 
   joystick: { x: number, y: number, active: boolean };
   setJoystick: (x: number, y: number, active: boolean) => void;
@@ -432,7 +473,7 @@ export const useGameStore = create<GameState>((set, get) => {
   const applyLevelTransition = (level: number, delayMs = 1100) => {
     const now = Date.now();
     const nextModifier = getLevelModifier(level);
-    const previewObjective = createObjectiveState(get().completedObjectives, nextModifier, now + delayMs);
+    const previewObjective = refreshObjectiveForModifier(get().currentObjective, nextModifier, now + delayMs);
 
     set({
       controlsLockedUntil: now + 2200,
@@ -452,7 +493,7 @@ export const useGameStore = create<GameState>((set, get) => {
 
     window.setTimeout(() => {
       const introNow = Date.now();
-      const refreshedObjective = createObjectiveState(get().completedObjectives, nextModifier, introNow);
+      const refreshedObjective = refreshObjectiveForModifier(get().currentObjective, nextModifier, introNow);
       set({
         currentLevel: level,
         levelModifier: nextModifier,
@@ -476,12 +517,11 @@ export const useGameStore = create<GameState>((set, get) => {
     }, delayMs);
 
     window.setTimeout(() => {
-      set((state) => {
-        if (!state.levelBeat || state.levelBeat.level !== level) {
-          return state;
-        }
-        return { ...state, levelBeat: null, controlsLockedUntil: 0 };
-      });
+      set((state) => (
+        state.levelBeat && state.levelBeat.level === level
+          ? { levelBeat: null, controlsLockedUntil: 0 }
+          : {}
+      ));
     }, 3400);
   };
 
@@ -667,7 +707,17 @@ export const useGameStore = create<GameState>((set, get) => {
     },
 
     uiAction: null,
-    triggerUiAction: (action, playerIndex = 0) => set({ uiAction: { action, time: Date.now(), playerIndex } }),
+    triggerUiAction: (action, playerIndex = 0) => {
+      const now = Date.now();
+      set({
+        uiAction: { action, time: now, playerIndex, source: 'touch' },
+        inputFeedback: { action, time: now, playerIndex, source: 'touch' }
+      });
+    },
+    inputFeedback: null,
+    triggerInputFeedback: (action, source, playerIndex = 0) => set({
+      inputFeedback: { action, time: Date.now(), playerIndex, source }
+    }),
 
     joystick: { x: 0, y: 0, active: false },
     setJoystick: (x, y, active) => set({ joystick: { x, y, active } }),
