@@ -11,6 +11,7 @@ export function TrashCan({ id, position, knocked }: { id: number, position: [num
   const knockTrashCan = useGameStore(s => s.knockTrashCan);
   const addBone = useGameStore(s => s.addBone);
   const addStar = useGameStore(s => s.addStar);
+  const recordObjectiveEvent = useGameStore(s => s.recordObjectiveEvent);
   const hasLooted = useRef(false);
   const [showCrash, setShowCrash] = useState(false);
 
@@ -43,6 +44,7 @@ export function TrashCan({ id, position, knocked }: { id: number, position: [num
       if (Math.random() > 0.5) {
         addBone([pos.x, pos.y + 1, pos.z]);
       }
+      recordObjectiveEvent('trash');
       addStar(); // Good job knocking it over! Or maybe bad dog? We'll give a star for fun.
     }
   });

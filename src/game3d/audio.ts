@@ -59,6 +59,31 @@ export function playStarSound() {
   osc.stop(ctx.currentTime + 0.4);
 }
 
+export function playLevelStinger(phase: 'intro' | 'outro') {
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+  const freqs = phase === 'intro' ? [392, 523.25, 783.99] : [659.25, 523.25, 392];
+
+  freqs.forEach((freq, index) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = phase === 'intro' ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(freq, now + index * 0.08);
+    osc.frequency.exponentialRampToValueAtTime(freq * (phase === 'intro' ? 1.08 : 0.92), now + index * 0.08 + 0.18);
+
+    gain.gain.setValueAtTime(0.001, now + index * 0.08);
+    gain.gain.linearRampToValueAtTime(0.16, now + index * 0.08 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + index * 0.08 + 0.24);
+
+    osc.start(now + index * 0.08);
+    osc.stop(now + index * 0.08 + 0.24);
+  });
+}
+
 export function playCrashSound() {
   const ctx = getAudioCtx();
   const osc = ctx.createOscillator();
