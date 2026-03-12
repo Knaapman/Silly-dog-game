@@ -20,8 +20,21 @@ import { ParkPath } from './ParkPath';
 import { DigSpot } from './DigSpot';
 import { TrashCan } from './TrashCan';
 import { useGameStore } from './store';
+import { useFeedbackStore } from './feedbackStore';
 import * as THREE from 'three';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
+
+type ActiveFeedback = {
+  id: number;
+  sourceTime: number;
+  createdAt: number;
+  duration: number;
+  type: string;
+  position: [number, number, number];
+  icon?: string;
+  text?: string;
+  major?: boolean;
+};
 
 function Lighting() {
   const isNight = useGameStore(s => s.isNight);
@@ -87,9 +100,21 @@ function Lighting() {
 function CameraController() {
   const dogs = useGameStore(s => s.dogPositions);
   const isTwoPlayer = useGameStore(s => s.isTwoPlayer);
+  const feedbackEvents = useFeedbackStore(s => s.events);
   const lookAtTarget = useRef(new THREE.Vector3());
+  const lastKickEventTime = useRef(0);
+  const cameraKick = useRef(0);
   
   useFrame((state, delta) => {
+    for (const event of feedbackEvents) {
+      if (event.major && event.time > lastKickEventTime.current) {
+        lastKickEventTime.current = event.time;
+        cameraKick.current = 0.45;
+      }
+    }
+
+    cameraKick.current = Math.max(0, cameraKick.current - delta * 2.2);
+
     let midX, midZ, zoom;
 
     if (isTwoPlayer) {
@@ -108,6 +133,11 @@ function CameraController() {
 
     // Smooth camera movement
     const targetPos = new THREE.Vector3(midX, zoom, midZ + zoom * 0.8);
+    if (cameraKick.current > 0) {
+      targetPos.x += (Math.random() - 0.5) * cameraKick.current;
+      targetPos.y += (Math.random() - 0.5) * cameraKick.current * 0.7;
+      targetPos.z += (Math.random() - 0.5) * cameraKick.current;
+    }
     const lerpFactor = 1 - Math.exp(-5 * delta);
     state.camera.position.lerp(targetPos, lerpFactor);
     
@@ -116,6 +146,77 @@ function CameraController() {
     state.camera.lookAt(lookAtTarget.current);
   });
   return null;
+}
+
+function FeedbackRenderer() {
+  const feedbackEvents = useFeedbackStore(s => s.events);
+  const [activeFeedback, setActiveFeedback] = useState<ActiveFeedback[]>([]);
+  const lastEventTime = useRef(0);
+
+  useFrame(() => {
+    const now = Date.now();
+    const newEvents = feedbackEvents
+      .filter((event) => event.time > lastEventTime.current)
+      .map((event) => ({
+        id: event.id,
+        sourceTime: event.time,
+        createdAt: now,
+        duration: event.major ? 1.4 : 1.0,
+        type: event.type,
+        position: event.position,
+        icon: event.icon,
+        text: event.text,
+        major: event.major
+      }));
+
+    if (newEvents.length > 0) {
+      lastEventTime.current = Math.max(...newEvents.map((event) => event.sourceTime), lastEventTime.current);
+      setActiveFeedback((current) => [...current, ...newEvents]);
+    }
+
+    setActiveFeedback((current) =>
+      current.filter((event) => now - event.createdAt < event.duration * 1000 + 250)
+    );
+  });
+
+  return (
+    <group>
+      {activeFeedback.map((event) => {
+        const age = (Date.now() - event.createdAt) / 1000;
+        const progress = Math.min(1, age / event.duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const pulseScale = 0.4 + eased * (event.major ? 4.2 : 2.6);
+        const pulseOpacity = 1 - eased;
+        const yLift = 1.2 + eased * 1.8;
+        const label = event.text ? `${event.icon ? `${event.icon} ` : ''}${event.text}` : event.icon ?? '';
+        const ringColor = event.type === 'action_fail' || event.type === 'empty_dig' ? '#ef5350' : '#7cfc00';
+
+        return (
+          <group key={event.id} position={[event.position[0], event.position[1] + 0.08, event.position[2]]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[pulseScale, pulseScale, pulseScale]}>
+              <ringGeometry args={[0.35, 0.5, 28]} />
+              <meshBasicMaterial color={ringColor} transparent opacity={pulseOpacity * 0.7} depthWrite={false} />
+            </mesh>
+            {label && (
+              <Text
+                position={[0, yLift, 0]}
+                fontSize={event.major ? 0.55 : 0.42}
+                color="#ffffff"
+                outlineColor="#1f2937"
+                outlineWidth={0.08}
+                anchorX="center"
+                anchorY="middle"
+                material-transparent
+                material-opacity={Math.max(0, 1 - progress)}
+              >
+                {label}
+              </Text>
+            )}
+          </group>
+        );
+      })}
+    </group>
+  );
 }
 
 
@@ -377,6 +478,7 @@ export function Scene() {
         {bones.map(b => <Bone key={`bone-${b.id}`} id={b.id} position={b.pos} />)}
         {digSpots.map(d => <DigSpot key={`digspot-${d.id}`} position={d.pos} active={d.active} />)}
         {trashCans.map(t => <TrashCan key={`trashcan-${t.id}`} id={t.id} position={t.pos} knocked={t.knocked} />)}
+        <FeedbackRenderer />
       </Physics>
     </>
   );

@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, CuboidCollider, useRapier } from '@react-three/rapier';
 import { useInput } from './useInput';
 import { useGameStore } from './store';
+import { useFeedbackStore } from './feedbackStore';
 import { playBarkSound, playPoopSound, playJumpSound, playDigSound, playEatSound, playDrinkSound, playSniffSound, playSleepSound, playPantSound } from './audio';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
@@ -60,8 +61,6 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   const [digTimer, setDigTimer] = useState(0);
   const [sniffTimer, setSniffTimer] = useState(0);
   const [poopCooldown, setPoopCooldown] = useState(0);
-  const [reaction, setReaction] = useState<string | null>(null);
-  const [reactionTimer, setReactionTimer] = useState(0);
   const [zzzParticles, setZzzParticles] = useState<{id: number, time: number, x: number, y: number}[]>([]);
   const [digParticles, setDigParticles] = useState<{id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number}[]>([]);
   const [dustParticles, setDustParticles] = useState<{id: number, time: number, x: number, y: number, z: number, scale: number}[]>([]);
@@ -81,6 +80,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   });
 
   const addBone = useGameStore(s => s.addBone);
+  const emitFeedback = useFeedbackStore(s => s.emitFeedback);
 
   // Animation Refs for smooth transitions
   const animState = useRef({
@@ -471,10 +471,15 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
             rb.current.applyImpulse({ x: 0, y: 2, z: 0 }, true);
           }
           
-          // Occasional heart reaction
-          if (dist < 2 && Math.random() < 0.005 && reactionTimer <= 0) {
-            setReaction("❤️");
-            setReactionTimer(2);
+          // Occasional friendly feedback
+          if (dist < 2 && Math.random() < 0.005) {
+            emitFeedback({
+              type: 'action_success',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '❤️',
+              text: 'Friend!',
+              playerIndex
+            });
           }
         }
       }
@@ -568,17 +573,38 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         }
         
         if (nearestDist < 3) {
-          setReaction("❗"); // Found it! Dig here!
-          setReactionTimer(1);
+          emitFeedback({
+            type: 'found_digspot',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '❗',
+            text: 'Dig here!',
+            major: true,
+            playerIndex
+          });
         } else if (nearestDist < 10) {
-          setReaction("🐾"); // Getting warm
-          setReactionTimer(1);
+          emitFeedback({
+            type: 'action_success',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🐾',
+            text: 'Getting warm',
+            playerIndex
+          });
         } else if (nearestDist < 25) {
-          setReaction("🔎"); // Getting closer
-          setReactionTimer(1);
+          emitFeedback({
+            type: 'action_success',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🔎',
+            text: 'Getting closer',
+            playerIndex
+          });
         } else {
-          setReaction("❓"); // Cold
-          setReactionTimer(1);
+          emitFeedback({
+            type: 'action_fail',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '❓',
+            text: 'Cold trail',
+            playerIndex
+          });
         }
       }
     } else {
@@ -609,14 +635,26 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         setPoopCooldown(5); // 5 seconds cooldown
         playPoopSound();
       } else {
-        setReaction("❌");
-        setReactionTimer(1);
+        emitFeedback({
+          type: 'action_fail',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '❌',
+          text: 'Too soon',
+          playerIndex
+        });
       }
     }
 
     if (input.justDug && !isJumping && !isMoving && !isSitting && !isLyingDown && !isRolling && !isDrinking) {
       setIsDigging(true);
       setDigTimer(2.0); // Dig for 2 seconds
+      emitFeedback({
+        type: 'action_success',
+        position: [currentPos.x, currentPos.y, currentPos.z],
+        icon: '⛏️',
+        text: 'Digging...',
+        playerIndex
+      });
     }
 
     if (isDigging) {
@@ -654,6 +692,22 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
             if (digPos.distanceTo(spotPos) < 2.5) {
               digSpot(spot.id);
               addBone([spotPos.x, spotPos.y + 1, spotPos.z]);
+              emitFeedback({
+                type: 'found_digspot',
+                position: [spotPos.x, spotPos.y, spotPos.z],
+                icon: '🦴',
+                text: 'Treasure found!',
+                major: true,
+                playerIndex
+              });
+              emitFeedback({
+                type: 'collect_star',
+                position: [spotPos.x, spotPos.y, spotPos.z],
+                icon: '⭐',
+                text: '+1 Star',
+                major: true,
+                playerIndex
+              });
               useGameStore.getState().addStar(); // Good dog!
               foundSpot = true;
               break;
@@ -662,8 +716,13 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         }
         
         if (!foundSpot) {
-          setReaction("?");
-          setReactionTimer(1);
+          emitFeedback({
+            type: 'empty_dig',
+            position: [digPos.x, digPos.y, digPos.z],
+            icon: '❔',
+            text: 'Nothing here',
+            playerIndex
+          });
         }
       }
     }
@@ -724,6 +783,13 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       addBark(currentPos);
       setBarking(0.5); // show bark bubble for 0.5s
       playBarkSound();
+      emitFeedback({
+        type: 'action_success',
+        position: [currentPos.x, currentPos.y, currentPos.z],
+        icon: '🗣️',
+        text: 'Woof!',
+        playerIndex
+      });
     }
 
     if (barking > 0) {
@@ -750,12 +816,33 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       if (heldBall != null) {
         triggerThrow(playerIndex, 'ball', heldBall);
         dropBall(playerIndex);
+        emitFeedback({
+          type: 'action_success',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '🎾',
+          text: 'Ball thrown',
+          playerIndex
+        });
       } else if (heldBone != null) {
         triggerThrow(playerIndex, 'bone', heldBone);
         dropBone(playerIndex);
+        emitFeedback({
+          type: 'action_success',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '🦴',
+          text: 'Bone thrown',
+          playerIndex
+        });
       } else if (heldFrisbee != null) {
         triggerThrow(playerIndex, 'frisbee', heldFrisbee);
         dropFrisbee(playerIndex);
+        emitFeedback({
+          type: 'action_success',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '🥏',
+          text: 'Frisbee thrown',
+          playerIndex
+        });
       } else {
         // Try to grab a ball, bone, or frisbee
         let nearestBallId: number | null = null;
@@ -813,10 +900,39 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
 
         if (closestType === 'ball' && nearestBallId != null) {
           grabBall(playerIndex, nearestBallId);
+          emitFeedback({
+            type: 'action_success',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🎾',
+            text: 'Grabbed ball',
+            playerIndex
+          });
         } else if (closestType === 'bone' && nearestBoneId != null) {
           grabBone(playerIndex, nearestBoneId);
+          emitFeedback({
+            type: 'action_success',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🦴',
+            text: 'Grabbed bone',
+            playerIndex
+          });
         } else if (closestType === 'frisbee' && nearestFrisbeeId != null) {
           grabFrisbee(playerIndex, nearestFrisbeeId);
+          emitFeedback({
+            type: 'action_success',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🥏',
+            text: 'Grabbed frisbee',
+            playerIndex
+          });
+        } else {
+          emitFeedback({
+            type: 'action_fail',
+            position: [currentPos.x, currentPos.y, currentPos.z],
+            icon: '🙅',
+            text: 'Nothing to grab',
+            playerIndex
+          });
         }
       }
     }
@@ -831,6 +947,21 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         setEating(1.5);
         setBarking(0);
         setIsSitting(false);
+        emitFeedback({
+          type: 'action_success',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '🍖',
+          text: 'Chomp!',
+          playerIndex
+        });
+        emitFeedback({
+          type: 'collect_star',
+          position: [currentPos.x, currentPos.y, currentPos.z],
+          icon: '⭐',
+          text: '+1 Star',
+          major: true,
+          playerIndex
+        });
         useGameStore.getState().addStar(); // Good dog!
       } else {
         // Check for food on ground
@@ -844,6 +975,21 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
             setEating(1.5);
             setBarking(0);
             setIsSitting(false);
+            emitFeedback({
+              type: 'action_success',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '🍽️',
+              text: 'Yum!',
+              playerIndex
+            });
+            emitFeedback({
+              type: 'collect_star',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '⭐',
+              text: '+1 Star',
+              major: true,
+              playerIndex
+            });
             useGameStore.getState().addStar(); // Good dog!
             break;
           }
@@ -860,6 +1006,21 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
               setEating(1.5);
               setBarking(0);
               setIsSitting(false);
+              emitFeedback({
+                type: 'action_success',
+                position: [currentPos.x, currentPos.y, currentPos.z],
+                icon: '🦴',
+                text: 'Bone snack!',
+                playerIndex
+              });
+              emitFeedback({
+                type: 'collect_star',
+                position: [currentPos.x, currentPos.y, currentPos.z],
+                icon: '⭐',
+                text: '+1 Star',
+                major: true,
+                playerIndex
+              });
               useGameStore.getState().addStar(); // Good dog!
               break;
             }
@@ -875,16 +1036,24 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
             setIsDrinking(true);
             setIsSitting(false);
             setIsLyingDown(false);
+            emitFeedback({
+              type: 'action_success',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '💧',
+              text: 'Refreshing!',
+              playerIndex
+            });
+          } else {
+            emitFeedback({
+              type: 'action_fail',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '🍽️',
+              text: 'Nothing to eat',
+              playerIndex
+            });
           }
         }
       }
-    }
-
-    // Interaction with other dogs
-    if (reactionTimer > 0) {
-      setReactionTimer(t => t - delta);
-    } else if (reaction !== null && !isSniffing) {
-      setReaction(null);
     }
 
     const barks = useGameStore.getState().barks;
@@ -894,8 +1063,13 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       if (dist < 5) {
         for (const bark of barks) {
           if (Date.now() - bark.time < 100 && bark.pos.distanceTo(otherDogPos) < 1) {
-            setReaction("!");
-            setReactionTimer(1);
+            emitFeedback({
+              type: 'action_success',
+              position: [currentPos.x, currentPos.y, currentPos.z],
+              icon: '💥',
+              text: 'Bark impact!',
+              playerIndex
+            });
           }
         }
       }
@@ -1013,12 +1187,6 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           YUM!
         </Text>
       )}
-      {reaction && (
-        <Text position={[0, 2.5, 0]} fontSize={0.8} color="#ff00ff" outlineWidth={0.05} outlineColor="black">
-          {reaction}
-        </Text>
-      )}
-
       {/* Dust Particles */}
       {dustParticles.map(p => (
         <mesh key={p.id} position={[p.x, p.y, p.z]} scale={p.scale}>
