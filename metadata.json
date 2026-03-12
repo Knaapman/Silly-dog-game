@@ -1,0 +1,5 @@
+{
+  "name": "Silly Dog Sandbox",
+  "description": "A child-friendly, cartoonish sandbox game where you play as a dog, chase cats and birds, and play with balls. Supports local multiplayer and gamepads.",
+  "requestFramePermissions": []
+}
