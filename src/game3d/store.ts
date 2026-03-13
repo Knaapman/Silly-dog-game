@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
-import { playStarSound } from './audio';
+import { playStarSound, type AudioPosition } from './audio';
 
 const zoneSpawnAnchors = {
   bezoekerscentrum: { x: 0, z: -40, radius: 10 },
@@ -439,7 +439,7 @@ interface GameState {
   knockTrashCan: (id: number) => void;
 
   stars: number;
-  addStar: () => void;
+  addStar: (position?: AudioPosition) => void;
   resetEnvironment: () => void;
 
   currentLevel: number;
@@ -531,10 +531,10 @@ export const useGameStore = create<GameState>((set, get) => {
     }
   };
 
-  const awardStars = (amount: number) => {
+  const awardStars = (amount: number, position?: AudioPosition) => {
     if (amount <= 0) return;
     for (let i = 0; i < amount; i += 1) {
-      playStarSound();
+      playStarSound({ position, combo: i + 1, delay: i * 0.08 });
     }
     set((state) => ({ stars: state.stars + amount }));
     queueLevelTransitionIfNeeded(get().stars);
@@ -641,8 +641,8 @@ export const useGameStore = create<GameState>((set, get) => {
     })),
 
     stars: 0,
-    addStar: () => {
-      awardStars(1);
+    addStar: (position) => {
+      awardStars(1, position);
     },
     resetEnvironment: () => set((state) => ({
       digSpots: createDigSpots(state.levelModifier.spawnProfile),

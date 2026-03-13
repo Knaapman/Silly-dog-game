@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, CuboidCollider, useRapier } from '@react-three/rapier';
 import { useInput } from './useInput';
 import { useGameStore, type UiActionType } from './store';
 import { useFeedbackStore } from './feedbackStore';
-import { playBarkSound, playPoopSound, playJumpSound, playDigSound, playEatSound, playDrinkSound, playSniffSound, playSleepSound, playPantSound } from './audio';
+import { playBarkSound, playDigCompleteSound, playDrinkSound, playEatSound, playJumpSound, playPantSound, playPickupSound, playPoopSound, playSleepSound, playSniffSound, startDigLoop, type PositionalLoopHandle } from './audio';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 
@@ -104,13 +104,14 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   const lastProcessedUiActionTime = useRef(0);
   const animOffset = useRef(Math.random() * Math.PI * 2);
   const soundTimers = useRef({
-    dig: 0,
     eat: 0,
     drink: 0,
     sniff: 0,
     sleep: 0,
     pant: 0
   });
+  const currentSoundPosition = useRef(new THREE.Vector3(position[0], position[1], position[2]));
+  const digLoopRef = useRef<PositionalLoopHandle | null>(null);
 
   const addBone = useGameStore(s => s.addBone);
   const emitFeedback = useFeedbackStore(s => s.emitFeedback);
@@ -128,6 +129,22 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
 
   const setBarkActive = (active: boolean) => setIsBarking(prev => prev === active ? prev : active);
   const setEatActive = (active: boolean) => setIsEating(prev => prev === active ? prev : active);
+
+  useEffect(() => {
+    if (isDigging) {
+      digLoopRef.current?.stop();
+      digLoopRef.current = startDigLoop({ position: currentSoundPosition.current });
+      return;
+    }
+
+    digLoopRef.current?.stop();
+    digLoopRef.current = null;
+  }, [isDigging]);
+
+  useEffect(() => () => {
+    digLoopRef.current?.stop();
+    digLoopRef.current = null;
+  }, []);
 
   const updateSniffAction = (delta: number, currentPos: THREE.Vector3) => {
     if (!isSniffing) {
@@ -187,6 +204,8 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     if (!rb.current || !group.current) return;
     const pos = rb.current.translation();
     const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+    currentSoundPosition.current.copy(currentPos);
+    digLoopRef.current?.setPosition(currentPos);
     const distToPond = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
     const isSwimming = distToPond < 6;
     const groundRay = new rapier.Ray(
@@ -262,7 +281,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       if (input.justJumped && !isSwimming) {
         rb.current.applyImpulse({ x: 0, y: 10 * levelModifier.movement.jumpImpulseMultiplier, z: 0 }, true);
         setIsSniffing(false);
-        playJumpSound();
+        playJumpSound({ position: currentPos });
         recordObjectiveEvent('jump');
       }
     }
@@ -305,39 +324,33 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     const t = state.clock.elapsedTime;
 
     // --- SOUND SYSTEM ---
-    if (isDigging) {
-      if (t - soundTimers.current.dig > 0.2) {
-        playDigSound();
-        soundTimers.current.dig = t;
-      }
-    }
     if (eating > 0) {
       if (t - soundTimers.current.eat > 0.3) {
-        playEatSound();
+        playEatSound({ position: currentPos });
         soundTimers.current.eat = t;
       }
     }
     if (isDrinking) {
       if (t - soundTimers.current.drink > 0.4) {
-        playDrinkSound();
+        playDrinkSound({ position: currentPos });
         soundTimers.current.drink = t;
       }
     }
     if (isSniffing) {
       if (t - soundTimers.current.sniff > 0.6) {
-        playSniffSound();
+        playSniffSound({ position: currentPos });
         soundTimers.current.sniff = t;
       }
     }
     if (isLyingDown) {
       if (t - soundTimers.current.sleep > 2.5) {
-        playSleepSound();
+        playSleepSound({ position: currentPos });
         soundTimers.current.sleep = t;
       }
     }
     if (isSitting) {
       if (t - soundTimers.current.pant > 1.5) {
-        playPantSound();
+        playPantSound({ position: currentPos });
         soundTimers.current.pant = t;
       }
     }
@@ -680,7 +693,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         const poopPos = currentPos.clone().add(backDir.multiplyScalar(1.5));
         addPoop([poopPos.x, poopPos.y, poopPos.z]);
         poopCooldownRef.current = 5;
-        playPoopSound();
+        playPoopSound({ position: poopPos });
       } else {
         emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❌', text: 'Too soon', playerIndex });
       }
@@ -703,6 +716,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         return;
       }
       setIsDigging(false);
+      playDigCompleteSound({ position: currentPos });
       const digSpots = useGameStore.getState().digSpots;
       const digSpot = useGameStore.getState().digSpot;
       const forwardDir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y);
@@ -717,7 +731,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           emitFeedback({ type: 'found_digspot', position: [spotPos.x, spotPos.y, spotPos.z], icon: '🦴', text: 'Treasure found!', major: true, playerIndex });
           emitFeedback({ type: 'collect_star', position: [spotPos.x, spotPos.y, spotPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
           recordObjectiveEvent('dig');
-          useGameStore.getState().addStar();
+          useGameStore.getState().addStar(spotPos);
           foundSpot = true;
           break;
         }
@@ -748,7 +762,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       addBark(currentPos);
       barkTimerRef.current = 0.5;
       setBarkActive(true);
-      playBarkSound();
+      playBarkSound({ position: currentPos });
       emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🗣️', text: 'Woof!', playerIndex });
     }
     if (barkTimerRef.current > 0) barkTimerRef.current -= delta;
@@ -789,6 +803,9 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         if (nearestBallId != null && minBallDist < closestDist) { closestType = 'ball'; closestDist = minBallDist; }
         if (nearestBoneId != null && minBoneDist < closestDist) { closestType = 'bone'; closestDist = minBoneDist; }
         if (nearestFrisbeeId != null && minFrisbeeDist < closestDist) { closestType = 'frisbee'; }
+        if (closestType === 'ball' && nearestBallId != null) playPickupSound({ position: currentPos });
+        if (closestType === 'bone' && nearestBoneId != null) playPickupSound({ position: currentPos });
+        if (closestType === 'frisbee' && nearestFrisbeeId != null) playPickupSound({ position: currentPos });
         if (closestType === 'ball' && nearestBallId != null) { grabBall(playerIndex, nearestBallId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🎾', text: 'Grabbed ball', playerIndex }); }
         else if (closestType === 'bone' && nearestBoneId != null) { grabBone(playerIndex, nearestBoneId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🦴', text: 'Grabbed bone', playerIndex }); }
         else if (closestType === 'frisbee' && nearestFrisbeeId != null) { grabFrisbee(playerIndex, nearestFrisbeeId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🥏', text: 'Grabbed frisbee', playerIndex }); }
@@ -826,7 +843,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         recordObjectiveEvent('eat');
         emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍖', text: 'Chomp!', playerIndex });
         emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
-        useGameStore.getState().addStar();
+        useGameStore.getState().addStar(currentPos);
       } else {
         const pondDist = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
         if (pondDist < 8.5 && pondDist > 6) {

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { useGameStore } from './store';
+import { playThrowSound, playToyBounceSound } from './audio';
 import * as THREE from 'three';
 
 export function Frisbee({ id, position, color }: { id: number, position: [number, number, number], color: string }) {
@@ -15,6 +16,7 @@ export function Frisbee({ id, position, color }: { id: number, position: [number
 
   const [isHeld, setIsHeld] = useState(false);
   const [holdingDog, setHoldingDog] = useState<number | null>(null);
+  const bounceCooldown = useRef(0);
 
   useEffect(() => {
     let heldBy = null;
@@ -43,6 +45,7 @@ export function Frisbee({ id, position, color }: { id: number, position: [number
     if (lastThrow && lastThrow.type === 'frisbee' && lastThrow.id === id && Date.now() - lastThrow.time < 100) {
       rb.current.setBodyType(0, true);
       rb.current.wakeUp();
+      const launchPos = dogPositions[lastThrow.dogIndex];
 
       const dogRot = dogRotations[lastThrow.dogIndex];
       const throwDir = new THREE.Vector3(Math.sin(dogRot), 0.2, Math.cos(dogRot)).normalize();
@@ -50,11 +53,13 @@ export function Frisbee({ id, position, color }: { id: number, position: [number
       // Frisbee is thrown flatter and spins
       rb.current.applyImpulse({ x: throwDir.x * 25, y: throwDir.y * 25, z: throwDir.z * 25 }, true);
       rb.current.applyTorqueImpulse({ x: 0, y: 50, z: 0 }, true);
+      playThrowSound({ position: launchPos, flavor: 'frisbee' });
     }
-  }, [throwEvents, id, dogRotations]);
+  }, [dogPositions, throwEvents, id, dogRotations]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!rb.current) return;
+    bounceCooldown.current = Math.max(0, bounceCooldown.current - delta);
     
     if (isHeld && holdingDog !== null) {
       const dogPos = dogPositions[holdingDog];
@@ -79,6 +84,16 @@ export function Frisbee({ id, position, color }: { id: number, position: [number
       if (speedSq > 1) {
         // Apply upward force proportional to horizontal speed
         rb.current.applyImpulse({ x: 0, y: Math.min(speedSq * 0.02, 0.4), z: 0 }, true);
+      }
+
+      const pos = rb.current.translation();
+      const speed = Math.sqrt(speedSq + vel.y * vel.y);
+      if (bounceCooldown.current === 0 && pos.y < 0.35 && Math.abs(vel.y) > 1.2 && speed > 5) {
+        bounceCooldown.current = 0.16;
+        playToyBounceSound({
+          position: [pos.x, pos.y, pos.z],
+          sharpness: 0.6 + Math.min(0.4, speed / 24)
+        });
       }
     }
 

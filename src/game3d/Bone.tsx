@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { useGameStore } from './store';
+import { playThrowSound, playToyBounceSound } from './audio';
 import * as THREE from 'three';
 
 export function Bone({ id, position }: { id: number, position: [number, number, number] }) {
@@ -15,6 +16,7 @@ export function Bone({ id, position }: { id: number, position: [number, number, 
 
   const [isHeld, setIsHeld] = useState(false);
   const [holdingDog, setHoldingDog] = useState<number | null>(null);
+  const bounceCooldown = useRef(0);
 
   useEffect(() => {
     let heldBy = null;
@@ -43,16 +45,19 @@ export function Bone({ id, position }: { id: number, position: [number, number, 
     if (lastThrow && lastThrow.type === 'bone' && lastThrow.id === id && Date.now() - lastThrow.time < 100) {
       rb.current.setBodyType(0, true);
       rb.current.wakeUp();
+      const launchPos = dogPositions[lastThrow.dogIndex];
 
       const dogRot = dogRotations[lastThrow.dogIndex];
       const throwDir = new THREE.Vector3(Math.sin(dogRot), 0.5, Math.cos(dogRot)).normalize();
       rb.current.applyImpulse({ x: throwDir.x * 15, y: throwDir.y * 15, z: throwDir.z * 15 }, true);
       rb.current.applyTorqueImpulse({ x: Math.random(), y: Math.random(), z: Math.random() }, true);
+      playThrowSound({ position: launchPos, flavor: 'bone' });
     }
-  }, [throwEvents, id, dogRotations]);
+  }, [dogPositions, throwEvents, id, dogRotations]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!rb.current) return;
+    bounceCooldown.current = Math.max(0, bounceCooldown.current - delta);
     
     if (isHeld && holdingDog !== null) {
       const dogPos = dogPositions[holdingDog];
@@ -73,6 +78,15 @@ export function Bone({ id, position }: { id: number, position: [number, number, 
     }
 
     const pos = rb.current.translation();
+    const vel = rb.current.linvel();
+    const speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+    if (!isHeld && bounceCooldown.current === 0 && pos.y < 0.5 && Math.abs(vel.y) > 1.4 && speed > 3.2) {
+      bounceCooldown.current = 0.22;
+      playToyBounceSound({
+        position: [pos.x, pos.y, pos.z],
+        sharpness: 0.35 + Math.min(0.65, speed / 16)
+      });
+    }
     setBonePosition(id, new THREE.Vector3(pos.x, pos.y, pos.z));
   });
 

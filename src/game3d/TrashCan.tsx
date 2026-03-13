@@ -36,16 +36,16 @@ export function TrashCan({ id, position, knocked }: { id: number, position: [num
       knockTrashCan(id);
       hasLooted.current = true;
       setShowCrash(true);
-      playCrashSound();
+      const pos = rb.current.translation();
+      playCrashSound({ position: [pos.x, pos.y, pos.z] });
       setTimeout(() => setShowCrash(false), 2000);
       
       // Spawn some loot
-      const pos = rb.current.translation();
       if (Math.random() > 0.5) {
         addBone([pos.x, pos.y + 1, pos.z]);
       }
       recordObjectiveEvent('trash');
-      addStar(); // Good job knocking it over! Or maybe bad dog? We'll give a star for fun.
+      addStar([pos.x, pos.y, pos.z]); // Good job knocking it over! Or maybe bad dog? We'll give a star for fun.
     }
   });
 

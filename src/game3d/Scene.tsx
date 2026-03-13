@@ -21,6 +21,8 @@ import { DigSpot } from './DigSpot';
 import { TrashCan } from './TrashCan';
 import { useGameStore } from './store';
 import { useFeedbackStore } from './feedbackStore';
+import { resolveLiveObjectiveGuide, ZONE_GUIDES } from './guidance';
+import { syncZoneAmbience, updateAudioListener } from './audio';
 import * as THREE from 'three';
 import { useMemo, useRef, useState } from 'react';
 
@@ -283,35 +285,250 @@ function Butterflies() {
 }
 
 function ZoneBeacons() {
-  const zones = [
-    { label: 'Rustzone', pos: [-48, 5.5, -4] as [number, number, number] },
-    { label: 'Onderhoudsdepot', pos: [-28, 5.5, -36] as [number, number, number] },
-    { label: 'Bezoekerscentrum', pos: [0, 6, -38] as [number, number, number] },
-    { label: 'Agility Course', pos: [-12, 5.5, -22] as [number, number, number] },
-    { label: 'Graafduinen', pos: [36, 5.5, -22] as [number, number, number] },
-    { label: 'Wereldwijde Wandeling', pos: [35, 5.5, 0] as [number, number, number] },
-    { label: 'Innovatiepark', pos: [33, 5.5, 22] as [number, number, number] },
-    { label: 'Snuffeltuin', pos: [10, 4.5, 37] as [number, number, number] },
-    { label: 'Gezondheidscentrum', pos: [31, 5, 41] as [number, number, number] },
-    { label: 'Zwemmeer', pos: [0, 4.5, 8] as [number, number, number] }
-  ];
+  const dogPosition = useGameStore((state) => state.dogPositions[0]);
+  const dogRotation = useGameStore((state) => state.dogRotations[0]);
+  const currentObjective = useGameStore((state) => state.currentObjective);
+  const foods = useGameStore((state) => state.foods);
+  const digSpots = useGameStore((state) => state.digSpots);
+  const trashCans = useGameStore((state) => state.trashCans);
+  const bonePositions = useGameStore((state) => state.bonePositions);
+  const heldBoneId = useGameStore((state) => state.heldBones[0]);
+  const labelRefs = useRef<Array<any | null>>([]);
+  const forward = useRef(new THREE.Vector3());
+  const zoneCenter = useRef(new THREE.Vector3());
+  const zoneDirection = useRef(new THREE.Vector3());
+
+  const guide = useMemo(() => resolveLiveObjectiveGuide({
+    objective: currentObjective,
+    dogPosition,
+    foods,
+    digSpots,
+    trashCans,
+    bonePositions,
+    heldBoneId,
+    idleOrStuck: false
+  }), [bonePositions, currentObjective, digSpots, dogPosition, foods, heldBoneId, trashCans]);
+
+  useFrame(({ clock }) => {
+    forward.current.set(Math.sin(dogRotation), 0, Math.cos(dogRotation));
+    const pulse = 0.92 + Math.sin(clock.elapsedTime * 2.2) * 0.05;
+
+    ZONE_GUIDES.forEach((zone, index) => {
+      const label = labelRefs.current[index];
+      if (!label) return;
+
+      zoneCenter.current.set(zone.world[0], zone.world[1], zone.world[2]);
+      const distance = dogPosition.distanceTo(zoneCenter.current);
+      zoneDirection.current.copy(zoneCenter.current).sub(dogPosition);
+      const directionLength = Math.max(0.001, zoneDirection.current.length());
+      zoneDirection.current.divideScalar(directionLength);
+
+      const los = THREE.MathUtils.clamp((forward.current.dot(zoneDirection.current) - 0.1) / 0.75, 0, 1);
+      const nearFade = 1 - THREE.MathUtils.smoothstep(distance, 14, 42);
+      const objectiveFade = zone.label === currentObjective.zone
+        ? 1 - THREE.MathUtils.smoothstep(distance, 20, 58)
+        : 0;
+      const targetFade = guide.targetPosition && guide.targetPosition.distanceTo(zoneCenter.current) < 16
+        ? 1 - THREE.MathUtils.smoothstep(distance, 18, 54)
+        : 0;
+      const opacity = THREE.MathUtils.clamp(Math.max(nearFade * los, objectiveFade * 0.9, targetFade * 0.75), 0, 0.96);
+
+      label.visible = opacity > 0.03;
+      label.material.opacity = opacity;
+      label.scale.setScalar(pulse + opacity * 0.1);
+    });
+  });
 
   return (
     <group>
-      {zones.map((zone) => (
+      {ZONE_GUIDES.map((zone, index) => (
         <Text
           key={zone.label}
-          position={zone.pos}
-          fontSize={1.7}
+          ref={(node) => {
+            labelRefs.current[index] = node;
+          }}
+          position={zone.labelPos}
+          fontSize={zone.label === currentObjective.zone ? 1.95 : 1.7}
           color="#ffffff"
           outlineColor="#1f2937"
           outlineWidth={0.12}
           anchorX="center"
           anchorY="middle"
+          material-transparent
+          material-opacity={0}
         >
           {zone.label}
         </Text>
       ))}
+    </group>
+  );
+}
+
+function AudioDirector() {
+  const listenerPosition = useGameStore((state) => state.dogPositions[0]);
+  const isNight = useGameStore((state) => state.isNight);
+
+  useFrame(() => {
+    updateAudioListener(listenerPosition);
+    syncZoneAmbience(listenerPosition, isNight);
+  });
+
+  return null;
+}
+
+function ObjectiveGuidance() {
+  const dogPosition = useGameStore((state) => state.dogPositions[0]);
+  const currentObjective = useGameStore((state) => state.currentObjective);
+  const foods = useGameStore((state) => state.foods);
+  const digSpots = useGameStore((state) => state.digSpots);
+  const trashCans = useGameStore((state) => state.trashCans);
+  const bonePositions = useGameStore((state) => state.bonePositions);
+  const heldBoneId = useGameStore((state) => state.heldBones[0]);
+
+  const [idleOrStuck, setIdleOrStuck] = useState(false);
+  const previousPosition = useRef(new THREE.Vector3());
+  const stillTime = useRef(0);
+  const lastProgressValue = useRef(-1);
+  const lastProgressAt = useRef(Date.now());
+  const bestDistanceSinceProgress = useRef(Number.POSITIVE_INFINITY);
+  const markerRef = useRef<THREE.Group>(null);
+  const markerLabelRef = useRef<any>(null);
+  const hintRef = useRef<any>(null);
+  const pipRefs = useRef<Array<THREE.Mesh | null>>([]);
+
+  const progressValue = currentObjective.requirements.reduce((total, requirement) => total + requirement.progress, 0);
+  const guide = useMemo(() => resolveLiveObjectiveGuide({
+    objective: currentObjective,
+    dogPosition,
+    foods,
+    digSpots,
+    trashCans,
+    bonePositions,
+    heldBoneId,
+    idleOrStuck
+  }), [bonePositions, currentObjective, digSpots, dogPosition, foods, heldBoneId, idleOrStuck, trashCans]);
+
+  useFrame(({ clock }, delta) => {
+    const now = Date.now();
+    const moved = previousPosition.current.lengthSq() === 0 ? 0 : previousPosition.current.distanceTo(dogPosition);
+    const speed = moved / Math.max(delta, 0.016);
+
+    if (progressValue !== lastProgressValue.current) {
+      lastProgressValue.current = progressValue;
+      lastProgressAt.current = now;
+      bestDistanceSinceProgress.current = guide.distance;
+      stillTime.current = 0;
+      if (idleOrStuck) setIdleOrStuck(false);
+    } else {
+      if (!guide.immediateAction && guide.distance < bestDistanceSinceProgress.current - 0.75) {
+        bestDistanceSinceProgress.current = guide.distance;
+        stillTime.current = 0;
+        if (idleOrStuck) setIdleOrStuck(false);
+      } else if (speed < 0.75) {
+        stillTime.current += delta;
+      } else {
+        stillTime.current = Math.max(0, stillTime.current - delta * 1.4);
+      }
+
+      const staleFor = (now - lastProgressAt.current) / 1000;
+      const nextIdle = staleFor > 3.5
+        && (
+          (guide.immediateAction && stillTime.current > 1.5)
+          || (!guide.immediateAction && guide.distance > 6 && stillTime.current > 2.3)
+        );
+      if (nextIdle !== idleOrStuck) {
+        setIdleOrStuck(nextIdle);
+      }
+    }
+
+    previousPosition.current.copy(dogPosition);
+
+    if (markerRef.current && guide.targetPosition) {
+      markerRef.current.position.copy(guide.targetPosition);
+      markerRef.current.position.y = 0.4 + Math.sin(clock.elapsedTime * 3) * 0.18;
+      markerRef.current.rotation.y += delta * 1.2;
+    }
+
+    if (markerLabelRef.current) {
+      markerLabelRef.current.material.opacity = guide.distance < 28 ? 0.98 : 0.72;
+    }
+
+    if (hintRef.current) {
+      hintRef.current.material.opacity = guide.hintText ? 0.95 : 0;
+    }
+
+    pipRefs.current.forEach((pip, index) => {
+      if (!pip) return;
+      const wave = 0.38 + (Math.sin(clock.elapsedTime * 4 - index * 0.55) + 1) * 0.22;
+      const material = pip.material as THREE.MeshStandardMaterial;
+      material.opacity = wave;
+      material.emissiveIntensity = 0.6 + wave;
+    });
+  });
+
+  return (
+    <group>
+      {guide.targetPosition && (
+        <group ref={markerRef}>
+          <mesh position={[0, 0.95, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 2.1, 10]} />
+            <meshStandardMaterial color="#fde68a" emissive="#f59e0b" emissiveIntensity={1.2} transparent opacity={0.75} depthWrite={false} />
+          </mesh>
+          <mesh position={[0, 2.3, 0]}>
+            <coneGeometry args={[0.4, 0.8, 12]} />
+            <meshStandardMaterial color="#f97316" emissive="#fb923c" emissiveIntensity={1.4} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]}>
+            <ringGeometry args={[1.15, 1.55, 24]} />
+            <meshBasicMaterial color="#fef08a" transparent opacity={0.78} depthWrite={false} />
+          </mesh>
+          <Text
+            ref={markerLabelRef}
+            position={[0, 3.35, 0]}
+            fontSize={0.62}
+            color="#fff7ed"
+            outlineColor="#1f2937"
+            outlineWidth={0.08}
+            anchorX="center"
+            anchorY="middle"
+            material-transparent
+            material-opacity={0.9}
+          >
+            {guide.targetLabel}
+          </Text>
+        </group>
+      )}
+
+      {guide.trailPoints.map((point, index) => (
+        <mesh
+          key={`trail-${index}`}
+          ref={(node) => {
+            pipRefs.current[index] = node;
+          }}
+          position={[point.x, 0.32, point.z]}
+        >
+          <sphereGeometry args={[0.24, 12, 12]} />
+          <meshStandardMaterial color="#fef08a" emissive="#facc15" emissiveIntensity={0.9} transparent opacity={0.42} depthWrite={false} />
+        </mesh>
+      ))}
+
+      {guide.hintText && (
+        <Text
+          ref={hintRef}
+          position={[dogPosition.x, 3.4, dogPosition.z]}
+          fontSize={0.5}
+          maxWidth={8}
+          color="#ffffff"
+          outlineColor="#111827"
+          outlineWidth={0.09}
+          anchorX="center"
+          anchorY="middle"
+          material-transparent
+          material-opacity={0.95}
+        >
+          {guide.hintText}
+        </Text>
+      )}
     </group>
   );
 }
@@ -418,6 +635,7 @@ export function Scene() {
       <Lighting />
 
       <CameraController />
+      <AudioDirector />
 
       <Physics>
         {/* Ground */}
@@ -463,6 +681,7 @@ export function Scene() {
         {benches.map((b, i) => <Bench key={`bench-${i}`} position={b.pos} rotation={b.rot} />)}
         <RestAndDepot />
         <ZoneBeacons />
+        <ObjectiveGuidance />
         
         <Butterflies />
 

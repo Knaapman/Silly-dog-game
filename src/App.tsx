@@ -2,8 +2,9 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Scene } from './game3d/Scene';
-import { playLevelStinger } from './game3d/audio';
+import { getAudioSettings, playLevelStinger, setAudioMuted, setCategoryGain, setMasterVolume, subscribeAudioSettings } from './game3d/audio';
 import { useGameStore, type UiActionType } from './game3d/store';
+import { resolveLiveObjectiveGuide } from './game3d/guidance';
 import { VirtualJoystick } from './game3d/VirtualJoystick';
 
 type TouchButtonConfig = {
@@ -27,6 +28,8 @@ const TOUCH_BUTTONS: Record<UiActionType, Omit<TouchButtonConfig, 'subtitle'>> =
   roll: { action: 'roll', title: 'Roll', icon: 'Roll', color: 'bg-violet-500', shadow: 'shadow-[0_8px_0_rgb(109,40,217)]' },
   sniff: { action: 'sniff', title: 'Sniff', icon: 'Sniff', color: 'bg-emerald-500', shadow: 'shadow-[0_8px_0_rgb(5,150,105)]' }
 };
+
+const AUDIO_CATEGORIES = ['ui', 'action', 'world', 'reward'] as const;
 
 function buildTouchButton(action: UiActionType, subtitle: string, title?: string): TouchButtonConfig {
   const base = TOUCH_BUTTONS[action];
@@ -58,13 +61,20 @@ export default function App() {
   const frisbeePositions = useGameStore((state) => state.frisbeePositions);
   const foods = useGameStore((state) => state.foods);
   const digSpots = useGameStore((state) => state.digSpots);
+  const trashCans = useGameStore((state) => state.trashCans);
 
   const [isTouch, setIsTouch] = useState(false);
   const [uiNow, setUiNow] = useState(Date.now());
   const [activeFeedback, setActiveFeedback] = useState<typeof inputFeedback>(null);
+  const [audioSettings, setAudioSettings] = useState(() => getAudioSettings());
 
   useEffect(() => {
     setIsTouch(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeAudioSettings((next) => setAudioSettings(next));
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -92,11 +102,16 @@ export default function App() {
     ? Math.max(0, Math.ceil((currentObjective.bonus.expiresAt - uiNow) / 1000))
     : 0;
 
-  const objectiveSummary = useMemo(() => {
-    return currentObjective.requirements
-      .map((requirement) => `${requirement.label}: ${requirement.progress}/${requirement.count}`)
-      .join('  \u2022  ');
-  }, [currentObjective.requirements]);
+  const liveGuide = useMemo(() => resolveLiveObjectiveGuide({
+    objective: currentObjective,
+    dogPosition: dogPositions[0] ?? new THREE.Vector3(),
+    foods,
+    digSpots,
+    trashCans,
+    bonePositions,
+    heldBoneId: heldBones[0],
+    idleOrStuck: false
+  }), [bonePositions, currentObjective, digSpots, dogPositions, foods, heldBones, trashCans]);
 
   const touchButtons = useMemo(() => {
     const dogPos = dogPositions[0] ?? new THREE.Vector3();
@@ -194,6 +209,43 @@ export default function App() {
               {isTwoPlayer ? '2 Dogs' : '1 Dog'}
             </button>
           </div>
+          <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white/70 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Audio mix</p>
+              <button
+                onClick={() => setAudioMuted(!audioSettings.muted)}
+                className={`rounded-xl px-3 py-1.5 text-sm font-black transition-transform hover:scale-105 active:scale-95 ${audioSettings.muted ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}
+              >
+                {audioSettings.muted ? 'Muted' : 'Sound on'}
+              </button>
+            </div>
+            <label className="mt-3 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+              Master volume
+              <input
+                className="mt-2 w-full accent-amber-500"
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(audioSettings.masterVolume * 100)}
+                onChange={(event) => setMasterVolume(Number(event.target.value) / 100)}
+              />
+            </label>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {AUDIO_CATEGORIES.map((category) => (
+                <label key={category} className="rounded-xl bg-slate-50 px-2 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                  {category}
+                  <input
+                    className="mt-1.5 w-full accent-sky-500"
+                    type="range"
+                    min={0}
+                    max={140}
+                    value={Math.round(audioSettings.categoryGains[category] * 100)}
+                    onChange={(event) => setCategoryGain(category, Number(event.target.value) / 100)}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-xl border-4 border-amber-300 flex flex-col items-center pointer-events-auto min-w-[17rem]">
@@ -220,15 +272,29 @@ export default function App() {
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Live route objective</p>
               <p className="text-lg font-black text-slate-900 mt-1">{currentObjective.title}</p>
-              <p className="text-sm text-slate-700 mt-1">{currentObjective.description}</p>
-              <p className="text-xs text-slate-500 mt-2">Zone: {currentObjective.zone}</p>
+              <p className="text-sm text-slate-700 mt-1">{liveGuide.actionLabel}</p>
             </div>
             <div className="bg-emerald-100 text-emerald-800 rounded-2xl px-3 py-2 text-xs font-bold uppercase tracking-wide">
               Loop {currentObjective.loopIndex + 1}
             </div>
           </div>
 
-          <p className="text-sm font-semibold text-slate-800 leading-snug mt-3">{objectiveSummary}</p>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <p className="font-bold uppercase tracking-wide text-emerald-700">Distance</p>
+              <p className="mt-1 font-semibold text-slate-800">{liveGuide.immediateAction ? 'Ready now' : `${Math.round(liveGuide.distance)}m to ${liveGuide.targetLabel}`}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
+              <p className="font-bold uppercase tracking-wide text-slate-600">Do this</p>
+              <p className="mt-1 font-semibold text-slate-800">{liveGuide.actionLabel}</p>
+            </div>
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2">
+              <p className="font-bold uppercase tracking-wide text-amber-700">Complete when</p>
+              <p className="mt-1 font-semibold text-slate-800">{liveGuide.completionLabel}</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500 mt-3">{liveGuide.statusLabel}  •  Zone: {liveGuide.zoneLabel}</p>
 
           {currentObjective.bonus && (
             <div className={`mt-3 rounded-2xl px-3 py-2 border text-sm ${currentObjective.bonus.completed ? 'bg-amber-100 border-amber-300 text-amber-900' : bonusSecondsLeft > 0 ? 'bg-sky-100 border-sky-300 text-sky-900' : 'bg-slate-100 border-slate-300 text-slate-600'}`}>

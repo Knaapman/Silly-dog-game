@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { useGameStore } from './store';
+import { playThrowSound, playToyBounceSound } from './audio';
 import * as THREE from 'three';
 
 export function Ball({ id, position, color }: { id: number, position: [number, number, number], color: string }) {
@@ -16,6 +17,7 @@ export function Ball({ id, position, color }: { id: number, position: [number, n
 
   const [isHeld, setIsHeld] = useState(false);
   const [holdingDog, setHoldingDog] = useState<number | null>(null);
+  const bounceCooldown = useRef(0);
 
   useEffect(() => {
     let heldBy = null;
@@ -51,17 +53,20 @@ export function Ball({ id, position, color }: { id: number, position: [number, n
       // Ensure body is dynamic before throwing
       rb.current.setBodyType(0, true);
       rb.current.wakeUp();
+      const launchPos = dogPositions[lastThrow.dogIndex];
 
       // Apply throw impulse
       const dogRot = dogRotations[lastThrow.dogIndex];
       const throwDir = new THREE.Vector3(Math.sin(dogRot), 0.5, Math.cos(dogRot)).normalize();
       rb.current.applyImpulse({ x: throwDir.x * 20, y: throwDir.y * 20, z: throwDir.z * 20 }, true);
       rb.current.applyTorqueImpulse({ x: Math.random(), y: Math.random(), z: Math.random() }, true);
+      playThrowSound({ position: launchPos, flavor: 'ball' });
     }
-  }, [throwEvents, id, dogRotations]);
+  }, [dogPositions, throwEvents, id, dogRotations]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!rb.current) return;
+    bounceCooldown.current = Math.max(0, bounceCooldown.current - delta);
     
     if (isHeld && holdingDog !== null) {
       const dogPos = dogPositions[holdingDog];
@@ -77,6 +82,8 @@ export function Ball({ id, position, color }: { id: number, position: [number, n
     } else {
       const pos = rb.current.translation();
       const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+      const vel = rb.current.linvel();
+      const speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
 
       // Bark pushing
       for (const bark of barks) {
@@ -84,6 +91,14 @@ export function Ball({ id, position, color }: { id: number, position: [number, n
           const dir = currentPos.clone().sub(bark.pos).normalize();
           rb.current.applyImpulse({ x: dir.x * 10, y: 5, z: dir.z * 10 }, true);
         }
+      }
+
+      if (bounceCooldown.current === 0 && pos.y < 0.65 && Math.abs(vel.y) > 1.8 && speed > 4) {
+        bounceCooldown.current = 0.18;
+        playToyBounceSound({
+          position: currentPos,
+          sharpness: Math.min(1, speed / 20)
+        });
       }
     }
 
