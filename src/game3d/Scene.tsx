@@ -24,7 +24,7 @@ import { useFeedbackStore } from './feedbackStore';
 import { resolveLiveObjectiveGuide, ZONE_GUIDES } from './guidance';
 import { syncZoneAmbience, updateAudioListener } from './audio';
 import * as THREE from 'three';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type ActiveFeedback = {
   id: number;
@@ -37,6 +37,36 @@ type ActiveFeedback = {
   text?: string;
   major?: boolean;
 };
+
+function createScatteredLayout<T>(
+  count: number,
+  minDistance: number,
+  create: (index: number, pos: [number, number, number]) => T,
+  options?: { width?: number; height?: number; avoidCenterRadius?: number; maxAttempts?: number; y?: number }
+) {
+  const width = options?.width ?? 132;
+  const height = options?.height ?? 132;
+  const avoidCenterRadius = options?.avoidCenterRadius ?? 18;
+  const maxAttempts = options?.maxAttempts ?? 36;
+  const y = options?.y ?? 0;
+  const positions: Array<[number, number, number]> = [];
+
+  for (let index = 0; index < count; index += 1) {
+    let chosen: [number, number, number] = [(Math.random() - 0.5) * width, y, (Math.random() - 0.5) * height];
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const candidate: [number, number, number] = [(Math.random() - 0.5) * width, y, (Math.random() - 0.5) * height];
+      const nearCenter = Math.hypot(candidate[0], candidate[2]) < avoidCenterRadius;
+      const overlaps = positions.some(([x, , z]) => Math.hypot(candidate[0] - x, candidate[2] - z) < minDistance);
+      if (!nearCenter && !overlaps) {
+        chosen = candidate;
+        break;
+      }
+    }
+    positions.push(chosen);
+  }
+
+  return positions.map((pos, index) => create(index, pos));
+}
 
 function Lighting() {
   const isNight = useGameStore(s => s.isNight);
@@ -160,7 +190,7 @@ function FeedbackRenderer() {
   const [activeFeedback, setActiveFeedback] = useState<ActiveFeedback[]>([]);
   const lastEventTime = useRef(0);
 
-  useFrame(() => {
+  useEffect(() => {
     const now = Date.now();
     const newEvents = feedbackEvents
       .filter((event) => event.time > lastEventTime.current)
@@ -168,7 +198,7 @@ function FeedbackRenderer() {
         id: event.id,
         sourceTime: event.time,
         createdAt: now,
-        duration: event.major ? 1.4 : 1.0,
+        duration: event.major ? 1.15 : 0.7,
         type: event.type,
         position: event.position,
         icon: event.icon,
@@ -180,11 +210,18 @@ function FeedbackRenderer() {
       lastEventTime.current = Math.max(...newEvents.map((event) => event.sourceTime), lastEventTime.current);
       setActiveFeedback((current) => [...current, ...newEvents]);
     }
+  }, [feedbackEvents]);
 
-    setActiveFeedback((current) =>
-      current.filter((event) => now - event.createdAt < event.duration * 1000 + 250)
-    );
-  });
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      setActiveFeedback((current) =>
+        current.filter((event) => now - event.createdAt < event.duration * 1000 + 250)
+      );
+    }, 80);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <group>
@@ -195,7 +232,7 @@ function FeedbackRenderer() {
         const pulseScale = 0.4 + eased * (event.major ? 4.2 : 2.6);
         const pulseOpacity = 1 - eased;
         const yLift = 1.2 + eased * 1.8;
-        const label = event.text ? `${event.icon ? `${event.icon} ` : ''}${event.text}` : event.icon ?? '';
+        const label = event.major ? (event.text ?? event.icon ?? '') : (event.icon ?? '');
         const ringColor = event.type === 'action_fail' || event.type === 'empty_dig' ? '#ef5350' : '#7cfc00';
 
         return (
@@ -392,8 +429,6 @@ function ObjectiveGuidance() {
   const lastProgressAt = useRef(Date.now());
   const bestDistanceSinceProgress = useRef(Number.POSITIVE_INFINITY);
   const markerRef = useRef<THREE.Group>(null);
-  const markerLabelRef = useRef<any>(null);
-  const hintRef = useRef<any>(null);
   const pipRefs = useRef<Array<THREE.Mesh | null>>([]);
 
   const progressValue = currentObjective.requirements.reduce((total, requirement) => total + requirement.progress, 0);
@@ -449,14 +484,6 @@ function ObjectiveGuidance() {
       markerRef.current.rotation.y += delta * 1.2;
     }
 
-    if (markerLabelRef.current) {
-      markerLabelRef.current.material.opacity = guide.distance < 28 ? 0.98 : 0.72;
-    }
-
-    if (hintRef.current) {
-      hintRef.current.material.opacity = guide.hintText ? 0.95 : 0;
-    }
-
     pipRefs.current.forEach((pip, index) => {
       if (!pip) return;
       const wave = 0.38 + (Math.sin(clock.elapsedTime * 4 - index * 0.55) + 1) * 0.22;
@@ -482,20 +509,6 @@ function ObjectiveGuidance() {
             <ringGeometry args={[1.15, 1.55, 24]} />
             <meshBasicMaterial color="#fef08a" transparent opacity={0.78} depthWrite={false} />
           </mesh>
-          <Text
-            ref={markerLabelRef}
-            position={[0, 3.35, 0]}
-            fontSize={0.62}
-            color="#fff7ed"
-            outlineColor="#1f2937"
-            outlineWidth={0.08}
-            anchorX="center"
-            anchorY="middle"
-            material-transparent
-            material-opacity={0.9}
-          >
-            {guide.targetLabel}
-          </Text>
         </group>
       )}
 
@@ -511,24 +524,6 @@ function ObjectiveGuidance() {
           <meshStandardMaterial color="#fef08a" emissive="#facc15" emissiveIntensity={0.9} transparent opacity={0.42} depthWrite={false} />
         </mesh>
       ))}
-
-      {guide.hintText && (
-        <Text
-          ref={hintRef}
-          position={[dogPosition.x, 3.4, dogPosition.z]}
-          fontSize={0.5}
-          maxWidth={8}
-          color="#ffffff"
-          outlineColor="#111827"
-          outlineWidth={0.09}
-          anchorX="center"
-          anchorY="middle"
-          material-transparent
-          material-opacity={0.95}
-        >
-          {guide.hintText}
-        </Text>
-      )}
     </group>
   );
 }
@@ -558,61 +553,49 @@ function RestAndDepot() {
 
 export function Scene() {
   // Generate random positions for entities
-  const trees = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < 60; i++) {
-      const x = (Math.random() - 0.5) * 132;
-      const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 8 || Math.abs(z) < 8 || Math.sqrt(x*x + z*z) < 20) continue;
-      arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
-    }
-    return arr;
-  }, []);
+  const trees = useMemo(() => createScatteredLayout(34, 10, (id, pos) => ({ id, pos })), []);
 
-  const bushes = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < 40; i++) {
-      const x = (Math.random() - 0.5) * 132;
-      const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 6 || Math.abs(z) < 6 || Math.sqrt(x*x + z*z) < 18) continue;
-      arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
-    }
-    return arr;
-  }, []);
+  const bushes = useMemo(() => createScatteredLayout(18, 10, (id, pos) => ({ id, pos })), []);
 
-  const rocks = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < 20; i++) {
-      const x = (Math.random() - 0.5) * 132;
-      const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 5 || Math.abs(z) < 5 || Math.sqrt(x*x + z*z) < 15) continue;
-      arr.push({ id: i, pos: [x, 0, z] as [number, number, number], scale: Math.random() * 1.5 + 0.5 });
-    }
-    return arr;
-  }, []);
+  const rocks = useMemo(
+    () => createScatteredLayout(10, 12, (id, pos) => ({ id, pos, scale: Math.random() * 1.2 + 0.7 })),
+    []
+  );
   
-  const cats = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 124, 2, (Math.random() - 0.5) * 124] as [number, number, number],
-    color: ['#ff9900', '#333333', '#ffffff'][Math.floor(Math.random() * 3)]
-  })), []);
+  const cats = useMemo(
+    () => createScatteredLayout(6, 14, (id, pos) => ({
+      id,
+      pos: [pos[0], 2, pos[2]] as [number, number, number],
+      color: ['#ff9900', '#333333', '#ffffff'][Math.floor(Math.random() * 3)]
+    }), { width: 124, height: 124, avoidCenterRadius: 16, y: 2 }),
+    []
+  );
   
-  const birds = useMemo(() => Array.from({ length: 40 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 124, 0.5, (Math.random() - 0.5) * 124] as [number, number, number]
-  })), []);
+  const birds = useMemo(
+    () => createScatteredLayout(12, 10, (id, pos) => ({
+      id,
+      pos: [pos[0], 0.5, pos[2]] as [number, number, number]
+    }), { width: 124, height: 124, avoidCenterRadius: 12, y: 0.5 }),
+    []
+  );
   
-  const balls = useMemo(() => Array.from({ length: 8 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 96, 2, (Math.random() - 0.5) * 96] as [number, number, number],
-    color: ['#adff2f', '#ff4500', '#1e90ff'][Math.floor(Math.random() * 3)]
-  })), []);
+  const balls = useMemo(
+    () => createScatteredLayout(5, 16, (id, pos) => ({
+      id,
+      pos: [pos[0], 2, pos[2]] as [number, number, number],
+      color: ['#adff2f', '#ff4500', '#1e90ff'][Math.floor(Math.random() * 3)]
+    }), { width: 96, height: 96, avoidCenterRadius: 14, y: 2 }),
+    []
+  );
 
-  const frisbees = useMemo(() => Array.from({ length: 4 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 88, 2, (Math.random() - 0.5) * 88] as [number, number, number],
-    color: ['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)]
-  })), []);
+  const frisbees = useMemo(
+    () => createScatteredLayout(2, 20, (id, pos) => ({
+      id,
+      pos: [pos[0], 2, pos[2]] as [number, number, number],
+      color: ['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)]
+    }), { width: 88, height: 88, avoidCenterRadius: 14, y: 2 }),
+    []
+  );
 
   const foods = useGameStore(s => s.foods);
   const poops = useGameStore(s => s.poops);
@@ -680,7 +663,6 @@ export function Scene() {
         
         {benches.map((b, i) => <Bench key={`bench-${i}`} position={b.pos} rotation={b.rot} />)}
         <RestAndDepot />
-        <ZoneBeacons />
         <ObjectiveGuidance />
         
         <Butterflies />

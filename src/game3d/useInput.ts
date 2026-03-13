@@ -115,13 +115,14 @@ export function useInput(playerIndex: number) {
       gamepadActions.jump = !!gp.buttons[0]?.pressed;
       gamepadActions.bark = !!gp.buttons[1]?.pressed;
       gamepadActions.interact = !!gp.buttons[2]?.pressed;
-      gamepadActions.poop = !!gp.buttons[3]?.pressed;
-      gamepadActions.sit = !!gp.buttons[4]?.pressed;
-      gamepadActions.roll = !!gp.buttons[5]?.pressed;
+      gamepadActions.eat = !!gp.buttons[3]?.pressed;
+      gamepadActions.sniff = !!gp.buttons[4]?.pressed;
+      gamepadActions.dig = !!gp.buttons[5]?.pressed;
       gamepadActions.lieDown = !!gp.buttons[6]?.pressed;
       run = run || !!gp.buttons[7]?.pressed;
-      gamepadActions.dig = !!gp.buttons[8]?.pressed;
-      gamepadActions.sniff = !!gp.buttons[12]?.pressed;
+      gamepadActions.sit = !!gp.buttons[12]?.pressed;
+      gamepadActions.poop = !!gp.buttons[13]?.pressed;
+      gamepadActions.roll = !!gp.buttons[15]?.pressed;
     }
 
     const joystick = useGameStore.getState().joystick;

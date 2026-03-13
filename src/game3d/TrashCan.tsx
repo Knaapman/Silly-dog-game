@@ -14,6 +14,7 @@ export function TrashCan({ id, position, knocked }: { id: number, position: [num
   const recordObjectiveEvent = useGameStore(s => s.recordObjectiveEvent);
   const hasLooted = useRef(false);
   const [showCrash, setShowCrash] = useState(false);
+  const crashTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!knocked && rb.current) {
@@ -25,20 +26,27 @@ export function TrashCan({ id, position, knocked }: { id: number, position: [num
     }
   }, [knocked, position]);
 
-  // We can check if it's knocked over by looking at its rotation
+  useEffect(() => () => {
+    if (crashTimeoutRef.current != null) {
+      window.clearTimeout(crashTimeoutRef.current);
+    }
+  }, []);
+
   useFrame(() => {
     if (!rb.current || knocked || hasLooted.current) return;
     const rot = rb.current.rotation();
-    const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w));
-    
-    // If tilted more than 45 degrees
-    if (Math.abs(euler.x) > Math.PI / 4 || Math.abs(euler.z) > Math.PI / 4) {
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w));
+
+    if (up.y < 0.7) {
       knockTrashCan(id);
       hasLooted.current = true;
       setShowCrash(true);
       const pos = rb.current.translation();
       playCrashSound({ position: [pos.x, pos.y, pos.z] });
-      setTimeout(() => setShowCrash(false), 2000);
+      if (crashTimeoutRef.current != null) {
+        window.clearTimeout(crashTimeoutRef.current);
+      }
+      crashTimeoutRef.current = window.setTimeout(() => setShowCrash(false), 2000);
       
       // Spawn some loot
       if (Math.random() > 0.5) {

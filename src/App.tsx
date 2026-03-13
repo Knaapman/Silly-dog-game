@@ -1,11 +1,12 @@
 import { Canvas } from '@react-three/fiber';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
-import { Scene } from './game3d/Scene';
 import { getAudioSettings, playLevelStinger, setAudioMuted, setCategoryGain, setMasterVolume, subscribeAudioSettings } from './game3d/audio';
 import { useGameStore, type UiActionType } from './game3d/store';
 import { resolveLiveObjectiveGuide } from './game3d/guidance';
 import { VirtualJoystick } from './game3d/VirtualJoystick';
+
+const Scene = lazy(async () => import('./game3d/Scene').then((module) => ({ default: module.Scene })));
 
 type TouchButtonConfig = {
   action: UiActionType;
@@ -17,16 +18,16 @@ type TouchButtonConfig = {
 };
 
 const TOUCH_BUTTONS: Record<UiActionType, Omit<TouchButtonConfig, 'subtitle'>> = {
-  bark: { action: 'bark', title: 'Woof', icon: 'Woof', color: 'bg-blue-500', shadow: 'shadow-[0_8px_0_rgb(29,78,216)]' },
-  dig: { action: 'dig', title: 'Dig', icon: 'Paw', color: 'bg-green-500', shadow: 'shadow-[0_8px_0_rgb(21,128,61)]' },
-  lieDown: { action: 'lieDown', title: 'Rest', icon: 'Nap', color: 'bg-fuchsia-500', shadow: 'shadow-[0_8px_0_rgb(162,28,175)]' },
-  poop: { action: 'poop', title: 'Poop', icon: 'Oops', color: 'bg-amber-700', shadow: 'shadow-[0_8px_0_rgb(146,64,14)]' },
-  interact: { action: 'interact', title: 'Grab', icon: 'Toss', color: 'bg-rose-500', shadow: 'shadow-[0_8px_0_rgb(190,24,93)]' },
-  eat: { action: 'eat', title: 'Eat', icon: 'Chomp', color: 'bg-orange-500', shadow: 'shadow-[0_8px_0_rgb(194,65,12)]' },
-  jump: { action: 'jump', title: 'Jump', icon: 'Hop', color: 'bg-cyan-500', shadow: 'shadow-[0_8px_0_rgb(8,145,178)]' },
-  sit: { action: 'sit', title: 'Sit', icon: 'Sit', color: 'bg-indigo-500', shadow: 'shadow-[0_8px_0_rgb(67,56,202)]' },
-  roll: { action: 'roll', title: 'Roll', icon: 'Roll', color: 'bg-violet-500', shadow: 'shadow-[0_8px_0_rgb(109,40,217)]' },
-  sniff: { action: 'sniff', title: 'Sniff', icon: 'Sniff', color: 'bg-emerald-500', shadow: 'shadow-[0_8px_0_rgb(5,150,105)]' }
+  bark: { action: 'bark', title: 'Blaf', icon: 'Bla', color: 'bg-blue-500', shadow: 'shadow-[0_8px_0_rgb(29,78,216)]' },
+  dig: { action: 'dig', title: 'Graaf', icon: 'Poot', color: 'bg-green-500', shadow: 'shadow-[0_8px_0_rgb(21,128,61)]' },
+  lieDown: { action: 'lieDown', title: 'Lig', icon: 'Rust', color: 'bg-fuchsia-500', shadow: 'shadow-[0_8px_0_rgb(162,28,175)]' },
+  poop: { action: 'poop', title: 'Poep', icon: 'Oeps', color: 'bg-amber-700', shadow: 'shadow-[0_8px_0_rgb(146,64,14)]' },
+  interact: { action: 'interact', title: 'Pak', icon: 'Gooi', color: 'bg-rose-500', shadow: 'shadow-[0_8px_0_rgb(190,24,93)]' },
+  eat: { action: 'eat', title: 'Eet', icon: 'Hap', color: 'bg-orange-500', shadow: 'shadow-[0_8px_0_rgb(194,65,12)]' },
+  jump: { action: 'jump', title: 'Spring', icon: 'Hop', color: 'bg-cyan-500', shadow: 'shadow-[0_8px_0_rgb(8,145,178)]' },
+  sit: { action: 'sit', title: 'Zit', icon: 'Zit', color: 'bg-indigo-500', shadow: 'shadow-[0_8px_0_rgb(67,56,202)]' },
+  roll: { action: 'roll', title: 'Rol', icon: 'Rol', color: 'bg-violet-500', shadow: 'shadow-[0_8px_0_rgb(109,40,217)]' },
+  sniff: { action: 'sniff', title: 'Snuf', icon: 'Snuf', color: 'bg-emerald-500', shadow: 'shadow-[0_8px_0_rgb(5,150,105)]' }
 };
 
 const AUDIO_CATEGORIES = ['ui', 'action', 'world', 'reward'] as const;
@@ -150,27 +151,27 @@ export default function App() {
     const canEat = heldBone != null || nearFood || nearLooseBone || canDrink;
     const nearDigSpot = digSpots.some((spot) => spot.active && dogPos.distanceTo(new THREE.Vector3(spot.pos[0], spot.pos[1], spot.pos[2])) < 3.5);
 
-    let primary = buildTouchButton('jump', 'Always ready');
-    let secondary = buildTouchButton('bark', 'Quick signal');
+    let primary = buildTouchButton('jump', 'Altijd paraat');
+    let secondary = buildTouchButton('bark', 'Snelle reactie');
 
     if (isHoldingThrowable) {
-      primary = buildTouchButton('interact', heldBone != null ? 'Throw or drop the bone' : 'Throw what you are carrying', heldBone != null ? 'Toss' : 'Throw');
+      primary = buildTouchButton('interact', heldBone != null ? 'Gooi of laat het bot vallen' : 'Gooi wat je draagt', heldBone != null ? 'Gooi' : 'Werp');
       secondary = heldBone != null
-        ? buildTouchButton('eat', 'Chew the bone now', 'Chew')
-        : buildTouchButton('jump', 'Keep moving');
+        ? buildTouchButton('eat', 'Kauw nu op het bot', 'Kauw')
+        : buildTouchButton('jump', 'Blijf bewegen');
     } else if (canEat) {
       primary = canDrink
-        ? buildTouchButton('eat', 'Drink at the pond', 'Drink')
-        : buildTouchButton('eat', heldBone != null ? 'Chew what you are holding' : 'Eat what is nearby', heldBone != null ? 'Chew' : 'Chomp');
+        ? buildTouchButton('eat', 'Drink bij de vijver', 'Drink')
+        : buildTouchButton('eat', heldBone != null ? 'Kauw op wat je vasthoudt' : 'Eet wat dichtbij ligt', heldBone != null ? 'Kauw' : 'Hap');
       secondary = nearbyPickup
-        ? buildTouchButton('interact', `Grab nearby ${nearbyPickup.type}`)
-        : buildTouchButton('jump', 'Stay playful');
+        ? buildTouchButton('interact', `Pak een ${nearbyPickup.type} in de buurt`)
+        : buildTouchButton('jump', 'Blijf speels');
     } else if (nearbyPickup) {
-      primary = buildTouchButton('interact', `Grab nearby ${nearbyPickup.type}`);
-      secondary = buildTouchButton('jump', 'Hop while moving');
+      primary = buildTouchButton('interact', `Pak een ${nearbyPickup.type} in de buurt`);
+      secondary = buildTouchButton('jump', 'Spring al bewegend');
     } else if (nearDigSpot) {
-      primary = buildTouchButton('dig', 'Treasure might be here');
-      secondary = buildTouchButton('sniff', 'Check the scent trail');
+      primary = buildTouchButton('dig', 'Hier kan een schat liggen');
+      secondary = buildTouchButton('sniff', 'Controleer het geurspoor');
     }
 
     return { primary, secondary };
@@ -189,38 +190,40 @@ export default function App() {
   return (
     <div className={`w-full h-screen overflow-hidden transition-colors duration-1000 ${isNight ? 'bg-[#0B1026]' : 'bg-[#87CEEB]'}`}>
       <Canvas shadows camera={{ position: [0, 20, 20], fov: 45 }}>
-        <Scene />
+        <Suspense fallback={null}>
+          <Scene />
+        </Suspense>
       </Canvas>
 
       <div className="absolute top-5 left-5 right-5 flex justify-between items-start pointer-events-none gap-4">
         <div className="bg-white/80 backdrop-blur-md text-slate-800 p-4 rounded-3xl shadow-xl pointer-events-auto border-4 border-white max-w-sm">
-          <h1 className="text-3xl font-black text-amber-600 mb-3 drop-shadow-sm">Happy Dog Park</h1>
+          <h1 className="text-3xl font-black text-amber-600 mb-3 drop-shadow-sm">Blije Hondenpark</h1>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={toggleNight}
               className="px-4 py-2 rounded-2xl font-bold text-lg transition-transform hover:scale-105 bg-indigo-500 text-white shadow-md active:scale-95"
             >
-              {isNight ? 'Night' : 'Day'}
+              {isNight ? 'Nacht' : 'Dag'}
             </button>
             <button
               onClick={() => setTwoPlayer(!isTwoPlayer)}
               className={`px-4 py-2 rounded-2xl font-bold text-lg transition-transform hover:scale-105 shadow-md active:scale-95 ${isTwoPlayer ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-700'}`}
             >
-              {isTwoPlayer ? '2 Dogs' : '1 Dog'}
+              {isTwoPlayer ? '2 Honden' : '1 Hond'}
             </button>
           </div>
           <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white/70 p-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Audio mix</p>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Audiomix</p>
               <button
                 onClick={() => setAudioMuted(!audioSettings.muted)}
                 className={`rounded-xl px-3 py-1.5 text-sm font-black transition-transform hover:scale-105 active:scale-95 ${audioSettings.muted ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}
               >
-                {audioSettings.muted ? 'Muted' : 'Sound on'}
+                {audioSettings.muted ? 'Gedempt' : 'Geluid aan'}
               </button>
             </div>
             <label className="mt-3 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Master volume
+              Hoofdvolume
               <input
                 className="mt-2 w-full accent-amber-500"
                 type="range"
@@ -249,7 +252,7 @@ export default function App() {
         </div>
 
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-xl border-4 border-amber-300 flex flex-col items-center pointer-events-auto min-w-[17rem]">
-          <h2 className="text-2xl font-black text-amber-500 mb-2">Level {currentLevel} Dog</h2>
+          <h2 className="text-2xl font-black text-amber-500 mb-2">Level {currentLevel} Hond</h2>
           <div className="flex gap-1">
             {Array.from({ length: 10 }).map((_, index) => (
               <div
@@ -270,26 +273,26 @@ export default function App() {
         <div className="bg-white/88 backdrop-blur-md p-4 rounded-2xl border-2 border-emerald-300 shadow-lg">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Live route objective</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Actieve routeopdracht</p>
               <p className="text-lg font-black text-slate-900 mt-1">{currentObjective.title}</p>
               <p className="text-sm text-slate-700 mt-1">{liveGuide.actionLabel}</p>
             </div>
             <div className="bg-emerald-100 text-emerald-800 rounded-2xl px-3 py-2 text-xs font-bold uppercase tracking-wide">
-              Loop {currentObjective.loopIndex + 1}
+              Ronde {currentObjective.loopIndex + 1}
             </div>
           </div>
 
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
             <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-emerald-700">Distance</p>
-              <p className="mt-1 font-semibold text-slate-800">{liveGuide.immediateAction ? 'Ready now' : `${Math.round(liveGuide.distance)}m to ${liveGuide.targetLabel}`}</p>
+              <p className="font-bold uppercase tracking-wide text-emerald-700">Afstand</p>
+              <p className="mt-1 font-semibold text-slate-800">{liveGuide.immediateAction ? 'Nu klaar' : `${Math.round(liveGuide.distance)} m tot ${liveGuide.targetLabel}`}</p>
             </div>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-slate-600">Do this</p>
+              <p className="font-bold uppercase tracking-wide text-slate-600">Doe dit</p>
               <p className="mt-1 font-semibold text-slate-800">{liveGuide.actionLabel}</p>
             </div>
             <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-amber-700">Complete when</p>
+              <p className="font-bold uppercase tracking-wide text-amber-700">Klaar wanneer</p>
               <p className="mt-1 font-semibold text-slate-800">{liveGuide.completionLabel}</p>
             </div>
           </div>
@@ -301,7 +304,7 @@ export default function App() {
               <span className="font-bold">{currentObjective.bonus.label}</span>
               <span className="ml-2">
                 {currentObjective.bonus.progress}/{currentObjective.bonus.target}
-                {currentObjective.bonus.completed ? '  +1 star' : bonusSecondsLeft > 0 ? `  ${bonusSecondsLeft}s left` : '  expired'}
+                {currentObjective.bonus.completed ? '  +1 ster' : bonusSecondsLeft > 0 ? `  nog ${bonusSecondsLeft}s` : '  verlopen'}
               </span>
             </div>
           )}
@@ -320,11 +323,11 @@ export default function App() {
       {levelBeat && levelBeat.endsAt > uiNow && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 bg-slate-950/25 backdrop-blur-[2px]">
           <div className="max-w-xl mx-4 bg-white/92 border-4 border-amber-300 rounded-[2rem] shadow-2xl px-6 py-5 text-center">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-amber-700">{levelBeat.phase === 'outro' ? 'Level break' : 'New loop variant'}</p>
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-amber-700">{levelBeat.phase === 'outro' ? 'Levelpauze' : 'Nieuwe routevariant'}</p>
             <h1 className="text-5xl font-black text-slate-900 mt-2">{levelBeat.title}</h1>
             <p className="text-base font-semibold text-slate-700 mt-2">{levelBeat.subtitle}</p>
             <div className="mt-4 rounded-[1.5rem] bg-emerald-50 border border-emerald-200 p-4 text-left">
-              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Next objective</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Volgende opdracht</p>
               <p className="text-xl font-black text-slate-900 mt-1">{levelBeat.objectiveTitle}</p>
               <p className="text-sm text-slate-700 mt-1">{levelBeat.objectiveDescription}</p>
               <p className="text-xs text-slate-500 mt-3">{levelBeat.modifierLabel}: {levelBeat.modifierDescription}</p>
@@ -341,7 +344,7 @@ export default function App() {
 
           <div className="pointer-events-none flex w-[min(24rem,48vw)] flex-col gap-4">
             <p className="text-right text-xs font-black uppercase tracking-[0.22em] text-white/85 drop-shadow-[0_2px_6px_rgba(15,23,42,0.45)]">
-              Touch actions adapt to nearby toys, snacks, and dig spots
+              Touch-acties passen zich aan speelgoed, snacks en graafplekken in de buurt aan
             </p>
             {[touchButtons.primary, touchButtons.secondary].map((button, index) => {
               const isActive = activeFeedback?.source === 'touch' && activeFeedback.action === button.action;
@@ -353,7 +356,7 @@ export default function App() {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="text-left">
-                      <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">{index === 0 ? 'Primary' : 'Secondary'}</p>
+                      <p className="text-xs font-black uppercase tracking-[0.24em] text-white/70">{index === 0 ? 'Primair' : 'Secundair'}</p>
                       <p className="mt-1 text-2xl font-black">{button.title}</p>
                       <p className="mt-1 text-sm font-semibold text-white/85">{button.subtitle}</p>
                     </div>
@@ -368,21 +371,22 @@ export default function App() {
         </div>
       ) : (
         <div className="absolute bottom-8 right-8 bg-white/80 backdrop-blur-md p-4 rounded-3xl shadow-xl border-4 border-white pointer-events-auto text-slate-800">
-          <h3 className="font-bold text-lg mb-2 border-b-2 border-slate-200 pb-1">Keyboard Controls</h3>
+          <h3 className="font-bold text-lg mb-2 border-b-2 border-slate-200 pb-1">Controller Eerst</h3>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">W A S D</kbd> Move</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Shift</kbd> Run</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Space</kbd> Jump</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">F</kbd> Bark</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">E</kbd> Eat/Drink</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">T</kbd> Throw/Grab</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Q</kbd> Sit</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">C</kbd> Sleep</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">R</kbd> Roll</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">X</kbd> Dig</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Z</kbd> Poop</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">V</kbd> Sniff</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Left Stick</kbd> Bewegen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">RT</kbd> Rennen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">A</kbd> Springen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">B</kbd> Blaffen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">X</kbd> Pakken / Gooien</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Y</kbd> Eten / Drinken</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">LB</kbd> Snuffelen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">RB</kbd> Graven</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">D-Pad Up</kbd> Zitten</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">D-Pad Right</kbd> Rollen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">LT</kbd> Liggen</div>
+            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">D-Pad Down</kbd> Poepen</div>
           </div>
+          <p className="mt-3 text-xs text-slate-600">Toetsenbord blijft beschikbaar als fallback voor debuggen en een tweede speler.</p>
         </div>
       )}
     </div>

@@ -40,15 +40,15 @@ export const ZONE_GUIDES = [
   { label: 'Rustzone', world: [-48, 0, -4] as GuidePoint, labelPos: [-48, 5.5, -4] as GuidePoint },
   { label: 'Onderhoudsdepot', world: [-28, 0, -36] as GuidePoint, labelPos: [-28, 5.5, -36] as GuidePoint },
   { label: 'Bezoekerscentrum', world: [0, 0, -38] as GuidePoint, labelPos: [0, 6, -38] as GuidePoint },
-  { label: 'Agility Course', world: [-12, 0, -22] as GuidePoint, labelPos: [-12, 5.5, -22] as GuidePoint },
+  { label: 'Agilityparcours', world: [-12, 0, -22] as GuidePoint, labelPos: [-12, 5.5, -22] as GuidePoint },
   { label: 'Graafduinen', world: [36, 0, -22] as GuidePoint, labelPos: [36, 5.5, -22] as GuidePoint },
   { label: 'Wereldwijde Wandeling', world: [35, 0, 0] as GuidePoint, labelPos: [35, 5.5, 0] as GuidePoint },
   { label: 'Innovatiepark', world: [33, 0, 22] as GuidePoint, labelPos: [33, 5.5, 22] as GuidePoint },
   { label: 'Snuffeltuin', world: [10, 0, 37] as GuidePoint, labelPos: [10, 4.5, 37] as GuidePoint },
   { label: 'Gezondheidscentrum', world: [31, 0, 41] as GuidePoint, labelPos: [31, 5, 41] as GuidePoint },
   { label: 'Zwemmeer', world: [0, 0, 8] as GuidePoint, labelPos: [0, 4.5, 8] as GuidePoint },
-  { label: 'Park paths', world: [0, 0, 50] as GuidePoint, labelPos: [0, 5.2, 50] as GuidePoint },
-  { label: 'Food stations', world: [0, 0, 10] as GuidePoint, labelPos: [0, 5.2, 10] as GuidePoint }
+  { label: 'Parkpaden', world: [0, 0, 50] as GuidePoint, labelPos: [0, 5.2, 50] as GuidePoint },
+  { label: 'Voerplekken', world: [0, 0, 10] as GuidePoint, labelPos: [0, 5.2, 10] as GuidePoint }
 ] as const;
 
 export const PARK_PATH_CONNECTORS = [
@@ -105,7 +105,11 @@ function getNearestRequirement(requirements: ObjectiveRequirementLike[]) {
   return requirements.find((requirement) => requirement.progress < requirement.count) ?? requirements[requirements.length - 1];
 }
 
-function getNearestVector<T>(origin: THREE.Vector3, entries: T[], getPosition: (entry: T) => THREE.Vector3): { entry: T; position: THREE.Vector3; distance: number } | null {
+function getNearestVector<T>(
+  origin: THREE.Vector3,
+  entries: T[],
+  getPosition: (entry: T) => THREE.Vector3
+): { entry: T; position: THREE.Vector3; distance: number } | null {
   let best: { entry: T; position: THREE.Vector3; distance: number } | null = null;
   for (const entry of entries) {
     const position = getPosition(entry);
@@ -186,9 +190,9 @@ function buildTrailPoints(origin: THREE.Vector3, target: THREE.Vector3) {
 
 function formatCompletionLabel(requirement: ObjectiveRequirementLike) {
   const remaining = Math.max(0, requirement.count - requirement.progress);
-  if (remaining <= 0) return `${requirement.label} done`;
-  if (remaining === 1) return `${requirement.label}: 1 more`;
-  return `${requirement.label}: ${remaining} more`;
+  if (remaining <= 0) return `${requirement.label} voltooid`;
+  if (remaining === 1) return `${requirement.label}: nog 1`;
+  return `${requirement.label}: nog ${remaining}`;
 }
 
 type GuideParams = {
@@ -220,9 +224,9 @@ export function resolveLiveObjectiveGuide({
   let immediateAction = false;
 
   if (objective.id === 'agility-sprint') {
-    targetPosition = getZoneCenter('Agility Course');
-    targetLabel = 'Agility ramp';
-    actionLabel = 'Reach the course and jump cleanly';
+    targetPosition = getZoneCenter('Agilityparcours');
+    targetLabel = 'Agilityhelling';
+    actionLabel = 'Ga naar het parcours en spring netjes';
   } else if (objective.id === 'hot-trail') {
     if (pending.event === 'dig') {
       const activeSpot = getNearestVector(
@@ -232,22 +236,22 @@ export function resolveLiveObjectiveGuide({
       );
       if (activeSpot) {
         targetPosition = activeSpot.position;
-        targetLabel = 'Warm dig spot';
-        actionLabel = 'Sniff nearby, then dig on the hotspot';
+        targetLabel = 'Warme graafplek';
+        actionLabel = 'Snuffel in de buurt en graaf op de hotspot';
       } else {
         targetPosition = getZoneCenter('Snuffeltuin');
         targetLabel = 'Snuffeltuin';
-        actionLabel = 'Follow the scent trail into the garden';
+        actionLabel = 'Volg het geurspoor naar de tuin';
       }
     } else {
       targetPosition = getZoneCenter('Snuffeltuin');
       targetLabel = 'Snuffeltuin';
-      actionLabel = 'Head to the scent garden and sniff twice';
+      actionLabel = 'Ga naar de snuffeltuin en snuffel twee keer';
     }
   } else if (objective.id === 'cooldown-lap') {
     targetPosition = new THREE.Vector3(0, 0, 7.2);
-    targetLabel = 'Pond edge';
-    actionLabel = 'Walk to the shoreline and drink';
+    targetLabel = 'Waterkant';
+    actionLabel = 'Loop naar de oever en drink';
   } else if (objective.id === 'cleanup-chaos') {
     const targetCan = getNearestVector(
       dogPosition,
@@ -256,19 +260,19 @@ export function resolveLiveObjectiveGuide({
     );
     if (targetCan) {
       targetPosition = targetCan.position;
-      targetLabel = 'Loose trash can';
-      actionLabel = 'Get close and bump a can over';
+      targetLabel = 'Staande prullenbak';
+      actionLabel = 'Kom dichtbij en tik een bak om';
     } else {
-      targetPosition = getZoneCenter('Park paths');
-      targetLabel = 'Main loop';
-      actionLabel = 'Sweep the paths for a standing can';
+      targetPosition = getZoneCenter('Parkpaden');
+      targetLabel = 'Hoofdpad';
+      actionLabel = 'Zoek op de paden naar een rechtopstaande bak';
     }
   } else if (objective.id === 'snack-finish') {
     if (heldBoneId != null) {
       immediateAction = true;
       targetPosition = null;
-      targetLabel = 'Held bone';
-      actionLabel = 'Chew the bone you are carrying';
+      targetLabel = 'Bot in bek';
+      actionLabel = 'Kauw op het bot dat je draagt';
     } else {
       const snackTarget = getNearestVector(
         dogPosition,
@@ -280,12 +284,14 @@ export function resolveLiveObjectiveGuide({
       );
       if (snackTarget) {
         targetPosition = snackTarget.position;
-        targetLabel = snackTarget.entry.type === 'bone' ? 'Loose bone' : 'Snack bowl';
-        actionLabel = snackTarget.entry.type === 'bone' ? 'Grab or chew the nearby bone' : 'Reach the nearest snack and eat';
+        targetLabel = snackTarget.entry.type === 'bone' ? 'Los bot' : 'Voerbak';
+        actionLabel = snackTarget.entry.type === 'bone'
+          ? 'Pak of kauw op het bot in de buurt'
+          : 'Ga naar de dichtstbijzijnde snack en eet';
       } else {
-        targetPosition = getZoneCenter('Food stations');
-        targetLabel = 'Food route';
-        actionLabel = 'Sweep the park for any remaining treats';
+        targetPosition = getZoneCenter('Voerplekken');
+        targetLabel = 'Voerroute';
+        actionLabel = 'Doorzoek het park naar overgebleven snacks';
       }
     }
   }
@@ -299,16 +305,18 @@ export function resolveLiveObjectiveGuide({
 
   let hintText: string | null = null;
   if (idleOrStuck) {
-    if (immediateAction) hintText = 'You can finish this right here.';
-    else if (objective.id === 'agility-sprint') hintText = 'The marker leads to the jumps. Build speed and hop.';
-    else if (objective.id === 'hot-trail') hintText = pending.event === 'dig' ? 'Warm marker means dig range. Sniff if you lose it.' : 'Head for Snuffeltuin, then tap sniff to track the hotspot.';
-    else if (objective.id === 'cooldown-lap') hintText = 'Stand at the pond rim, then drink.';
-    else if (objective.id === 'cleanup-chaos') hintText = 'Follow the pips to the nearest upright can.';
-    else if (objective.id === 'snack-finish') hintText = 'Follow the marker to food, or chew a bone if you pick one up.';
+    if (immediateAction) hintText = 'Je kunt dit hier meteen afronden.';
+    else if (objective.id === 'agility-sprint') hintText = 'De marker leidt naar de sprongen. Maak vaart en spring.';
+    else if (objective.id === 'hot-trail') hintText = pending.event === 'dig'
+      ? 'Een warme marker betekent graafafstand. Snuffel opnieuw als je hem kwijt bent.'
+      : 'Ga naar de snuffeltuin en gebruik snuffelen om de hotspot te vinden.';
+    else if (objective.id === 'cooldown-lap') hintText = 'Ga op de rand van het water staan en drink dan.';
+    else if (objective.id === 'cleanup-chaos') hintText = 'Volg de stippen naar de dichtstbijzijnde rechtopstaande bak.';
+    else if (objective.id === 'snack-finish') hintText = 'Volg de marker naar eten, of kauw op een bot als je er een oppakt.';
   }
 
   const statusBits = [`${pending.progress}/${pending.count}`];
-  if (!immediateAction) statusBits.unshift(`${Math.round(distance)}m away`);
+  if (!immediateAction) statusBits.unshift(`${Math.round(distance)} m afstand`);
 
   return {
     title: objective.title,

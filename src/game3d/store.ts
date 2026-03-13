@@ -139,41 +139,41 @@ const BASE_MOVEMENT_TUNING: MovementTuning = {
 const OBJECTIVE_LOOP: ObjectiveDefinition[] = [
   {
     id: 'agility-sprint',
-    title: 'Agility Sprint',
-    description: 'Hop through the agility route and keep the pace up.',
-    zone: 'Agility Course',
-    requirements: [{ event: 'jump', count: 3, label: 'Clean jumps' }]
+    title: 'Agilitysprint',
+    description: 'Spring door het agilityparcours en houd het tempo hoog.',
+    zone: 'Agilityparcours',
+    requirements: [{ event: 'jump', count: 3, label: 'Nette sprongen' }]
   },
   {
     id: 'hot-trail',
-    title: 'Hot Trail',
-    description: 'Sniff out the warm trail, then dig where it peaks.',
+    title: 'Warm spoor',
+    description: 'Snuffel het warme spoor uit en graaf waar het het sterkst is.',
     zone: 'Snuffeltuin',
     requirements: [
-      { event: 'sniff', count: 2, label: 'Tracking sniffs' },
-      { event: 'dig', count: 1, label: 'Treasure digs' }
+      { event: 'sniff', count: 2, label: 'Volg-snuffels' },
+      { event: 'dig', count: 1, label: 'Schatgraafbeurt' }
     ]
   },
   {
     id: 'cooldown-lap',
-    title: 'Cooldown Lap',
-    description: 'Visit the lake for a quick reset before the next dash.',
+    title: 'Afkoelronde',
+    description: 'Ga langs het zwemmeer voor een snelle reset voor de volgende sprint.',
     zone: 'Zwemmeer',
-    requirements: [{ event: 'drink', count: 1, label: 'Shoreline drinks' }]
+    requirements: [{ event: 'drink', count: 1, label: 'Slokken aan de waterkant' }]
   },
   {
     id: 'cleanup-chaos',
-    title: 'Cleanup Chaos',
-    description: 'Cause just enough trouble to shake loose a new route.',
-    zone: 'Park paths',
-    requirements: [{ event: 'trash', count: 1, label: 'Trash cans toppled' }]
+    title: 'Opruimchaos',
+    description: 'Maak precies genoeg rommel om een nieuwe route los te schudden.',
+    zone: 'Parkpaden',
+    requirements: [{ event: 'trash', count: 1, label: 'Omgetikte prullenbakken' }]
   },
   {
     id: 'snack-finish',
-    title: 'Snack Finish',
-    description: 'Wrap the lap by finding a treat and chowing down.',
-    zone: 'Food stations',
-    requirements: [{ event: 'eat', count: 2, label: 'Treats eaten' }]
+    title: 'Snackfinish',
+    description: 'Sluit de ronde af door een snack te vinden en op te eten.',
+    zone: 'Voerplekken',
+    requirements: [{ event: 'eat', count: 2, label: 'Opgegeten snacks' }]
   }
 ];
 
@@ -188,8 +188,41 @@ function spawnNear(zone: SpawnZone, y = 0): [number, number, number] {
   ];
 }
 
-function createSpawnList<T>(route: SpawnZone[], count: number, factory: (zone: SpawnZone, index: number) => T) {
-  return Array.from({ length: count }).map((_, index) => factory(route[index % route.length], index));
+function spawnNearAvoiding(
+  zone: SpawnZone,
+  existing: Array<[number, number, number]>,
+  minDistance: number,
+  y = 0,
+  attempts = 24
+): [number, number, number] {
+  let fallback = spawnNear(zone, y);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const candidate = spawnNear(zone, y);
+    fallback = candidate;
+    const overlaps = existing.some(([x, currentY, z]) => (
+      Math.hypot(candidate[0] - x, candidate[1] - currentY, candidate[2] - z) < minDistance
+    ));
+    if (!overlaps) {
+      return candidate;
+    }
+  }
+
+  return fallback;
+}
+
+function createSpawnList<T>(
+  route: SpawnZone[],
+  count: number,
+  minDistance: number,
+  factory: (zone: SpawnZone, index: number, pos: [number, number, number]) => T
+) {
+  const positions: Array<[number, number, number]> = [];
+  return Array.from({ length: count }).map((_, index) => {
+    const zone = route[index % route.length];
+    const pos = spawnNearAvoiding(zone, positions, minDistance);
+    positions.push(pos);
+    return factory(zone, index, pos);
+  });
 }
 
 function createFoodSpawns(profile: SpawnProfile) {
@@ -202,9 +235,9 @@ function createFoodSpawns(profile: SpawnProfile) {
     'gezondheid',
     'centralePlaza'
   ];
-  return createSpawnList(route, profile.foodCount, (zone, index) => ({
+  return createSpawnList(route, profile.foodCount, 6, (_zone, index, pos) => ({
     id: index,
-    pos: spawnNear(zone, 0)
+    pos
   }));
 }
 
@@ -219,18 +252,18 @@ function createDigSpots(profile: SpawnProfile) {
     'bezoekerscentrum',
     'centralePlaza'
   ];
-  return createSpawnList(route, profile.digSpotCount, (zone, index) => ({
+  return createSpawnList(route, profile.digSpotCount, 7, (_zone, index, pos) => ({
     id: index,
-    pos: spawnNear(zone, 0),
+    pos,
     active: true
   }));
 }
 
 function createTrashCanSpawns(profile: SpawnProfile) {
   const route: SpawnZone[] = ['bezoekerscentrum', 'wandeling', 'snuffeltuin', 'gezondheid', 'agility'];
-  return createSpawnList(route, profile.trashCanCount, (zone, index) => ({
+  return createSpawnList(route, profile.trashCanCount, 9, (_zone, index, pos) => ({
     id: index,
-    pos: spawnNear(zone, 0),
+    pos,
     knocked: false
   }));
 }
@@ -243,8 +276,8 @@ function getLevelModifier(level: number): LevelModifier {
   if (level <= 1) {
     return {
       type: 'base',
-      label: 'Park Warmup',
-      description: 'Balanced spawns and no extra twists while the route settles in.',
+      label: 'Parkopwarming',
+      description: 'Gebalanceerde spawns zonder extra twists terwijl het rondje op gang komt.',
       spawnProfile: BASE_SPAWN_PROFILE,
       movement: BASE_MOVEMENT_TUNING
     };
@@ -256,21 +289,21 @@ function getLevelModifier(level: number): LevelModifier {
   if (tier === 0) {
     const profiles = [
       {
-        label: 'Snack Surge',
-        description: 'More food bowls appear, but fewer dig spots stay active.',
-        tradeoff: 'Easier snack runs, thinner treasure trail.',
+        label: 'Snackgolf',
+        description: 'Er verschijnen meer voerbakken, maar minder graafplekken blijven actief.',
+        tradeoff: 'Makkelijker snacken, minder duidelijke schatroute.',
         spawnProfile: { foodCount: 8, digSpotCount: 6, trashCanCount: 3 }
       },
       {
-        label: 'Dig Day',
-        description: 'Extra dig spots pop up while food bowls thin out.',
-        tradeoff: 'Treasure is easier to find, snacks take longer to spot.',
+        label: 'Graafdag',
+        description: 'Extra graafplekken duiken op terwijl voerplekken schaarser worden.',
+        tradeoff: 'Schatten zijn makkelijker te vinden, snacks kosten meer zoektijd.',
         spawnProfile: { foodCount: 4, digSpotCount: 10, trashCanCount: 4 }
       },
       {
-        label: 'Trash Parade',
-        description: 'More trash cans clutter the paths and food stations get tighter.',
-        tradeoff: 'Cleanup laps are juicier, snack runs get lean.',
+        label: 'Prullenbakparade',
+        description: 'Meer prullenbakken verstoppen de paden en voerplekken worden krapper.',
+        tradeoff: 'Opruimrondes leveren meer op, snackroutes worden magerder.',
         spawnProfile: { foodCount: 5, digSpotCount: 7, trashCanCount: 6 }
       }
     ];
@@ -288,9 +321,9 @@ function getLevelModifier(level: number): LevelModifier {
   if (tier === 1) {
     return {
       type: 'bonus',
-      label: 'Bonus Window',
-      description: 'Each loop starts a short side objective that can award an extra star.',
-      tradeoff: 'Miss the timer and you only get the main route credit.',
+      label: 'Bonusrace',
+      description: 'Elke lus start met een korte bonusopdracht die een extra ster kan geven.',
+      tradeoff: 'Mis je de timer, dan krijg je alleen de hoofdroute-beloning.',
       spawnProfile: BASE_SPAWN_PROFILE,
       movement: BASE_MOVEMENT_TUNING
     };
@@ -298,9 +331,9 @@ function getLevelModifier(level: number): LevelModifier {
 
   const perks = [
     {
-      label: 'Sprinter Paws',
-      description: 'Run speed climbs so agility routes feel snappier.',
-      tradeoff: 'Jump height dips a little, so timing matters more.',
+      label: 'Sprintpoten',
+      description: 'Je topsnelheid gaat omhoog zodat agilityrondes strakker aanvoelen.',
+      tradeoff: 'Je sprongen worden iets lager, dus timing telt zwaarder.',
       movement: {
         walkSpeedMultiplier: 1,
         sprintSpeedMultiplier: 1.15,
@@ -310,9 +343,9 @@ function getLevelModifier(level: number): LevelModifier {
       }
     },
     {
-      label: 'Deep Snout',
-      description: 'Sniffing keeps more momentum, helping treasure routes flow.',
-      tradeoff: 'Top sprint speed softens a touch outside sniff mode.',
+      label: 'Diepe snuit',
+      description: 'Snuffelen behoudt meer momentum, waardoor schatroutes vloeiender lopen.',
+      tradeoff: 'Je topsnelheid buiten snuffelmodus zakt een tikje.',
       movement: {
         walkSpeedMultiplier: 1,
         sprintSpeedMultiplier: 0.94,
@@ -322,9 +355,9 @@ function getLevelModifier(level: number): LevelModifier {
       }
     },
     {
-      label: 'Spring Paws',
-      description: 'Jumps get a little more lift for playful route shortcuts.',
-      tradeoff: 'Digging takes longer while those legs stay bouncy.',
+      label: 'Veerpoten',
+      description: 'Sprongen krijgen extra lift voor speelse route-afsnijders.',
+      tradeoff: 'Graven duurt langer zolang die poten zo veerkrachtig zijn.',
       movement: {
         walkSpeedMultiplier: 1,
         sprintSpeedMultiplier: 1,
@@ -350,11 +383,11 @@ function createBonusObjective(loopIndex: number, modifier: LevelModifier, now: n
   if (modifier.type !== 'bonus') return null;
 
   const bonusByLoop: BonusObjectiveState[] = [
-    { event: 'jump', label: 'Bonus: land 2 extra jumps fast', progress: 0, target: 2, expiresAt: now + 20000, rewardStars: 1, completed: false, expired: false },
-    { event: 'sniff', label: 'Bonus: chain 2 more sniffs', progress: 0, target: 2, expiresAt: now + 18000, rewardStars: 1, completed: false, expired: false },
-    { event: 'drink', label: 'Bonus: sneak in 1 more drink', progress: 0, target: 1, expiresAt: now + 15000, rewardStars: 1, completed: false, expired: false },
-    { event: 'trash', label: 'Bonus: tip a second can', progress: 0, target: 1, expiresAt: now + 22000, rewardStars: 1, completed: false, expired: false },
-    { event: 'eat', label: 'Bonus: scarf 1 extra snack', progress: 0, target: 1, expiresAt: now + 18000, rewardStars: 1, completed: false, expired: false }
+    { event: 'jump', label: 'Bonus: land snel nog 2 sprongen', progress: 0, target: 2, expiresAt: now + 20000, rewardStars: 1, completed: false, expired: false },
+    { event: 'sniff', label: 'Bonus: keten nog 2 snuffels', progress: 0, target: 2, expiresAt: now + 18000, rewardStars: 1, completed: false, expired: false },
+    { event: 'drink', label: 'Bonus: neem nog 1 slok', progress: 0, target: 1, expiresAt: now + 15000, rewardStars: 1, completed: false, expired: false },
+    { event: 'trash', label: 'Bonus: tik nog 1 bak om', progress: 0, target: 1, expiresAt: now + 22000, rewardStars: 1, completed: false, expired: false },
+    { event: 'eat', label: 'Bonus: werk nog 1 snack weg', progress: 0, target: 1, expiresAt: now + 18000, rewardStars: 1, completed: false, expired: false }
   ];
 
   return { ...bonusByLoop[loopIndex % bonusByLoop.length] };
@@ -480,8 +513,8 @@ export const useGameStore = create<GameState>((set, get) => {
       levelBeat: {
         phase: 'outro',
         level,
-        title: `Level ${level - 1} complete!`,
-        subtitle: `Next up: ${previewObjective.zone}`,
+        title: `Level ${level - 1} voltooid!`,
+        subtitle: `Hierna: ${previewObjective.zone}`,
         objectiveTitle: previewObjective.title,
         objectiveDescription: previewObjective.description,
         modifierLabel: nextModifier.label,
@@ -505,7 +538,7 @@ export const useGameStore = create<GameState>((set, get) => {
           phase: 'intro',
           level,
           title: `Level ${level}`,
-          subtitle: 'Fresh route, same good dog energy.',
+          subtitle: 'Nieuwe route, zelfde brave hondenenergie.',
           objectiveTitle: refreshedObjective.title,
           objectiveDescription: refreshedObjective.description,
           modifierLabel: nextModifier.label,
@@ -647,7 +680,13 @@ export const useGameStore = create<GameState>((set, get) => {
     resetEnvironment: () => set((state) => ({
       digSpots: createDigSpots(state.levelModifier.spawnProfile),
       trashCans: createTrashCanSpawns(state.levelModifier.spawnProfile),
-      foods: createFoodSpawns(state.levelModifier.spawnProfile).map((food, index) => ({ ...food, id: Date.now() + index }))
+      foods: createFoodSpawns(state.levelModifier.spawnProfile).map((food, index) => ({ ...food, id: Date.now() + index })),
+      bones: [],
+      bonePositions: {},
+      heldBones: { 0: null, 1: null },
+      poops: [],
+      barks: [],
+      throwEvents: []
     })),
 
     currentLevel: 1,
@@ -737,7 +776,13 @@ export const useGameStore = create<GameState>((set, get) => {
       return { bones: newBones };
     }),
     removeBone: (id) => set((state) => ({
-      bones: state.bones.filter((bone) => bone.id !== id)
+      bones: state.bones.filter((bone) => bone.id !== id),
+      bonePositions: Object.fromEntries(
+        Object.entries(state.bonePositions).filter(([boneId]) => Number(boneId) !== id)
+      ),
+      heldBones: Object.fromEntries(
+        Object.entries(state.heldBones).map(([dogIndex, boneId]) => [dogIndex, boneId === id ? null : boneId])
+      ) as Record<number, number | null>
     }))
   };
 });

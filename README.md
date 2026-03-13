@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Silly Dog Game
 
-# Run and deploy your AI Studio app
+Een 3D hondenpark-game gebouwd met Vite, React, Three.js en Rapier.
 
-This contains everything you need to run your app locally.
+## Starten
 
-View your app in AI Studio: https://ai.studio/apps/7f138002-9396-461b-b401-b1046d589ff9
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
+1. Installeer dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Start de ontwikkelserver:
    `npm run dev`
+3. Maak een productiebuild:
+   `npm run build`
+
+## Bediening
+
+De controller is de hoofdmanier om te spelen.
+
+- `Left Stick`: bewegen
+- `RT`: rennen
+- `A`: springen
+- `B`: blaffen
+- `X`: pakken / gooien
+- `Y`: eten / drinken
+- `LB`: snuffelen
+- `RB`: graven
+- `D-Pad Up`: zitten
+- `D-Pad Right`: rollen
+- `LT`: liggen
+- `D-Pad Down`: poepen
+
+Toetsenbordbediening blijft beschikbaar als fallback en voor een tweede speler.
+
+## Technische notities
+
+- Rendering via `@react-three/fiber`
+- Physics en collisions via `@react-three/rapier`
+- Gameplaystate via Zustand

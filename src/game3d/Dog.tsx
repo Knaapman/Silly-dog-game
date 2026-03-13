@@ -12,6 +12,11 @@ type ZzzParticle = {id: number, time: number, x: number, y: number};
 type DigParticle = {id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number};
 type DustParticle = {id: number, time: number, x: number, y: number, z: number, scale: number};
 type SplashParticle = {id: number, time: number, x: number, y: number, z: number, vx: number, vy: number, vz: number, scale: number};
+type PickupType = 'ball' | 'bone' | 'frisbee';
+
+const GROUND_RAY_LENGTH = 0.55;
+const INTERACTION_RADIUS = 4;
+const EAT_RADIUS = 2;
 
 function lerpAngle(start: number, end: number, t: number) {
   let diff = end - start;
@@ -34,6 +39,16 @@ function applyUiActionToInput(
   else if (action === 'sit') input.justSat = true;
   else if (action === 'roll') input.justRolled = true;
   else if (action === 'sniff') input.justSniffed = true;
+}
+
+function dampHorizontalVelocity(body: RapierRigidBody, delta: number) {
+  const velocity = body.linvel();
+  const lerpFactor = 1 - Math.exp(-18 * delta);
+  body.setLinvel({
+    x: THREE.MathUtils.lerp(velocity.x, 0, lerpFactor),
+    y: velocity.y,
+    z: THREE.MathUtils.lerp(velocity.z, 0, lerpFactor)
+  }, true);
 }
 
 export function Dog({ playerIndex, color, position }: { playerIndex: number, color: string, position: [number, number, number] }) {
@@ -165,13 +180,13 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     }
 
     if (nearestDist < 3) {
-      emitFeedback({ type: 'found_digspot', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❗', text: 'Dig here!', major: true, playerIndex });
+      emitFeedback({ type: 'found_digspot', position: [currentPos.x, currentPos.y, currentPos.z], icon: '!', text: 'Graaf hier!', major: true, playerIndex });
     } else if (nearestDist < 10) {
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🐾', text: 'Getting warm', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'snuf', text: 'Je zit warm', playerIndex });
     } else if (nearestDist < 25) {
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🔎', text: 'Getting closer', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'spoor', text: 'Je komt dichterbij', playerIndex });
     } else {
-      emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❓', text: 'Cold trail', playerIndex });
+      emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '?', text: 'Koud spoor', playerIndex });
     }
   };
 
@@ -183,21 +198,47 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     if (heldBall != null) {
       triggerThrow(playerIndex, 'ball', heldBall);
       dropBall(playerIndex);
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🎾', text: 'Ball thrown', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'bal', text: 'Bal gegooid', playerIndex });
       return;
     }
     if (heldBone != null) {
       triggerThrow(playerIndex, 'bone', heldBone);
       dropBone(playerIndex);
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🦴', text: 'Bone thrown', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'bot', text: 'Bot gegooid', playerIndex });
       return;
     }
     if (heldFrisbee != null) {
       triggerThrow(playerIndex, 'frisbee', heldFrisbee);
       dropFrisbee(playerIndex);
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🥏', text: 'Frisbee thrown', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'disk', text: 'Frisbee gegooid', playerIndex });
       return;
     }
+  };
+
+  const getClosestPickup = (currentPos: THREE.Vector3): { type: PickupType; id: number } | null => {
+    let best: { type: PickupType; id: number; distance: number } | null = null;
+
+    const consider = (
+      type: PickupType,
+      positions: Record<number, THREE.Vector3>,
+      heldIds: Array<number | null>
+    ) => {
+      for (const [idStr, itemPos] of Object.entries(positions)) {
+        const id = Number(idStr);
+        if (heldIds.includes(id)) continue;
+        const distance = currentPos.distanceTo(itemPos);
+        if (distance > INTERACTION_RADIUS) continue;
+        if (!best || distance < best.distance) {
+          best = { type, id, distance };
+        }
+      }
+    };
+
+    consider('ball', ballPositions, Object.values(heldBalls));
+    consider('bone', bonePositions, Object.values(heldBones));
+    consider('frisbee', frisbeePositions, Object.values(heldFrisbees));
+
+    return best ? { type: best.type, id: best.id } : null;
   };
 
   useFrame((state, delta) => {
@@ -212,8 +253,8 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       { x: currentPos.x, y: currentPos.y + 0.1, z: currentPos.z },
       { x: 0, y: -1, z: 0 }
     );
-    const groundHit = world.castRay(groundRay, 0.5, true, undefined, undefined, undefined, rb.current);
-    const isGrounded = !isSwimming && !!groundHit && groundHit.toi < 0.3;
+    const groundHit = world.castRay(groundRay, GROUND_RAY_LENGTH, true, undefined, undefined, undefined, rb.current);
+    const isGrounded = !isSwimming && !!groundHit && groundHit.timeOfImpact < 0.3;
     const baseInput = getInput({ grounded: isGrounded });
     const controlsLocked = Date.now() < controlsLockedUntil;
     const input = controlsLocked ? {
@@ -256,6 +297,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       // Rock on back
       // group.current.rotation.z handled in anim logic
     } else if (isSitting || isLyingDown || eating > 0 || isDigging || isDrinking) {
+      dampHorizontalVelocity(rb.current, delta);
       // Cannot move while sitting, lying down, eating, digging, or drinking
       if (eating > 0 || isDigging || isDrinking) {
         // Eating/Digging/Drinking logic
@@ -358,7 +400,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     // --- ANIMATION SYSTEM ---
     const currentSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
     const isMoving = currentSpeed > 0.5 && eating <= 0 && !isSitting && !isLyingDown && !isRolling && !isDigging && !isDrinking;
-    const isJumping = !isSwimming && (Math.abs(vel.y) > 0.5 || (rb.current && !world.castRay(new rapier.Ray({ x: currentPos.x, y: currentPos.y + 0.1, z: currentPos.z }, { x: 0, y: -1, z: 0 }), 0.5, true, undefined, undefined, undefined, rb.current)));
+    const isJumping = !isSwimming && (!isGrounded || Math.abs(vel.y) > 0.5);
     const isRunning = currentSpeed > 8 && !isSniffing && isMoving && !isSwimming;
     const s = animState.current;
 
@@ -596,7 +638,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
               type: 'action_success',
               position: [currentPos.x, currentPos.y, currentPos.z],
               icon: '❤️',
-              text: 'Friend!',
+              text: 'Vriendje!',
               playerIndex
             });
           }
@@ -695,7 +737,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         poopCooldownRef.current = 5;
         playPoopSound({ position: poopPos });
       } else {
-        emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '❌', text: 'Too soon', playerIndex });
+        emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'stop', text: 'Nog even wachten', playerIndex });
       }
     }
 
@@ -703,7 +745,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       if (input.justDug && !isJumping && !isMoving && !isSitting && !isLyingDown && !isRolling && !isDrinking && !isDigging) {
         setIsDigging(true);
         digTimerRef.current = 2 * levelModifier.movement.digDurationMultiplier;
-        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⛏️', text: 'Digging...', playerIndex });
+        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'graaf', text: 'Bezig met graven...', playerIndex });
       }
       if (!isDigging) return;
       if (digTimerRef.current > 0) {
@@ -728,15 +770,15 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         if (digPos.distanceTo(spotPos) < 2.5) {
           digSpot(spot.id);
           addBone([spotPos.x, spotPos.y + 1, spotPos.z]);
-          emitFeedback({ type: 'found_digspot', position: [spotPos.x, spotPos.y, spotPos.z], icon: '🦴', text: 'Treasure found!', major: true, playerIndex });
-          emitFeedback({ type: 'collect_star', position: [spotPos.x, spotPos.y, spotPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
+          emitFeedback({ type: 'found_digspot', position: [spotPos.x, spotPos.y, spotPos.z], icon: 'bot', text: 'Schat gevonden!', major: true, playerIndex });
+          emitFeedback({ type: 'collect_star', position: [spotPos.x, spotPos.y, spotPos.z], icon: 'ster', text: '+1 ster', major: true, playerIndex });
           recordObjectiveEvent('dig');
           useGameStore.getState().addStar(spotPos);
           foundSpot = true;
           break;
         }
       }
-      if (!foundSpot) emitFeedback({ type: 'empty_dig', position: [digPos.x, digPos.y, digPos.z], icon: '❔', text: 'Nothing here', playerIndex });
+      if (!foundSpot) emitFeedback({ type: 'empty_dig', position: [digPos.x, digPos.y, digPos.z], icon: '?', text: 'Hier ligt niets', playerIndex });
     };
     updateDigAction();
 
@@ -763,7 +805,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       barkTimerRef.current = 0.5;
       setBarkActive(true);
       playBarkSound({ position: currentPos });
-      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🗣️', text: 'Woof!', playerIndex });
+      emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'blaf', text: 'Waf!', playerIndex });
     }
     if (barkTimerRef.current > 0) barkTimerRef.current -= delta;
     if (barkTimerRef.current <= 0 && isBarking) setBarkActive(false);
@@ -806,10 +848,10 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         if (closestType === 'ball' && nearestBallId != null) playPickupSound({ position: currentPos });
         if (closestType === 'bone' && nearestBoneId != null) playPickupSound({ position: currentPos });
         if (closestType === 'frisbee' && nearestFrisbeeId != null) playPickupSound({ position: currentPos });
-        if (closestType === 'ball' && nearestBallId != null) { grabBall(playerIndex, nearestBallId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🎾', text: 'Grabbed ball', playerIndex }); }
-        else if (closestType === 'bone' && nearestBoneId != null) { grabBone(playerIndex, nearestBoneId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🦴', text: 'Grabbed bone', playerIndex }); }
-        else if (closestType === 'frisbee' && nearestFrisbeeId != null) { grabFrisbee(playerIndex, nearestFrisbeeId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🥏', text: 'Grabbed frisbee', playerIndex }); }
-        else { emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🙅', text: 'Nothing to grab', playerIndex }); }
+        if (closestType === 'ball' && nearestBallId != null) { grabBall(playerIndex, nearestBallId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'bal', text: 'Bal gepakt', playerIndex }); }
+        else if (closestType === 'bone' && nearestBoneId != null) { grabBone(playerIndex, nearestBoneId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'bot', text: 'Bot gepakt', playerIndex }); }
+        else if (closestType === 'frisbee' && nearestFrisbeeId != null) { grabFrisbee(playerIndex, nearestFrisbeeId); emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'disk', text: 'Frisbee gepakt', playerIndex }); }
+        else { emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'leeg', text: 'Niets om te pakken', playerIndex }); }
       }
     }
 
@@ -841,8 +883,8 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         setBarkActive(false);
         setIsSitting(false);
         recordObjectiveEvent('eat');
-        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍖', text: 'Chomp!', playerIndex });
-        emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
+        emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'hap', text: 'Hap!', playerIndex });
+        emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'ster', text: '+1 ster', major: true, playerIndex });
         useGameStore.getState().addStar(currentPos);
       } else {
         const pondDist = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
@@ -850,9 +892,9 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           group.current.rotation.y = Math.atan2(-currentPos.x, -currentPos.z);
           setIsDrinking(true); setIsSitting(false); setIsLyingDown(false);
           recordObjectiveEvent('drink');
-          emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: '💧', text: 'Refreshing!', playerIndex });
+          emitFeedback({ type: 'action_success', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'water', text: 'Lekker fris!', playerIndex });
         } else {
-          emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: '🍽️', text: 'Nothing to eat', playerIndex });
+          emitFeedback({ type: 'action_fail', position: [currentPos.x, currentPos.y, currentPos.z], icon: 'leeg', text: 'Niets om te eten', playerIndex });
         }
       }
     }
@@ -866,8 +908,8 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
             emitFeedback({
               type: 'action_success',
               position: [currentPos.x, currentPos.y, currentPos.z],
-              icon: '💥',
-              text: 'Bark impact!',
+              icon: 'boem',
+              text: 'Blaf geraakt!',
               playerIndex
             });
           }
@@ -977,16 +1019,6 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
           <meshStandardMaterial color={color} />
         </mesh>
       </group>
-      {isBarking && (
-        <Text position={[0, 2, 0]} fontSize={0.5} color="white" outlineWidth={0.05} outlineColor="black">
-          WOOF!
-        </Text>
-      )}
-      {isEating && (
-        <Text position={[0, 2, 0]} fontSize={0.5} color="#ffeb3b" outlineWidth={0.05} outlineColor="black">
-          YUM!
-        </Text>
-      )}
       {/* Dust Particles */}
       {particleRenderState.dustParticles.map(p => (
         <mesh key={p.id} position={[p.x, p.y, p.z]} scale={p.scale}>
