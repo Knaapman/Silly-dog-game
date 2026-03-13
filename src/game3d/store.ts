@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { playStarSound, type AudioPosition } from './audio';
+import type { ConnectedGamepad } from './gamepad';
 
 const zoneSpawnAnchors = {
   bezoekerscentrum: { x: 0, z: -40, radius: 10 },
@@ -454,9 +455,14 @@ interface GameState {
   triggerUiAction: (action: UiActionType, playerIndex?: number) => void;
   inputFeedback: InputFeedbackEvent | null;
   triggerInputFeedback: (action: UiActionType, source: InputFeedbackSource, playerIndex?: number) => void;
+  connectedGamepads: ConnectedGamepad[];
+  setConnectedGamepads: (gamepads: ConnectedGamepad[]) => void;
 
   joystick: { x: number, y: number, active: boolean };
   setJoystick: (x: number, y: number, active: boolean) => void;
+
+  hasStarted: boolean;
+  setHasStarted: (hasStarted: boolean) => void;
 
   isTwoPlayer: boolean;
   setTwoPlayer: (isTwoPlayer: boolean) => void;
@@ -718,9 +724,14 @@ export const useGameStore = create<GameState>((set, get) => {
     triggerInputFeedback: (action, source, playerIndex = 0) => set({
       inputFeedback: { action, time: Date.now(), playerIndex, source }
     }),
+    connectedGamepads: [],
+    setConnectedGamepads: (connectedGamepads) => set({ connectedGamepads }),
 
     joystick: { x: 0, y: 0, active: false },
     setJoystick: (x, y, active) => set({ joystick: { x, y, active } }),
+
+    hasStarted: false,
+    setHasStarted: (hasStarted) => set({ hasStarted }),
 
     isTwoPlayer: false,
     setTwoPlayer: (isTwoPlayer) => set({ isTwoPlayer }),

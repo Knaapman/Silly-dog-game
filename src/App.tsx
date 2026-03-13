@@ -2,9 +2,17 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Scene } from './game3d/Scene';
-import { getAudioSettings, playLevelStinger, setAudioMuted, setCategoryGain, setMasterVolume, subscribeAudioSettings } from './game3d/audio';
-import { useGameStore, type UiActionType } from './game3d/store';
+import {
+  getAudioSettings,
+  playLevelStinger,
+  setAudioMuted,
+  setCategoryGain,
+  setMasterVolume,
+  subscribeAudioSettings
+} from './game3d/audio';
+import { readConnectedGamepads, type ConnectedGamepad } from './game3d/gamepad';
 import { resolveLiveObjectiveGuide } from './game3d/guidance';
+import { useGameStore, type UiActionType } from './game3d/store';
 import { VirtualJoystick } from './game3d/VirtualJoystick';
 
 type TouchButtonConfig = {
@@ -40,6 +48,321 @@ function buildTouchButton(action: UiActionType, subtitle: string, title?: string
   };
 }
 
+function getControllerSubtitle(gamepad: ConnectedGamepad | undefined) {
+  if (!gamepad) {
+    return 'No controller detected. Keyboard stays active.';
+  }
+
+  if (!gamepad.recognized) {
+    return 'Controller connected, but mapping looks limited.';
+  }
+
+  if (gamepad.xinputLike && gamepad.mapping === 'standard') {
+    return 'XInput / Standard mapping detected.';
+  }
+
+  if (gamepad.xinputLike) {
+    return 'XInput-style controller detected.';
+  }
+
+  if (gamepad.mapping === 'standard') {
+    return 'Standard mapping detected.';
+  }
+
+  return 'Controller connected.';
+}
+
+function PlayerControllerCard({ label, gamepad }: { label: string; gamepad?: ConnectedGamepad }) {
+  return (
+    <div className="rounded-2xl border border-white/15 bg-slate-950/40 px-4 py-3">
+      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-1 text-base font-bold text-white">{gamepad ? 'Controller connected' : 'No controller detected'}</p>
+      <p className="mt-1 text-sm text-slate-300">{getControllerSubtitle(gamepad)}</p>
+      <p className="mt-2 text-xs text-slate-400">{gamepad ? gamepad.label : 'Use keyboard controls as fallback.'}</p>
+    </div>
+  );
+}
+
+function StartOverlay({
+  hasEverStarted,
+  onStart,
+  onOpenSettings,
+  playerOnePad,
+  playerTwoPad,
+  showPlayerTwo
+}: {
+  hasEverStarted: boolean;
+  onStart: () => void;
+  onOpenSettings: () => void;
+  playerOnePad?: ConnectedGamepad;
+  playerTwoPad?: ConnectedGamepad;
+  showPlayerTwo: boolean;
+}) {
+  return (
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/62 px-5 backdrop-blur-sm">
+      <div className="w-full max-w-4xl rounded-[2rem] border border-white/15 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.9))] p-6 text-white shadow-2xl md:p-8">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-amber-300">Simple start screen</p>
+            <h1 className="mt-3 text-4xl font-black text-white md:text-6xl">Happy Dog Park</h1>
+            <p className="mt-3 max-w-xl text-base text-slate-200 md:text-lg">
+              Jump in fast, keep the HUD light, and let the park breathe. Start when you are ready and the compact play HUD will take over.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                onClick={onStart}
+                className="rounded-2xl bg-amber-400 px-6 py-3 text-lg font-black text-slate-950 shadow-[0_10px_30px_rgba(251,191,36,0.35)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {hasEverStarted ? 'Resume' : 'Start'}
+              </button>
+              <button
+                onClick={onOpenSettings}
+                className="rounded-2xl border border-white/20 bg-white/8 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/14"
+              >
+                Settings
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Keyboard</p>
+                <p className="mt-2 text-sm text-slate-100">`WASD` move, `Shift` run, `Space` jump, `F` bark, `E` eat, `T` grab.</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Controller</p>
+                <p className="mt-2 text-sm text-slate-100">First connected pad becomes Dog 1. Second connected pad becomes Dog 2.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <PlayerControllerCard label="Dog 1" gamepad={playerOnePad} />
+            {showPlayerTwo && <PlayerControllerCard label="Dog 2" gamepad={playerTwoPad} />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({
+  isOpen,
+  onClose,
+  audioSettings,
+  isTwoPlayer,
+  setTwoPlayer,
+  isNight,
+  toggleNight
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  audioSettings: ReturnType<typeof getAudioSettings>;
+  isTwoPlayer: boolean;
+  setTwoPlayer: (value: boolean) => void;
+  isNight: boolean;
+  toggleNight: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="absolute right-4 top-4 z-40 w-[min(25rem,calc(100vw-2rem))] rounded-[1.75rem] border border-white/15 bg-slate-950/88 p-4 text-white shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Settings</p>
+          <p className="mt-1 text-lg font-black text-white">Audio and match setup</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-xl border border-white/15 bg-white/8 px-3 py-2 text-sm font-bold text-white hover:bg-white/14"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          onClick={toggleNight}
+          className={`rounded-2xl px-4 py-3 text-sm font-black transition-transform hover:scale-[1.01] active:scale-[0.99] ${
+            isNight ? 'bg-indigo-500 text-white' : 'bg-amber-300 text-slate-950'
+          }`}
+        >
+          {isNight ? 'Night mode' : 'Day mode'}
+        </button>
+        <button
+          onClick={() => setTwoPlayer(!isTwoPlayer)}
+          className={`rounded-2xl px-4 py-3 text-sm font-black transition-transform hover:scale-[1.01] active:scale-[0.99] ${
+            isTwoPlayer ? 'bg-sky-500 text-white' : 'bg-white/10 text-white'
+          }`}
+        >
+          {isTwoPlayer ? '2 Dogs' : '1 Dog'}
+        </button>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Audio</p>
+          <button
+            onClick={() => setAudioMuted(!audioSettings.muted)}
+            className={`rounded-xl px-3 py-2 text-sm font-black ${
+              audioSettings.muted ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-slate-950'
+            }`}
+          >
+            {audioSettings.muted ? 'Muted' : 'Sound on'}
+          </button>
+        </div>
+
+        <label className="mt-4 block text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+          Master volume
+          <input
+            className="mt-2 w-full accent-amber-400"
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(audioSettings.masterVolume * 100)}
+            onChange={(event) => setMasterVolume(Number(event.target.value) / 100)}
+          />
+        </label>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {AUDIO_CATEGORIES.map((category) => (
+            <label key={category} className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-300">
+              {category}
+              <input
+                className="mt-2 w-full accent-sky-400"
+                type="range"
+                min={0}
+                max={140}
+                value={Math.round(audioSettings.categoryGains[category] * 100)}
+                onChange={(event) => setCategoryGain(category, Number(event.target.value) / 100)}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GameHud({
+  currentLevel,
+  progress,
+  levelModifierLabel,
+  levelModifierTradeoff,
+  objectiveTitle,
+  objectiveLoopIndex,
+  actionLabel,
+  statusLabel,
+  zoneLabel,
+  bonusLabel,
+  bonusProgress,
+  bonusTarget,
+  bonusState,
+  playerOnePad,
+  playerTwoPad,
+  showPlayerTwo,
+  onOpenSettings,
+  onOpenMenu
+}: {
+  currentLevel: number;
+  progress: number;
+  levelModifierLabel: string;
+  levelModifierTradeoff: string;
+  objectiveTitle: string;
+  objectiveLoopIndex: number;
+  actionLabel: string;
+  statusLabel: string;
+  zoneLabel: string;
+  bonusLabel: string | null;
+  bonusProgress: number;
+  bonusTarget: number;
+  bonusState: string | null;
+  playerOnePad?: ConnectedGamepad;
+  playerTwoPad?: ConnectedGamepad;
+  showPlayerTwo: boolean;
+  onOpenSettings: () => void;
+  onOpenMenu: () => void;
+}) {
+  return (
+    <>
+      <div className="absolute left-4 top-4 z-20 max-w-[24rem] rounded-[1.75rem] border border-white/15 bg-slate-950/62 p-4 text-white shadow-xl backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.28em] text-amber-300">Level {currentLevel}</p>
+            <h2 className="mt-1 text-2xl font-black">Happy Dog Park</h2>
+          </div>
+          <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-slate-200">
+            Loop {objectiveLoopIndex + 1}
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-1.5">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <div
+              key={index}
+              className={`h-2.5 flex-1 rounded-full ${index < progress ? 'bg-amber-300' : 'bg-white/10'}`}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 p-4">
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">Objective</p>
+          <p className="mt-1 text-lg font-black text-white">{objectiveTitle}</p>
+          <p className="mt-1 text-sm text-slate-200">{actionLabel}</p>
+          <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">{statusLabel} · {zoneLabel}</p>
+        </div>
+
+        <div className="mt-3 grid grid-cols-[1fr,auto] gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/6 p-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-sky-300">Modifier</p>
+            <p className="mt-1 text-sm font-bold text-white">{levelModifierLabel}</p>
+            <p className="mt-1 text-xs text-slate-300">{levelModifierTradeoff}</p>
+          </div>
+          {bonusLabel && bonusState && (
+            <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-3 text-right">
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-300">Bonus</p>
+              <p className="mt-1 text-sm font-bold text-white">{bonusLabel}</p>
+              <p className="mt-1 text-xs text-slate-300">{bonusProgress}/{bonusTarget} · {bonusState}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="absolute right-4 top-4 z-20 flex items-start gap-2">
+        <div className="rounded-[1.5rem] border border-white/15 bg-slate-950/62 px-4 py-3 text-white shadow-xl backdrop-blur-xl">
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Controllers</p>
+          <p className="mt-1 text-sm font-bold text-white">
+            P1: {playerOnePad ? 'Connected' : 'Keyboard'}
+            {showPlayerTwo ? `  |  P2: ${playerTwoPad ? 'Connected' : 'Keyboard'}` : ''}
+          </p>
+          <p className="mt-1 text-xs text-slate-300">{getControllerSubtitle(playerOnePad)}</p>
+        </div>
+        <button
+          onClick={onOpenSettings}
+          className="rounded-2xl border border-white/15 bg-slate-950/62 px-4 py-3 text-sm font-black text-white shadow-xl backdrop-blur-xl hover:bg-slate-950/72"
+        >
+          Settings
+        </button>
+        <button
+          onClick={onOpenMenu}
+          className="rounded-2xl border border-white/15 bg-slate-950/62 px-4 py-3 text-sm font-black text-white shadow-xl backdrop-blur-xl hover:bg-slate-950/72"
+        >
+          Menu
+        </button>
+      </div>
+    </>
+  );
+}
+
+function KeyboardHint() {
+  return (
+    <div className="absolute bottom-6 right-6 z-20 rounded-[1.5rem] border border-white/15 bg-slate-950/58 px-4 py-3 text-white shadow-lg backdrop-blur-xl">
+      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Keyboard</p>
+      <p className="mt-1 text-sm font-semibold text-white">`WASD` move, `Shift` run, `Space` jump</p>
+      <p className="mt-1 text-xs text-slate-300">`F` bark, `E` eat, `T` grab, `X` dig, `V` sniff</p>
+    </div>
+  );
+}
+
 export default function App() {
   const stars = useGameStore((state) => state.stars);
   const triggerUiAction = useGameStore((state) => state.triggerUiAction);
@@ -62,15 +385,40 @@ export default function App() {
   const foods = useGameStore((state) => state.foods);
   const digSpots = useGameStore((state) => state.digSpots);
   const trashCans = useGameStore((state) => state.trashCans);
+  const connectedGamepads = useGameStore((state) => state.connectedGamepads);
+  const setConnectedGamepads = useGameStore((state) => state.setConnectedGamepads);
+  const hasStarted = useGameStore((state) => state.hasStarted);
+  const setHasStarted = useGameStore((state) => state.setHasStarted);
 
   const [isTouch, setIsTouch] = useState(false);
   const [uiNow, setUiNow] = useState(Date.now());
   const [activeFeedback, setActiveFeedback] = useState<typeof inputFeedback>(null);
   const [audioSettings, setAudioSettings] = useState(() => getAudioSettings());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [hasEverStarted, setHasEverStarted] = useState(false);
 
   useEffect(() => {
     setIsTouch(window.matchMedia('(pointer: coarse)').matches);
   }, []);
+
+  useEffect(() => {
+    const sync = () => {
+      setConnectedGamepads(readConnectedGamepads());
+    };
+
+    sync();
+    const interval = window.setInterval(sync, 350);
+    window.addEventListener('gamepadconnected', sync);
+    window.addEventListener('gamepaddisconnected', sync);
+    window.addEventListener('focus', sync);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('gamepadconnected', sync);
+      window.removeEventListener('gamepaddisconnected', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, [setConnectedGamepads]);
 
   useEffect(() => {
     const unsubscribe = subscribeAudioSettings((next) => setAudioSettings(next));
@@ -78,24 +426,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!inputFeedback) return;
+    if (!inputFeedback || !hasStarted) return;
     setActiveFeedback(inputFeedback);
     const timeout = window.setTimeout(() => {
       setActiveFeedback((current) => current?.time === inputFeedback.time ? null : current);
     }, 420);
     return () => window.clearTimeout(timeout);
-  }, [inputFeedback]);
+  }, [hasStarted, inputFeedback]);
 
   useEffect(() => {
-    if (!levelBeat) return;
+    if (!levelBeat || !hasStarted) return;
     playLevelStinger(levelBeat.phase);
-  }, [levelBeat?.phase, levelBeat?.startedAt]);
+  }, [hasStarted, levelBeat?.phase, levelBeat?.startedAt]);
 
   useEffect(() => {
-    if (!levelBeat && !currentObjective.bonus) return;
+    if ((!levelBeat && !currentObjective.bonus) || !hasStarted) return;
     const interval = window.setInterval(() => setUiNow(Date.now()), 250);
     return () => window.clearInterval(interval);
-  }, [levelBeat, currentObjective.bonus]);
+  }, [currentObjective.bonus, hasStarted, levelBeat]);
 
   const progress = stars % 10;
   const bonusSecondsLeft = currentObjective.bonus && !currentObjective.bonus.completed
@@ -186,161 +534,110 @@ export default function App() {
     heldFrisbees
   ]);
 
+  const playerOnePad = connectedGamepads.find((gamepad) => gamepad.playerIndex === 0);
+  const playerTwoPad = connectedGamepads.find((gamepad) => gamepad.playerIndex === 1);
+  const bonusState = currentObjective.bonus
+    ? currentObjective.bonus.completed
+      ? '+1 star'
+      : bonusSecondsLeft > 0
+        ? `${bonusSecondsLeft}s left`
+        : 'expired'
+    : null;
+
+  const handleStart = () => {
+    setHasStarted(true);
+    setHasEverStarted(true);
+  };
+
+  const handleOpenMenu = () => {
+    setHasStarted(false);
+  };
+
   return (
-    <div className={`w-full h-screen overflow-hidden transition-colors duration-1000 ${isNight ? 'bg-[#0B1026]' : 'bg-[#87CEEB]'}`}>
+    <div className={`relative h-screen w-full overflow-hidden ${isNight ? 'bg-[#07101f]' : 'bg-[#8ec5ff]'}`}>
       <Canvas shadows camera={{ position: [0, 20, 20], fov: 45 }}>
         <Scene />
       </Canvas>
 
-      <div className="absolute top-5 left-5 right-5 flex justify-between items-start pointer-events-none gap-4">
-        <div className="bg-white/80 backdrop-blur-md text-slate-800 p-4 rounded-3xl shadow-xl pointer-events-auto border-4 border-white max-w-sm">
-          <h1 className="text-3xl font-black text-amber-600 mb-3 drop-shadow-sm">Happy Dog Park</h1>
-          <div className="flex gap-3 flex-wrap">
-            <button
-              onClick={toggleNight}
-              className="px-4 py-2 rounded-2xl font-bold text-lg transition-transform hover:scale-105 bg-indigo-500 text-white shadow-md active:scale-95"
-            >
-              {isNight ? 'Night' : 'Day'}
-            </button>
-            <button
-              onClick={() => setTwoPlayer(!isTwoPlayer)}
-              className={`px-4 py-2 rounded-2xl font-bold text-lg transition-transform hover:scale-105 shadow-md active:scale-95 ${isTwoPlayer ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-700'}`}
-            >
-              {isTwoPlayer ? '2 Dogs' : '1 Dog'}
-            </button>
-          </div>
-          <div className="mt-4 rounded-2xl border-2 border-slate-200 bg-white/70 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Audio mix</p>
-              <button
-                onClick={() => setAudioMuted(!audioSettings.muted)}
-                className={`rounded-xl px-3 py-1.5 text-sm font-black transition-transform hover:scale-105 active:scale-95 ${audioSettings.muted ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'}`}
-              >
-                {audioSettings.muted ? 'Muted' : 'Sound on'}
-              </button>
-            </div>
-            <label className="mt-3 block text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Master volume
-              <input
-                className="mt-2 w-full accent-amber-500"
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(audioSettings.masterVolume * 100)}
-                onChange={(event) => setMasterVolume(Number(event.target.value) / 100)}
-              />
-            </label>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {AUDIO_CATEGORIES.map((category) => (
-                <label key={category} className="rounded-xl bg-slate-50 px-2 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                  {category}
-                  <input
-                    className="mt-1.5 w-full accent-sky-500"
-                    type="range"
-                    min={0}
-                    max={140}
-                    value={Math.round(audioSettings.categoryGains[category] * 100)}
-                    onChange={(event) => setCategoryGain(category, Number(event.target.value) / 100)}
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+      {hasStarted && (
+        <GameHud
+          currentLevel={currentLevel}
+          progress={progress}
+          levelModifierLabel={levelModifier.label}
+          levelModifierTradeoff={levelModifier.tradeoff ?? levelModifier.description}
+          objectiveTitle={currentObjective.title}
+          objectiveLoopIndex={currentObjective.loopIndex}
+          actionLabel={liveGuide.actionLabel}
+          statusLabel={liveGuide.statusLabel}
+          zoneLabel={liveGuide.zoneLabel}
+          bonusLabel={currentObjective.bonus?.label ?? null}
+          bonusProgress={currentObjective.bonus?.progress ?? 0}
+          bonusTarget={currentObjective.bonus?.target ?? 0}
+          bonusState={bonusState}
+          playerOnePad={playerOnePad}
+          playerTwoPad={playerTwoPad}
+          showPlayerTwo={isTwoPlayer}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenMenu={handleOpenMenu}
+        />
+      )}
 
-        <div className="bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-xl border-4 border-amber-300 flex flex-col items-center pointer-events-auto min-w-[17rem]">
-          <h2 className="text-2xl font-black text-amber-500 mb-2">Level {currentLevel} Dog</h2>
-          <div className="flex gap-1">
-            {Array.from({ length: 10 }).map((_, index) => (
-              <div
-                key={index}
-                className="text-4xl transition-all duration-300"
-                style={{ transform: index < progress ? 'scale(1.2)' : 'scale(1)', opacity: index < progress ? 1 : 0.3 }}
-              >
-                {index < progress ? '\u2605' : '\u2606'}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-700 mt-3">{levelModifier.label}</p>
-          <p className="text-xs text-slate-600 mt-1 text-center">{levelModifier.tradeoff ?? levelModifier.description}</p>
-        </div>
-      </div>
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        audioSettings={audioSettings}
+        isTwoPlayer={isTwoPlayer}
+        setTwoPlayer={setTwoPlayer}
+        isNight={isNight}
+        toggleNight={toggleNight}
+      />
 
-      <div className="absolute top-36 left-5 pointer-events-none max-w-[30rem]">
-        <div className="bg-white/88 backdrop-blur-md p-4 rounded-2xl border-2 border-emerald-300 shadow-lg">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Live route objective</p>
-              <p className="text-lg font-black text-slate-900 mt-1">{currentObjective.title}</p>
-              <p className="text-sm text-slate-700 mt-1">{liveGuide.actionLabel}</p>
-            </div>
-            <div className="bg-emerald-100 text-emerald-800 rounded-2xl px-3 py-2 text-xs font-bold uppercase tracking-wide">
-              Loop {currentObjective.loopIndex + 1}
-            </div>
-          </div>
+      {!hasStarted && (
+        <StartOverlay
+          hasEverStarted={hasEverStarted}
+          onStart={handleStart}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          playerOnePad={playerOnePad}
+          playerTwoPad={playerTwoPad}
+          showPlayerTwo={isTwoPlayer}
+        />
+      )}
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs sm:text-sm">
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-emerald-700">Distance</p>
-              <p className="mt-1 font-semibold text-slate-800">{liveGuide.immediateAction ? 'Ready now' : `${Math.round(liveGuide.distance)}m to ${liveGuide.targetLabel}`}</p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-slate-600">Do this</p>
-              <p className="mt-1 font-semibold text-slate-800">{liveGuide.actionLabel}</p>
-            </div>
-            <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2">
-              <p className="font-bold uppercase tracking-wide text-amber-700">Complete when</p>
-              <p className="mt-1 font-semibold text-slate-800">{liveGuide.completionLabel}</p>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-500 mt-3">{liveGuide.statusLabel}  •  Zone: {liveGuide.zoneLabel}</p>
-
-          {currentObjective.bonus && (
-            <div className={`mt-3 rounded-2xl px-3 py-2 border text-sm ${currentObjective.bonus.completed ? 'bg-amber-100 border-amber-300 text-amber-900' : bonusSecondsLeft > 0 ? 'bg-sky-100 border-sky-300 text-sky-900' : 'bg-slate-100 border-slate-300 text-slate-600'}`}>
-              <span className="font-bold">{currentObjective.bonus.label}</span>
-              <span className="ml-2">
-                {currentObjective.bonus.progress}/{currentObjective.bonus.target}
-                {currentObjective.bonus.completed ? '  +1 star' : bonusSecondsLeft > 0 ? `  ${bonusSecondsLeft}s left` : '  expired'}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {activeFeedback && (
-        <div className="absolute bottom-44 left-1/2 -translate-x-1/2 pointer-events-none z-40">
-          <div className="rounded-full bg-white/92 border-2 border-slate-200 px-4 py-2 shadow-xl backdrop-blur-md animate-[ping_0.35s_ease-out_1]">
+      {hasStarted && activeFeedback && (
+        <div className="absolute bottom-40 left-1/2 z-40 -translate-x-1/2 pointer-events-none">
+          <div className="rounded-full border border-white/35 bg-white/90 px-4 py-2 shadow-xl backdrop-blur-md animate-[ping_0.35s_ease-out_1]">
             <span className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">{activeFeedback.source}</span>
             <span className="ml-3 text-sm font-black text-slate-900">{TOUCH_BUTTONS[activeFeedback.action].title}</span>
           </div>
         </div>
       )}
 
-      {levelBeat && levelBeat.endsAt > uiNow && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 bg-slate-950/25 backdrop-blur-[2px]">
-          <div className="max-w-xl mx-4 bg-white/92 border-4 border-amber-300 rounded-[2rem] shadow-2xl px-6 py-5 text-center">
-            <p className="text-xs font-black uppercase tracking-[0.35em] text-amber-700">{levelBeat.phase === 'outro' ? 'Level break' : 'New loop variant'}</p>
-            <h1 className="text-5xl font-black text-slate-900 mt-2">{levelBeat.title}</h1>
-            <p className="text-base font-semibold text-slate-700 mt-2">{levelBeat.subtitle}</p>
-            <div className="mt-4 rounded-[1.5rem] bg-emerald-50 border border-emerald-200 p-4 text-left">
+      {hasStarted && levelBeat && levelBeat.endsAt > uiNow && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-4 backdrop-blur-[2px] pointer-events-none">
+          <div className="max-w-xl rounded-[2rem] border-4 border-amber-300 bg-white/92 px-6 py-5 text-center shadow-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.35em] text-amber-700">
+              {levelBeat.phase === 'outro' ? 'Level break' : 'New loop variant'}
+            </p>
+            <h1 className="mt-2 text-5xl font-black text-slate-900">{levelBeat.title}</h1>
+            <p className="mt-2 text-base font-semibold text-slate-700">{levelBeat.subtitle}</p>
+            <div className="mt-4 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 text-left">
               <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Next objective</p>
-              <p className="text-xl font-black text-slate-900 mt-1">{levelBeat.objectiveTitle}</p>
-              <p className="text-sm text-slate-700 mt-1">{levelBeat.objectiveDescription}</p>
-              <p className="text-xs text-slate-500 mt-3">{levelBeat.modifierLabel}: {levelBeat.modifierDescription}</p>
+              <p className="mt-1 text-xl font-black text-slate-900">{levelBeat.objectiveTitle}</p>
+              <p className="mt-1 text-sm text-slate-700">{levelBeat.objectiveDescription}</p>
+              <p className="mt-3 text-xs text-slate-500">{levelBeat.modifierLabel}: {levelBeat.modifierDescription}</p>
             </div>
           </div>
         </div>
       )}
 
-      {isTouch ? (
-        <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end pointer-events-none gap-6">
+      {hasStarted && isTouch ? (
+        <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between gap-6 pointer-events-none">
           <div className="pointer-events-auto">
             <VirtualJoystick />
           </div>
 
-          <div className="pointer-events-none flex w-[min(24rem,48vw)] flex-col gap-4">
-            <p className="text-right text-xs font-black uppercase tracking-[0.22em] text-white/85 drop-shadow-[0_2px_6px_rgba(15,23,42,0.45)]">
+          <div className="pointer-events-none flex w-[min(22rem,48vw)] flex-col gap-3">
+            <p className="text-right text-[11px] font-black uppercase tracking-[0.22em] text-white/80 drop-shadow-[0_2px_6px_rgba(15,23,42,0.45)]">
               Touch actions adapt to nearby toys, snacks, and dig spots
             </p>
             {[touchButtons.primary, touchButtons.secondary].map((button, index) => {
@@ -348,7 +645,7 @@ export default function App() {
               return (
                 <button
                   key={`${button.action}-${index}`}
-                  className={`pointer-events-auto rounded-[2rem] px-5 py-4 text-white border-4 border-white transition-all active:translate-y-2 active:shadow-none ${button.color} ${button.shadow} ${isActive ? 'scale-105 ring-4 ring-white/75' : ''}`}
+                  className={`pointer-events-auto rounded-[1.75rem] border-4 border-white px-5 py-4 text-white transition-all active:translate-y-2 active:shadow-none ${button.color} ${button.shadow} ${isActive ? 'scale-105 ring-4 ring-white/75' : ''}`}
                   onClick={() => triggerUiAction(button.action)}
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -366,25 +663,9 @@ export default function App() {
             })}
           </div>
         </div>
-      ) : (
-        <div className="absolute bottom-8 right-8 bg-white/80 backdrop-blur-md p-4 rounded-3xl shadow-xl border-4 border-white pointer-events-auto text-slate-800">
-          <h3 className="font-bold text-lg mb-2 border-b-2 border-slate-200 pb-1">Keyboard Controls</h3>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">W A S D</kbd> Move</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Shift</kbd> Run</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Space</kbd> Jump</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">F</kbd> Bark</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">E</kbd> Eat/Drink</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">T</kbd> Throw/Grab</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Q</kbd> Sit</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">C</kbd> Sleep</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">R</kbd> Roll</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">X</kbd> Dig</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">Z</kbd> Poop</div>
-            <div><kbd className="bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300 shadow-sm font-mono text-xs">V</kbd> Sniff</div>
-          </div>
-        </div>
-      )}
+      ) : hasStarted ? (
+        <KeyboardHint />
+      ) : null}
     </div>
   );
 }

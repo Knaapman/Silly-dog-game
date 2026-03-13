@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore, type UiActionType } from './store';
+import { getAssignedGamepad, readConnectedGamepads } from './gamepad';
 
 const GAMEPAD_DEADZONE = 0.18;
 const JOYSTICK_DEADZONE = 0.12;
@@ -13,6 +14,10 @@ type InputSampleOptions = {
 
 type ActionState = Record<UiActionType, boolean>;
 
+type GamepadInputState = ActionState & {
+  run: boolean;
+};
+
 function createActionState(): ActionState {
   return {
     bark: false,
@@ -25,6 +30,13 @@ function createActionState(): ActionState {
     sit: false,
     roll: false,
     sniff: false
+  };
+}
+
+function createGamepadInputState(): GamepadInputState {
+  return {
+    ...createActionState(),
+    run: false
   };
 }
 
@@ -64,12 +76,58 @@ export function useInput(playerIndex: number) {
     };
   }, []);
 
+  useEffect(() => {
+    const sync = () => {
+      useGameStore.getState().setConnectedGamepads(readConnectedGamepads());
+    };
+
+    sync();
+    window.addEventListener('gamepadconnected', sync);
+    window.addEventListener('gamepaddisconnected', sync);
+    window.addEventListener('focus', sync);
+
+    return () => {
+      window.removeEventListener('gamepadconnected', sync);
+      window.removeEventListener('gamepaddisconnected', sync);
+      window.removeEventListener('focus', sync);
+    };
+  }, []);
+
+  const readGamepadAction = (gamepad: Gamepad | null) => {
+    const nextState = createGamepadInputState();
+    if (!gamepad) return nextState;
+
+    nextState.jump = !!gamepad.buttons[0]?.pressed;
+    nextState.bark = !!gamepad.buttons[1]?.pressed;
+    nextState.interact = !!gamepad.buttons[2]?.pressed;
+    nextState.poop = !!gamepad.buttons[3]?.pressed;
+    nextState.sit = !!gamepad.buttons[4]?.pressed;
+    nextState.roll = !!gamepad.buttons[5]?.pressed;
+    nextState.lieDown = !!gamepad.buttons[6]?.pressed;
+    nextState.run = !!gamepad.buttons[7]?.pressed;
+    nextState.dig = !!gamepad.buttons[8]?.pressed;
+    nextState.eat = !!gamepad.buttons[9]?.pressed;
+    nextState.sniff = !!gamepad.buttons[12]?.pressed || !!gamepad.buttons[13]?.pressed;
+
+    if (gamepad.mapping !== 'standard') {
+      nextState.sit = nextState.sit || !!gamepad.buttons[3]?.pressed;
+      nextState.roll = nextState.roll || !!gamepad.buttons[4]?.pressed;
+      nextState.lieDown = nextState.lieDown || !!gamepad.buttons[5]?.pressed;
+      nextState.run = nextState.run || !!gamepad.buttons[6]?.pressed;
+      nextState.dig = nextState.dig || !!gamepad.buttons[7]?.pressed;
+      nextState.eat = nextState.eat || !!gamepad.buttons[2]?.pressed;
+      nextState.sniff = nextState.sniff || !!gamepad.buttons[10]?.pressed;
+    }
+
+    return nextState;
+  };
+
   return ({ grounded = false }: InputSampleOptions = {}) => {
     let x = 0;
     let z = 0;
     let run = false;
     const actions = createActionState();
-    const gamepadActions = createActionState();
+    const gamepadActions = createGamepadInputState();
 
     if (playerIndex === 0) {
       if (keys.current['KeyA']) x -= 1;
@@ -105,23 +163,14 @@ export function useInput(playerIndex: number) {
       if (keys.current['ShiftRight']) run = true;
     }
 
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const gp = gamepads[playerIndex];
+    const gamepads = navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+    const gp = getAssignedGamepad(playerIndex, gamepads);
     if (gp) {
       const leftStick = shapeAnalogInput(gp.axes[0] ?? 0, gp.axes[1] ?? 0, GAMEPAD_DEADZONE);
       x += leftStick.x;
       z += leftStick.y;
-
-      gamepadActions.jump = !!gp.buttons[0]?.pressed;
-      gamepadActions.bark = !!gp.buttons[1]?.pressed;
-      gamepadActions.interact = !!gp.buttons[2]?.pressed;
-      gamepadActions.poop = !!gp.buttons[3]?.pressed;
-      gamepadActions.sit = !!gp.buttons[4]?.pressed;
-      gamepadActions.roll = !!gp.buttons[5]?.pressed;
-      gamepadActions.lieDown = !!gp.buttons[6]?.pressed;
-      run = run || !!gp.buttons[7]?.pressed;
-      gamepadActions.dig = !!gp.buttons[8]?.pressed;
-      gamepadActions.sniff = !!gp.buttons[12]?.pressed;
+      Object.assign(gamepadActions, readGamepadAction(gp));
+      run = run || gamepadActions.run;
     }
 
     const joystick = useGameStore.getState().joystick;

@@ -71,6 +71,7 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   const addPoop = useGameStore(s => s.addPoop);
   const stars = useGameStore(s => s.stars);
   const controlsLockedUntil = useGameStore(s => s.controlsLockedUntil);
+  const hasStarted = useGameStore(s => s.hasStarted);
   const levelModifier = useGameStore(s => s.levelModifier);
   const recordObjectiveEvent = useGameStore(s => s.recordObjectiveEvent);
 
@@ -213,9 +214,9 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
       { x: 0, y: -1, z: 0 }
     );
     const groundHit = world.castRay(groundRay, 0.5, true, undefined, undefined, undefined, rb.current);
-    const isGrounded = !isSwimming && !!groundHit && groundHit.toi < 0.3;
+    const isGrounded = !isSwimming && !!groundHit && groundHit.timeOfImpact < 0.3;
     const baseInput = getInput({ grounded: isGrounded });
-    const controlsLocked = Date.now() < controlsLockedUntil;
+    const controlsLocked = !hasStarted || Date.now() < controlsLockedUntil;
     const input = controlsLocked ? {
       ...baseInput,
       x: 0,
