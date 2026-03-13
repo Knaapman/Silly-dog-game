@@ -3,12 +3,10 @@ import { Sky } from '@react-three/drei';
 import { Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { Dog } from './Dog';
-import { Cat } from './Cat';
-import { Bird } from './Bird';
 import { Ball } from './Ball';
 import { Tree } from './Tree';
 import { Bench } from './Bench';
-import { Zwemmeer, AgilityCourse, Graafduinen, Snuffeltuin, GezondheidsCentrum, WereldwijdeWandeling, InnovatiePark, Bezoekerscentrum, EntranceGate } from './MapZones';
+import { Zwemmeer, AgilityCourse, Graafduinen, Bezoekerscentrum, EntranceGate } from './MapZones';
 import { Food } from './Food';
 import { Poop } from './Poop';
 import { Bone } from './Bone';
@@ -533,6 +531,181 @@ function ObjectiveGuidance() {
   );
 }
 
+function SqueakyHydrant({ position }: { position: [number, number, number] }) {
+  const dogPosition = useGameStore((state) => state.dogPositions[0]);
+  const group = useRef<THREE.Group>(null);
+  const labelRef = useRef<any>(null);
+  const activeUntil = useRef(0);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const now = Date.now();
+    const anchor = new THREE.Vector3(position[0], position[1], position[2]);
+    const distance = dogPosition.distanceTo(anchor);
+    if (distance < 4.2) {
+      activeUntil.current = Math.max(activeUntil.current, now + 1200);
+    }
+
+    const active = activeUntil.current > now;
+    group.current.position.y = position[1] + (active ? Math.sin(clock.elapsedTime * 10) * 0.18 : 0);
+    group.current.rotation.z = active ? Math.sin(clock.elapsedTime * 16) * 0.08 : 0;
+
+    if (labelRef.current) {
+      labelRef.current.visible = active;
+    }
+  });
+
+  return (
+    <group ref={group} position={position}>
+      <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.55, 0.7, 2.4, 16]} />
+        <meshStandardMaterial color="#ef4444" />
+      </mesh>
+      <mesh position={[0.58, 1.85, 0]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.18, 0.18, 1.1, 12]} />
+        <meshStandardMaterial color="#f87171" />
+      </mesh>
+      <mesh position={[0, 2.25, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[0.42, 16, 16]} />
+        <meshStandardMaterial color="#b91c1c" />
+      </mesh>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <mesh
+          key={index}
+          position={[
+            0.95 + Math.cos(index * 0.8) * 0.2,
+            2 + Math.sin(index * 1.4) * 0.18,
+            Math.sin(index * 0.9) * 0.45
+          ]}
+        >
+          <sphereGeometry args={[0.12, 10, 10]} />
+          <meshStandardMaterial color="#93c5fd" emissive="#bfdbfe" emissiveIntensity={1.4} />
+        </mesh>
+      ))}
+      <Text
+        ref={labelRef}
+        position={[0, 3.5, 0]}
+        fontSize={0.7}
+        color="#ffffff"
+        outlineColor="#1f2937"
+        outlineWidth={0.08}
+        anchorX="center"
+        anchorY="middle"
+      >
+        PSSST!
+      </Text>
+    </group>
+  );
+}
+
+function BoingBone({ position }: { position: [number, number, number] }) {
+  const dogPosition = useGameStore((state) => state.dogPositions[0]);
+  const group = useRef<THREE.Group>(null);
+  const labelRef = useRef<any>(null);
+  const activeUntil = useRef(0);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const now = Date.now();
+    const anchor = new THREE.Vector3(position[0], position[1], position[2]);
+    if (dogPosition.distanceTo(anchor) < 5.5) {
+      activeUntil.current = Math.max(activeUntil.current, now + 1400);
+    }
+
+    const active = activeUntil.current > now;
+    group.current.rotation.y += active ? 0.06 : 0.01;
+    group.current.rotation.x = active ? Math.sin(clock.elapsedTime * 12) * 0.12 : 0;
+    group.current.position.y = position[1] + (active ? Math.sin(clock.elapsedTime * 12) * 0.2 : 0);
+
+    if (labelRef.current) {
+      labelRef.current.visible = active;
+    }
+  });
+
+  return (
+    <group ref={group} position={position}>
+      <mesh castShadow receiveShadow>
+        <capsuleGeometry args={[0.55, 2.6, 10, 18]} />
+        <meshStandardMaterial color="#f5e6c8" />
+      </mesh>
+      {[-1.45, 1.45].map((offset) => (
+        <group key={offset} position={[0, offset, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh castShadow receiveShadow>
+            <torusGeometry args={[0.45, 0.18, 10, 18]} />
+            <meshStandardMaterial color="#fff7e2" />
+          </mesh>
+        </group>
+      ))}
+      <Text
+        ref={labelRef}
+        position={[0, 2.8, 0]}
+        fontSize={0.75}
+        color="#fff7ed"
+        outlineColor="#1f2937"
+        outlineWidth={0.08}
+        anchorX="center"
+        anchorY="middle"
+      >
+        BOING!
+      </Text>
+    </group>
+  );
+}
+
+function DuckFloat({ position }: { position: [number, number, number] }) {
+  const dogPosition = useGameStore((state) => state.dogPositions[0]);
+  const group = useRef<THREE.Group>(null);
+  const labelRef = useRef<any>(null);
+  const activeUntil = useRef(0);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const now = Date.now();
+    const anchor = new THREE.Vector3(position[0], position[1], position[2]);
+    if (dogPosition.distanceTo(anchor) < 6.5) {
+      activeUntil.current = Math.max(activeUntil.current, now + 1200);
+    }
+
+    const active = activeUntil.current > now;
+    group.current.position.y = position[1] + Math.sin(clock.elapsedTime * (active ? 7 : 3)) * 0.2;
+    group.current.rotation.y += active ? 0.05 : 0.015;
+    group.current.rotation.z = Math.sin(clock.elapsedTime * 4) * 0.08;
+
+    if (labelRef.current) {
+      labelRef.current.visible = active;
+    }
+  });
+
+  return (
+    <group ref={group} position={position}>
+      <mesh position={[0, 0.65, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[0.85, 18, 18]} />
+        <meshStandardMaterial color="#facc15" />
+      </mesh>
+      <mesh position={[0.58, 1.15, 0.18]} castShadow receiveShadow>
+        <sphereGeometry args={[0.45, 16, 16]} />
+        <meshStandardMaterial color="#fde047" />
+      </mesh>
+      <mesh position={[0.92, 1.08, 0.32]} rotation={[0, 0, -0.08]} castShadow receiveShadow>
+        <coneGeometry args={[0.18, 0.42, 12]} />
+        <meshStandardMaterial color="#fb923c" />
+      </mesh>
+      <Text
+        ref={labelRef}
+        position={[0, 2.35, 0]}
+        fontSize={0.7}
+        color="#ffffff"
+        outlineColor="#1f2937"
+        outlineWidth={0.08}
+        anchorX="center"
+        anchorY="middle"
+      >
+        QUACK!
+      </Text>
+    </group>
+  );
+}
+
 function RestAndDepot() {
   return (
     <group>
@@ -560,10 +733,10 @@ export function Scene() {
   // Generate random positions for entities
   const trees = useMemo(() => {
     const arr = [];
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 28; i++) {
       const x = (Math.random() - 0.5) * 132;
       const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 8 || Math.abs(z) < 8 || Math.sqrt(x*x + z*z) < 20) continue;
+      if (Math.abs(x) < 12 || Math.abs(z) < 12 || Math.sqrt(x * x + z * z) < 28) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
     }
     return arr;
@@ -571,10 +744,10 @@ export function Scene() {
 
   const bushes = useMemo(() => {
     const arr = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 14; i++) {
       const x = (Math.random() - 0.5) * 132;
       const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 6 || Math.abs(z) < 6 || Math.sqrt(x*x + z*z) < 18) continue;
+      if (Math.abs(x) < 14 || Math.abs(z) < 14 || Math.sqrt(x * x + z * z) < 30) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number] });
     }
     return arr;
@@ -582,33 +755,22 @@ export function Scene() {
 
   const rocks = useMemo(() => {
     const arr = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 8; i++) {
       const x = (Math.random() - 0.5) * 132;
       const z = (Math.random() - 0.5) * 132;
-      if (Math.abs(x) < 5 || Math.abs(z) < 5 || Math.sqrt(x*x + z*z) < 15) continue;
+      if (Math.abs(x) < 16 || Math.abs(z) < 16 || Math.sqrt(x * x + z * z) < 32) continue;
       arr.push({ id: i, pos: [x, 0, z] as [number, number, number], scale: Math.random() * 1.5 + 0.5 });
     }
     return arr;
   }, []);
-  
-  const cats = useMemo(() => Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 124, 2, (Math.random() - 0.5) * 124] as [number, number, number],
-    color: ['#ff9900', '#333333', '#ffffff'][Math.floor(Math.random() * 3)]
-  })), []);
-  
-  const birds = useMemo(() => Array.from({ length: 40 }).map((_, i) => ({
-    id: i,
-    pos: [(Math.random() - 0.5) * 124, 0.5, (Math.random() - 0.5) * 124] as [number, number, number]
-  })), []);
-  
-  const balls = useMemo(() => Array.from({ length: 8 }).map((_, i) => ({
+
+  const balls = useMemo(() => Array.from({ length: 5 }).map((_, i) => ({
     id: i,
     pos: [(Math.random() - 0.5) * 96, 2, (Math.random() - 0.5) * 96] as [number, number, number],
     color: ['#adff2f', '#ff4500', '#1e90ff'][Math.floor(Math.random() * 3)]
   })), []);
 
-  const frisbees = useMemo(() => Array.from({ length: 4 }).map((_, i) => ({
+  const frisbees = useMemo(() => Array.from({ length: 2 }).map((_, i) => ({
     id: i,
     pos: [(Math.random() - 0.5) * 88, 2, (Math.random() - 0.5) * 88] as [number, number, number],
     color: ['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)]
@@ -623,10 +785,7 @@ export function Scene() {
 
   const benches = useMemo(() => [
     { pos: [-44, 0, -6], rot: Math.PI / 3 },
-    { pos: [-50, 0, 4], rot: Math.PI / 2.2 },
-    { pos: [-41, 0, 14], rot: Math.PI / 2.8 },
     { pos: [18, 0, 49], rot: Math.PI },
-    { pos: [-7, 0, 57], rot: Math.PI },
     { pos: [45, 0, 33], rot: -Math.PI / 2 },
   ] as { pos: [number, number, number], rot: number }[], []);
 
@@ -637,9 +796,9 @@ export function Scene() {
       <CameraController />
       <AudioDirector />
 
-      <Physics>
+      <Physics gravity={[0, -24, 0]}>
         {/* Ground */}
-        <RigidBody type="fixed" friction={1}>
+        <RigidBody type="fixed" friction={2.2}>
           <mesh receiveShadow position={[0, -0.5, 0]}>
             <boxGeometry args={[140, 1, 140]} />
             <meshStandardMaterial color="#689f38" />
@@ -669,21 +828,17 @@ export function Scene() {
         {/* Park Elements */}
         <ParkPath />
         <Zwemmeer position={[0, 0, 0]} />
-        <group scale={[0.75, 0.75, 0.75]}><AgilityCourse position={[-16, 0, -24]} /></group>
-        <group scale={[0.75, 0.75, 0.75]}><Graafduinen position={[37, 0, -23]} /></group>
-        <group scale={[0.85, 0.85, 0.85]}><Bezoekerscentrum position={[0, 0, -40]} /></group>
-        <group scale={[0.7, 0.7, 0.7]}><WereldwijdeWandeling position={[37, 0, 0]} /></group>
-        <group scale={[0.75, 0.75, 0.75]}><InnovatiePark position={[37, 0, 23]} /></group>
-        <group scale={[0.7, 0.7, 0.7]}><GezondheidsCentrum position={[33, 0, 42]} /></group>
-        <group scale={[0.6, 0.6, 0.6]}><Snuffeltuin position={[10, 0, 38]} /></group>
+        <group scale={[0.72, 0.72, 0.72]}><AgilityCourse position={[-24, 0, -30]} /></group>
+        <group scale={[0.7, 0.7, 0.7]}><Graafduinen position={[30, 0, -28]} /></group>
+        <group scale={[0.82, 0.82, 0.82]}><Bezoekerscentrum position={[0, 0, -44]} /></group>
         <EntranceGate position={[0, 0, 60]} />
+        <SqueakyHydrant position={[-20, 0, 18]} />
+        <BoingBone position={[18, 1.4, 18]} />
+        <DuckFloat position={[0, 0.5, 15]} />
         
         {benches.map((b, i) => <Bench key={`bench-${i}`} position={b.pos} rotation={b.rot} />)}
         <RestAndDepot />
-        <ZoneBeacons />
         <ObjectiveGuidance />
-        
-        <Butterflies />
 
         {/* Players */}
         <Dog playerIndex={0} color="#ff4444" position={[-3, 2, 55]} />
@@ -693,8 +848,6 @@ export function Scene() {
         {trees.map(t => <Tree key={`tree-${t.id}`} position={t.pos} />)}
         {bushes.map(b => <Bush key={`bush-${b.id}`} position={b.pos} />)}
         {rocks.map(r => <Rock key={`rock-${r.id}`} position={r.pos} scale={r.scale} />)}
-        {cats.map(c => <Cat key={`cat-${c.id}`} id={c.id} position={c.pos} color={c.color} />)}
-        {birds.map(b => <Bird key={`bird-${b.id}`} id={b.id} position={b.pos} />)}
         {balls.map(b => <Ball key={`ball-${b.id}`} id={b.id} position={b.pos} color={b.color} />)}
         {frisbees.map(f => <Frisbee key={`frisbee-${f.id}`} id={f.id} position={f.pos} color={f.color} />)}
         {foods.map(f => <Food key={`food-${f.id}`} id={f.id} position={f.pos} />)}

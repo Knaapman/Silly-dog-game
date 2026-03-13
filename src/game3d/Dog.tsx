@@ -5,6 +5,7 @@ import { useInput } from './useInput';
 import { useGameStore, type UiActionType } from './store';
 import { useFeedbackStore } from './feedbackStore';
 import { playBarkSound, playDigCompleteSound, playDrinkSound, playEatSound, playJumpSound, playPantSound, playPickupSound, playPoopSound, playSleepSound, playSniffSound, startDigLoop, type PositionalLoopHandle } from './audio';
+import { POND_CENTER, POND_SWIM_INNER_RADIUS, POND_SWIM_OUTER_RADIUS } from './world';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 
@@ -207,8 +208,9 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
     const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
     currentSoundPosition.current.copy(currentPos);
     digLoopRef.current?.setPosition(currentPos);
-    const distToPond = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
-    const isSwimming = distToPond < 6;
+    const pondCenter = new THREE.Vector3(POND_CENTER[0], POND_CENTER[1], POND_CENTER[2]);
+    const distToPond = currentPos.distanceTo(pondCenter);
+    const isSwimming = distToPond > POND_SWIM_INNER_RADIUS && distToPond < POND_SWIM_OUTER_RADIUS;
     const groundRay = new rapier.Ray(
       { x: currentPos.x, y: currentPos.y + 0.1, z: currentPos.z },
       { x: 0, y: -1, z: 0 }
@@ -846,8 +848,8 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
         emitFeedback({ type: 'collect_star', position: [currentPos.x, currentPos.y, currentPos.z], icon: '⭐', text: '+1 Star', major: true, playerIndex });
         useGameStore.getState().addStar(currentPos);
       } else {
-        const pondDist = currentPos.distanceTo(new THREE.Vector3(0, 0, 0));
-        if (pondDist < 8.5 && pondDist > 6) {
+        const pondDist = currentPos.distanceTo(pondCenter);
+        if (pondDist < POND_SWIM_INNER_RADIUS + 0.75 && pondDist > POND_SWIM_INNER_RADIUS - 2.5) {
           group.current.rotation.y = Math.atan2(-currentPos.x, -currentPos.z);
           setIsDrinking(true); setIsSitting(false); setIsLyingDown(false);
           recordObjectiveEvent('drink');
@@ -881,7 +883,16 @@ export function Dog({ playerIndex, color, position }: { playerIndex: number, col
   });
 
   return (
-    <RigidBody ref={rb} position={position} colliders={false} lockRotations mass={2} friction={0}>
+    <RigidBody
+      ref={rb}
+      position={position}
+      colliders={false}
+      lockRotations
+      mass={2}
+      friction={1.4}
+      linearDamping={3.2}
+      angularDamping={8}
+    >
       <CuboidCollider args={[0.4, 0.4, 0.6]} position={[0, 0.4, 0]} />
       <group ref={group} position={[0, 0, 0]}>
         {/* Body */}

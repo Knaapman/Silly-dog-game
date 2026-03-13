@@ -308,7 +308,7 @@ function GameHud({
           <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">Objective</p>
           <p className="mt-1 text-lg font-black text-white">{objectiveTitle}</p>
           <p className="mt-1 text-sm text-slate-200">{actionLabel}</p>
-          <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">{statusLabel} Â· {zoneLabel}</p>
+          <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">{statusLabel} · {zoneLabel}</p>
         </div>
 
         <div className="mt-3 grid grid-cols-[1fr,auto] gap-3">
@@ -321,7 +321,7 @@ function GameHud({
             <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-3 text-right">
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-300">Bonus</p>
               <p className="mt-1 text-sm font-bold text-white">{bonusLabel}</p>
-              <p className="mt-1 text-xs text-slate-300">{bonusProgress}/{bonusTarget} Â· {bonusState}</p>
+              <p className="mt-1 text-xs text-slate-300">{bonusProgress}/{bonusTarget} · {bonusState}</p>
             </div>
           )}
         </div>
