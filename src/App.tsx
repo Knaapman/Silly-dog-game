@@ -64,8 +64,9 @@ export default function App() {
   }, [setTouchUi]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-sky-300">
+    <div className="app-root relative h-full w-full overflow-hidden bg-sky-300">
       <Canvas
+        className="game-canvas"
         frameloop="never"
         shadows="percentage"
         dpr={qualityDpr(quality, window.devicePixelRatio, window.innerWidth)}

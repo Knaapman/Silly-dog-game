@@ -8,7 +8,7 @@ import { emit } from './fx';
 import { gameClock, useGameFrame } from './clock';
 import { FrameLoop } from './FrameLoop';
 import { FxRenderer } from './FxRenderer';
-import { getInput, inputTime, isSourceConnected, padIdOf, photoPressed, pollInputs } from './input';
+import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPressed, pollInputs } from './input';
 import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
@@ -35,6 +35,7 @@ import { Poops } from './world/Poop';
 import { Trees } from './world/Trees';
 import { Winter } from './world/Winter';
 import { ParkEvents, weather } from './world/Events';
+import { StickerGuide } from './world/Guide';
 import { LAUNCH_PADS } from './layout';
 
 function SkyDome() {
@@ -188,6 +189,10 @@ function InputSystem() {
     const game = useGame.getState();
     if (isPaused(game)) return;
     if (game.phase === 'play' && photoPressed()) usePhotos.getState().request();
+    if (game.phase === 'play' && albumPressed()) {
+      game.setAlbumOpen(true);
+      return;
+    }
     if (game.phase === 'title') {
       // Keyboard starts are handled by App (any key works there); here: controllers and touch.
       const source = pressed.find((s) => s !== 'kb1' && s !== 'kb2');
@@ -351,6 +356,7 @@ export function Scene() {
       </Physics>
       <Sky />
       <Hints />
+      <StickerGuide />
       <FxRenderer />
     </>
   );

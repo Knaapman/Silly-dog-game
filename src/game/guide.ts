@@ -1,0 +1,154 @@
+import * as THREE from 'three';
+import { create } from 'zustand';
+import { gameNow } from './clock';
+import {
+  BALLOONS,
+  BOWLING,
+  EGG_NEST,
+  FERRIS,
+  GEYSERS,
+  GOLDEN_STARS,
+  HAT_RACK,
+  HIGH_STRIKER,
+  LAKE,
+  LAUNCH_PADS,
+  MAZE,
+  MUSHROOMS,
+  SEESAWS,
+  SHIP,
+  SLIDE_TOWER,
+  SNACKS,
+  SNOWBALLS,
+  SOCCER,
+  TOILET,
+  TRAMPOLINES,
+  TREX,
+  VOLCANO,
+  WINDMILL,
+  BRONTO,
+  distXZ
+} from './layout';
+import { players } from './runtime';
+import { useStickers, type StickerId } from './stickers';
+import { useGame } from './store';
+
+// "Show me where": pick a sticker you haven't got in the album, and an arrow over your animal
+// points the way to where it can be earned, with a beam of light there. No reading needed.
+
+/** Stickers that need a friend playing too. */
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw'];
+
+type P = [number, number];
+const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
+
+/** Where to go to get each star (the launcher that gets you up there, or the star itself). */
+const STAR_APPROACH: (P | null)[] = [
+  GEYSERS[0],
+  [FERRIS.center[0], FERRIS.center[2] + FERRIS.radius + 1],
+  [SOCCER.goalCenter[0], SOCCER.goalCenter[2] + 2],
+  VOLCANO.center,
+  [SLIDE_TOWER.base[0], SLIDE_TOWER.base[2]],
+  [SHIP.center[0], SHIP.center[1] - SHIP.width / 2 - 6], // the gangplank up to the cannon
+  [LAUNCH_PADS[1].position[0], LAUNCH_PADS[1].position[2]],
+  [LAUNCH_PADS[0].position[0], LAUNCH_PADS[0].position[2]],
+  MUSHROOMS[4].center,
+  MAZE.center,
+  BRONTO.center,
+  null // on the train: it comes round by itself
+];
+
+/** Fixed places for each sticker (the nearest one is used). */
+const PLACES: Partial<Record<StickerId, P[]>> = {
+  poop: snack('kibble'),
+  golden: snack('kibble'),
+  toot: snack('kibble'),
+  full: snack('kibble'),
+  flush: [[TOILET.position[0], TOILET.position[2]]],
+  geyser: GEYSERS,
+  pad: LAUNCH_PADS.map((p) => [p.position[0], p.position[2]] as P),
+  cannon: [STAR_APPROACH[5]!],
+  volcano: [VOLCANO.center],
+  seesaw: SEESAWS.map((s) => s.center),
+  bellyflop: TRAMPOLINES.map((t) => [t.position[0], t.position[2]] as P),
+  giant: snack('mushroom'),
+  rocket: snack('beans'),
+  fire: snack('chili'),
+  goal: [[SOCCER.kickoff[0], SOCCER.kickoff[2]]],
+  strike: [[BOWLING.ballStart[0], BOWLING.ballStart[2]]],
+  bell: [[HIGH_STRIKER.position[0], HIGH_STRIKER.position[2] + 1.5]],
+  dino: [EGG_NEST.center],
+  roar: [[TREX.position[0], TREX.position[2]]],
+  balloon: BALLOONS.map((b) => [b[0], b[2]] as P),
+  hat: [HAT_RACK.center],
+  swim: [[LAKE.center[0], LAKE.center[1] - LAKE.radius + 1.5]],
+  snowball: SNOWBALLS.map((s) => [s[0], s[2]] as P),
+  windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]]
+};
+
+/** Is there somewhere to go for this sticker (right now)? */
+export function hasGuide(id: StickerId) {
+  // friends: lead to the nearest friend (the see-saw has a place of its own)
+  const toFriend = FRIEND_STICKERS.includes(id) && id !== 'seesaw';
+  return toFriend || id === 'star' || id === 'allstars' || !!PLACES[id];
+}
+
+const nearest = (from: THREE.Vector3, places: P[], out: THREE.Vector3) => {
+  let best = Infinity;
+  for (const [x, z] of places) {
+    const d = distXZ(from.x, from.z, x, z);
+    if (d < best) {
+      best = d;
+      out.set(x, 0, z);
+    }
+  }
+  return best < Infinity;
+};
+
+/**
+ * Where the guide for `id` points, seen from `from` (a player). Some targets move: the
+ * nearest friend, the nearest star still to find. Returns false when there's nowhere to go.
+ */
+export function guideTarget(id: StickerId, from: THREE.Vector3, fromSlot: number, out: THREE.Vector3) {
+  if (FRIEND_STICKERS.includes(id) && id !== 'seesaw') {
+    let best = Infinity;
+    players.forEach((p) => {
+      if (p.slot === fromSlot || p.asleep) return;
+      const d = p.position.distanceTo(from);
+      if (d < best) {
+        best = d;
+        out.set(p.position.x, 0, p.position.z);
+      }
+    });
+    return best < Infinity;
+  }
+  if (id === 'star' || id === 'allstars') {
+    const stars = useGame.getState().stars;
+    const open: P[] = [];
+    GOLDEN_STARS.forEach((s, i) => {
+      if (stars[i] || s === 'train' || !STAR_APPROACH[i]) return;
+      open.push(STAR_APPROACH[i]!);
+    });
+    return nearest(from, open, out);
+  }
+  const places = PLACES[id];
+  return !!places && nearest(from, places, out);
+}
+
+/** What the guide arrows are doing (for tests). */
+export const guideDebug = { arrows: [] as { visible: boolean; yaw: number }[], beams: [] as { visible: boolean; x: number; z: number }[] };
+
+/** How long a guide stays up without being followed (seconds). */
+export const GUIDE_TIME = 120;
+
+export const useGuide = create<{ sticker: StickerId | null; since: number; start: (id: StickerId) => void; stop: () => void }>((set) => ({
+  sticker: null,
+  since: 0,
+  start: (id) => set({ sticker: id, since: gameNow() }),
+  stop: () => set({ sticker: null })
+}));
+
+// The guide ends when its sticker is earned.
+useStickers.subscribe((s) => {
+  const g = useGuide.getState();
+  if (g.sticker && s.got.includes(g.sticker)) g.stop();
+});

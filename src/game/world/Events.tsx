@@ -502,8 +502,13 @@ export function ParkEvents() {
   const order = useRef(0);
   useGameFrame(() => {
     const game = useGame.getState();
-    if (game.phase !== 'play' || TEST_MODE) return;
     const ev = useEvents.getState();
+    // back on the title screen: whatever was going on stops
+    if (game.phase !== 'play') {
+      if (ev.kind) ev.end();
+      return;
+    }
+    if (TEST_MODE) return;
     const now = gameNow();
     if (ev.next == null) {
       useEvents.setState({ next: now + FIRST_AFTER * 1000 });

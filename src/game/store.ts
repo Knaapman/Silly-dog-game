@@ -3,7 +3,7 @@ import { BASE_SPECIES, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLO
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
-import { padIdOf, rumbleAll, type SourceId } from './input';
+import { discardPendingPresses, padIdOf, rumbleAll, type SourceId } from './input';
 import { after, gameNow } from './clock';
 import { unlockedHats, useProgress } from './progress';
 import { earnSticker, unlockedSpecies } from './stickers';
@@ -189,9 +189,17 @@ export const useGame = create<GameStore>((set, get) => {
 
     resetPark: () => set((state) => ({ resetToken: state.resetToken + 1 })),
 
-    setMenuOpen: (open) => set(open ? { menuOpen: true, albumOpen: false } : { menuOpen: false }),
+    // Buttons pressed to use a menu or the album mustn't also do something in the game (the
+    // key that picks a sticker is also player two's jump / join key).
+    setMenuOpen: (open) => {
+      if (!open && get().menuOpen) discardPendingPresses();
+      set(open ? { menuOpen: true, albumOpen: false } : { menuOpen: false });
+    },
 
-    setAlbumOpen: (open) => set(open ? { albumOpen: true, menuOpen: false } : { albumOpen: false }),
+    setAlbumOpen: (open) => {
+      if (!open && get().albumOpen) discardPendingPresses();
+      set(open ? { albumOpen: true, menuOpen: false } : { albumOpen: false });
+    },
 
     setTouchUi: (enabled) => set({ touchUi: enabled })
   };

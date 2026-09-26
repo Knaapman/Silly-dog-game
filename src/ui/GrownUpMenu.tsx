@@ -335,18 +335,22 @@ export function GrownUpMenu() {
   };
   const focused = (i: number) => focus.row === 0 && focus.col === i;
   const [tester, setTester] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    panel.current?.querySelector(`[data-menu-row="${focus.row}"]`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [focus.row]);
   const testerRef = useRef(tester);
   testerRef.current = tester;
   const fps = useFps();
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setMenuOpen(false)}>
-      <div className="max-h-full w-full max-w-3xl overflow-auto rounded-[2rem] border-4 border-white bg-slate-800/95 p-5 text-white shadow-2xl" onClick={(e) => e.stopPropagation()} data-testid="grown-up-menu">
+      <div className="max-h-full w-full max-w-3xl overflow-auto rounded-[2rem] border-4 border-white bg-slate-800/95 p-5 text-white shadow-2xl" onClick={(e) => e.stopPropagation()} data-testid="grown-up-menu" ref={panel}>
         {tester ? (
           <ControllerTester onDone={() => setTester(false)} />
         ) : (
         <>
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3" data-menu-row={0}>
           <RoundButton buttonRef={btnRef(0)} focused={focused(0)} onClick={() => { unlockAudio(); setMuted(!audio.muted); }} title={audio.muted ? 'Sound on' : 'Sound off'} active={!audio.muted}>
             <SpeakerIcon muted={audio.muted} size={30} />
           </RoundButton>
@@ -372,7 +376,7 @@ export function GrownUpMenu() {
             <CloseIcon size={30} />
           </RoundButton>
         </div>
-        <label className={`mx-auto mt-4 flex max-w-sm items-center gap-3 rounded-full px-3 py-1 ${focus.row === SLIDER_ROW ? 'ring-4 ring-amber-300' : ''}`}>
+        <label className={`mx-auto mt-4 flex max-w-sm items-center gap-3 rounded-full px-3 py-1 ${focus.row === SLIDER_ROW ? 'ring-4 ring-amber-300' : ''}`} data-menu-row={SLIDER_ROW}>
           <SpeakerIcon size={22} />
           <input
             type="range"
@@ -387,7 +391,9 @@ export function GrownUpMenu() {
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {rows.map((row, i) => (
-            <Choice key={row.key} row={row} focused={focus.row === FIRST_SETTING + i} />
+            <div key={row.key} data-menu-row={FIRST_SETTING + i}>
+              <Choice row={row} focused={focus.row === FIRST_SETTING + i} />
+            </div>
           ))}
         </div>
         {gpu && (

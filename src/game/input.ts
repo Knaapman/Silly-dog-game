@@ -15,6 +15,8 @@ export type InputFrame = {
   anyPressed: boolean;
   /** The camera button (Capture on Switch-style pads): take a photo. */
   photo?: boolean;
+  /** Open the sticker album (a stick click on a controller). */
+  album?: boolean;
   /** Controller only: Start held long enough to open the grown-ups menu. */
   menu?: boolean;
   /** Controller only: Select held long enough to leave the game. */
@@ -24,7 +26,7 @@ export type InputFrame = {
 /** Directional / confirm / back events for navigating menus with a controller. */
 export type UiNav = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
 
-type KeyMap = { up: string[]; down: string[]; left: string[]; right: string[]; actions: Record<ActionName, string[]>; photo: string[] };
+type KeyMap = { up: string[]; down: string[]; left: string[]; right: string[]; actions: Record<ActionName, string[]>; photo: string[]; album: string[] };
 
 export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
   kb1: {
@@ -43,7 +45,8 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       species: ['Digit1', 'KeyC'],
       hat: ['Digit2', 'KeyX']
     },
-    photo: ['KeyT']
+    photo: ['KeyT'],
+    album: ['KeyB']
   },
   kb2: {
     up: ['ArrowUp'],
@@ -60,7 +63,8 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       species: ['Comma', 'Numpad7'],
       hat: ['KeyM', 'Numpad9']
     },
-    photo: ['Numpad8', 'Backslash']
+    photo: ['Numpad8', 'Backslash'],
+    album: ['Numpad4']
   }
 };
 
@@ -78,6 +82,8 @@ const PAD_BUTTONS: Record<ActionName, number[]> = {
 };
 /** Capture (the camera button on Switch-style pads; Chrome puts it after Home). */
 const PAD_CAPTURE = 17;
+/** Clicking either stick opens the sticker album. */
+const PAD_ALBUM = [10, 11];
 
 const STICK_DEADZONE = 0.22;
 
@@ -252,7 +258,7 @@ function readKeyboard(source: 'kb1' | 'kb2'): InputFrame {
     pressed[action] = presses[action] > 0;
     anyPressed ||= pressed[action];
   }
-  return { x, z, held, pressed, presses, anyPressed, photo: tapped(map.photo) };
+  return { x, z, held, pressed, presses, anyPressed, photo: tapped(map.photo), album: tapped(map.album) };
 }
 
 function readTouch(): InputFrame {
@@ -361,7 +367,7 @@ function readPad(gp: Gamepad): InputFrame {
     held[action] = now[button];
   }
   navEdges.set(gp.index, downs);
-  return { x, z, held, pressed, presses, anyPressed, menu, leave, photo: tapped(PAD_CAPTURE) };
+  return { x, z, held, pressed, presses, anyPressed, menu, leave, photo: tapped(PAD_CAPTURE), album: PAD_ALBUM.some(tapped) };
 }
 
 const navEdges = new Map<number, number[]>();
@@ -476,6 +482,12 @@ export function getInput(source: SourceId): InputFrame {
 /** Did any keyboard or controller press the camera button this frame? */
 export function photoPressed() {
   for (const frame of frames.values()) if (frame.photo) return true;
+  return false;
+}
+
+/** Did anyone ask for the sticker album this frame? */
+export function albumPressed() {
+  for (const frame of frames.values()) if (frame.album) return true;
   return false;
 }
 

@@ -29,7 +29,7 @@ so friends can drop in and out at any time. All players share one camera that zo
 | 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
-| 📒 Sticker album | — (grown-ups menu) | click the album button | | Orange album button (top right) |
+| 📒 Sticker album | Click a stick (L3 / R3) | `B` | `Num 4` | Orange album button (top right) |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
 | 👋 Leave the game | Hold Select (1.5 s) | — | — | — |
 
@@ -55,7 +55,8 @@ tester**, the sticker album, a picture of all controls, and:
 
 Everything in the menu down to the settings works with a controller too: D-pad or stick up/down picks a row,
 left/right moves along it or changes the setting, **A** presses, **B** or **Start** closes. The photo gallery and
-progress reset are for a mouse or finger. The sticker album pauses the game like the menu does; any button closes it.
+progress reset are for a mouse or finger. The sticker album pauses the game like the menu does. Buttons pressed in the
+menu or the album never also do something in the game.
 
 ### Controllers
 
@@ -133,7 +134,12 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device.
+  remembered on this device. Four stickers need a friend playing too (they have a little 👫 on them).
+- **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
+  press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
+  light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
+  friend stickers: the nearest friend). The arrow goes away once you're there, and the guide ends when the sticker is
+  earned (or after two minutes; tap the sticker at the top of the screen to stop it). **B** closes the album.
 - **New animals** join as the album fills up: a 🐱 cat at 3 stickers, a 🦆 duck at 7, a 🐮 cow at 12 and a 🦄 unicorn at
   18 (which leaves rainbow sparkles). Select / Change animal cycles through the ones you have.
 - **Surprises**: about a minute into playing, and then every minute or two, something happens (its picture bounces

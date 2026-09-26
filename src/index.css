@@ -92,3 +92,16 @@ body {
   paint-order: stroke fill;
   text-shadow: 0 8px 0 #7c2d12, 0 14px 24px rgba(0, 0, 0, 0.35);
 }
+
+/* Big screens (a TV, a 1440p monitor at 100%): everything on top of the game a bit bigger, so
+   it can be read from the sofa. The 3D view itself is left alone. */
+@media (min-width: 1600px) and (min-height: 1000px) {
+  .app-root > :not(.game-canvas) {
+    zoom: 1.25;
+  }
+}
+@media (min-width: 2400px) and (min-height: 1350px) {
+  .app-root > :not(.game-canvas) {
+    zoom: 1.6;
+  }
+}

@@ -9,7 +9,7 @@ import { useProgress } from '../game/progress';
 import { PHOTO_BEEPS, usePhotos } from '../game/photo';
 import { useStickers } from '../game/stickers';
 import { EVENT_ICON, RAINBOW_TIME, useEvents } from '../game/world/Events';
-import { AlbumIcon, StickerPop } from './Stickers';
+import { AlbumIcon, GuideBadge, StickerPop } from './Stickers';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -136,7 +136,10 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         <div className="order-3 flex w-full flex-col items-center gap-2 md:order-2 md:w-auto">
           <PartyMeter />
           <StarSlots />
-          <EventBadge />
+          <div className="flex items-center gap-3">
+            <EventBadge />
+            <GuideBadge />
+          </div>
           {!audio.running && (
             <button
               className="pointer-events-auto flex h-14 w-14 animate-pulse items-center justify-center rounded-full border-4 border-white bg-amber-400 text-slate-900 shadow-xl"

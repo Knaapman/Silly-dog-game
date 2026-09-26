@@ -34,8 +34,8 @@ test('stickers: earned by playing, shown big, collected in an album that pauses 
   expect(await page.evaluate(() => (window as any).__silly.clock.gameClock.time)).toBe(t0);
   await page.screenshot({ path: 'test-results/sticker-album.png' });
 
-  // any key closes it, and the game goes on
-  await page.keyboard.press('KeyW');
+  // Esc closes it, and the game goes on
+  await page.keyboard.press('Escape');
   await expect(album).toBeHidden();
   await game.seconds(0.5);
   expect(await page.evaluate(() => (window as any).__silly.clock.gameClock.time)).toBeGreaterThan(t0);

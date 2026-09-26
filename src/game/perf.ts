@@ -17,6 +17,12 @@ export function recordFrame(now: number) {
   }
   perf.frames += 1;
   const elapsed = now - perf.windowStart;
+  if (elapsed > 2500) {
+    // the tab was hidden (or the machine slept): that second says nothing about speed
+    perf.frames = 0;
+    perf.windowStart = now;
+    return false;
+  }
   if (elapsed < 1000) return false;
   perf.fps = (perf.frames * 1000) / elapsed;
   perf.frames = 0;
