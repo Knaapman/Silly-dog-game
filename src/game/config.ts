@@ -1,6 +1,9 @@
 export const MAX_PLAYERS = 4;
 
 export const PLAYER_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#fbbf24'] as const;
+/** Each player also has a shape (over the animal and on its badge), so colour-blind kids can tell them apart. */
+export const PLAYER_SHAPES = ['triangle', 'circle', 'diamond', 'star'] as const;
+export type PlayerShape = (typeof PLAYER_SHAPES)[number];
 
 export const SPECIES = ['dog', 'goat', 'pig', 'sheep', 'cat', 'duck', 'cow', 'unicorn'] as const;
 export type Species = (typeof SPECIES)[number];

@@ -16,7 +16,7 @@ export type PlayerVisuals = {
   flipGroup: THREE.Group | null;
   shadowRing: THREE.Mesh | null;
   beam: THREE.Mesh | null;
-  marker: THREE.Mesh | null;
+  marker: THREE.Object3D | null;
   tongue: THREE.Mesh | null;
   tongueTip: THREE.Mesh | null;
   /** When this animal (re)appeared, in game ms: the spawn beam fades out after that. */

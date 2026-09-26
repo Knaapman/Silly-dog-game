@@ -16,6 +16,8 @@ losing, no game over.
 
 Press **any button** on a controller (or any key, or tap ▶) to start. Every extra controller joins by pressing any button,
 so friends can drop in and out at any time. All players share one camera that zooms out to keep everyone on screen.
+Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
+badge, so colour-blind kids can tell who is who.
 
 | | Controller | Keyboard P1 | Keyboard P2 | Touch |
 |---|---|---|---|---|
@@ -177,7 +179,9 @@ Opening the game with `?test=<seed>` (for example `http://localhost:3000/?test=7
 moves until `window.__silly.step(frames)` is called, every step is exactly 1/60 s, randomness is seeded, React finishes
 all its work between steps, and only the last step of a batch is drawn. Nothing is read from or saved to the browser's
 storage. The same seed and the same presses therefore play out identically, down to the last bit, on any machine
-(`e2e/determinism.spec.ts` checks exactly that). The browser tests in `e2e/` drive the game this way through the
+(`e2e/determinism.spec.ts` checks exactly that, with keyboard and controller players). In test mode controllers
+are read once per simulated frame instead of on a real-time timer, so a test's button presses always land on the
+same frame. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
 and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and

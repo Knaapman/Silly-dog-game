@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playBurp, playHatTada, playPoof, playPower } from '../audio';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { ANIMAL_GROUPS } from '../collision';
-import { BELLY_MAX, PARTY_POINTS } from '../config';
+import { BELLY_MAX, PARTY_POINTS, PLAYER_SHAPES } from '../config';
 import { emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
 import { lambert } from '../materials';
@@ -16,6 +16,7 @@ import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
 import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
 import { MODEL_SCALE, POWER_COLOR, POWER_TIME, RADIUS } from './constants';
+import { MarkerShape } from './MarkerShape';
 import { createTmp, type FrameCtx } from './frame';
 import { movement } from './movement';
 import { pickSpawn } from './physics';
@@ -38,7 +39,7 @@ export function Player({ info }: { info: PlayerInfo }) {
   const sizeGroup = useRef<THREE.Group>(null);
   const flipGroup = useRef<THREE.Group>(null);
   const shadowRing = useRef<THREE.Mesh>(null);
-  const marker = useRef<THREE.Mesh>(null);
+  const marker = useRef<THREE.Group>(null);
   const tongue = useRef<THREE.Mesh>(null);
   const tongueTip = useRef<THREE.Mesh>(null);
   const rig = useRef(createRig());
@@ -268,9 +269,9 @@ export function Player({ info }: { info: PlayerInfo }) {
         <cylinderGeometry args={[0.9, 1.2, 12, 20, 1, true]} />
         <meshBasicMaterial color={color} transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
-      <mesh ref={marker} rotation={[Math.PI, 0, 0]} material={lambert(color)}>
-        <coneGeometry args={[0.18, 0.3, 4]} />
-      </mesh>
+      <group ref={marker}>
+        <MarkerShape shape={PLAYER_SHAPES[slot % PLAYER_SHAPES.length]} color={color} />
+      </group>
       <mesh ref={tongue} visible={false} material={lambert('#ff6f9c')}>
         <cylinderGeometry args={[0.055, 0.075, 1, 8]} />
       </mesh>

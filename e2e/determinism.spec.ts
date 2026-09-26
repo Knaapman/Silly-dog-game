@@ -8,9 +8,18 @@ import { Game } from './game';
 async function play(browser: Browser) {
   const page = await browser.newPage();
   const game = new Game(page);
+  await game.withPads();
   await game.open(7);
   await game.start();
   await game.join('kb2');
+  // a HORIPAD joins too, and jumps, licks and poops along
+  await page.evaluate(() => (window as any).__addPad(0, '', 'HORIPAD S (Vendor: 0f0d Product: 00c1)'));
+  await game.pad(0, 1);
+  await game.seconds(1);
+  for (const b of [1, 0, 7, 2, 1]) {
+    await game.pad(0, b, 0.2);
+    await game.seconds(0.3);
+  }
   const k = page.keyboard;
   const trace: unknown[] = [];
   const snap = async () =>

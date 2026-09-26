@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getAudioState, playTap, setMuted, subscribeAudio, unlockAudio } from '../game/audio';
-import { MAX_PLAYERS, PLAYER_COLORS, SPECIES_EMOJI, type HatId } from '../game/config';
+import { MAX_PLAYERS, PLAYER_COLORS, PLAYER_SHAPES, SPECIES_EMOJI, type HatId } from '../game/config';
+import { PlayerShapeIcon } from './PlayerShapeIcon';
 import { getConnectedPads } from '../game/input';
 import { isPartyTime, useGame } from '../game/store';
 import { CameraIcon, GamepadIcon, GearIcon, SpeakerIcon, StarIcon } from './Icons';
@@ -79,6 +80,9 @@ function PlayerBadges() {
             <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
             {p.asleep && <span className="emoji absolute -bottom-2 -right-2 animate-pulse text-xl">💤</span>}
+            <span className="absolute -bottom-1.5 -left-1.5" data-shape={PLAYER_SHAPES[slot]}>
+              <PlayerShapeIcon shape={PLAYER_SHAPES[slot]} color={p.color} size={20} />
+            </span>
           </button>
         );
       })}

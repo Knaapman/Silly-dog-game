@@ -1,6 +1,8 @@
 // Unified input: keyboard (two players), up to 4 gamepads and on-screen touch controls.
 // pollInputs() runs once per frame; players read their frame with getInput(source).
 
+import { TEST_MODE } from './testMode';
+
 export type SourceId = 'kb1' | 'kb2' | 'touch' | `pad${number}`;
 export type ActionName = 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'species' | 'hat';
 export const ACTIONS: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'species', 'hat'];
@@ -184,7 +186,9 @@ function samplePads() {
 export function installInput() {
   if (installed) return;
   installed = true;
-  window.setInterval(samplePads, 8);
+  // Between frames, on real time. Test mode samples once per simulated frame instead (in
+  // pollInputs), so a test's button presses land on the same frame every run.
+  if (!TEST_MODE) window.setInterval(samplePads, 8);
   window.addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement | null;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
