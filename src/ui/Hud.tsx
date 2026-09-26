@@ -7,6 +7,9 @@ import { CameraIcon, GamepadIcon, GearIcon, SpeakerIcon, StarIcon } from './Icon
 import { gameNow } from '../game/clock';
 import { useProgress } from '../game/progress';
 import { PHOTO_BEEPS, usePhotos } from '../game/photo';
+import { useStickers } from '../game/stickers';
+import { EVENT_ICON, RAINBOW_TIME, useEvents } from '../game/world/Events';
+import { AlbumIcon, StickerPop } from './Stickers';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -133,6 +136,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         <div className="order-3 flex w-full flex-col items-center gap-2 md:order-2 md:w-auto">
           <PartyMeter />
           <StarSlots />
+          <EventBadge />
           {!audio.running && (
             <button
               className="pointer-events-auto flex h-14 w-14 animate-pulse items-center justify-center rounded-full border-4 border-white bg-amber-400 text-slate-900 shadow-xl"
@@ -155,6 +159,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
           >
             <CameraIcon size={24} />
           </button>
+          <AlbumButton />
           <button
             className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-sky-500/80 text-white shadow-lg active:scale-90 sm:h-12 sm:w-12"
             onClick={() => {
@@ -174,9 +179,12 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
           </button>
         </div>
       </div>
+      <RainbowSky />
       <PartyFlash />
       <UnlockFlash />
+      <AnimalFlash />
       <PhotoOverlay />
+      <StickerPopNow />
     </>
   );
 }
@@ -236,5 +244,73 @@ function PhotoOverlay() {
         </>
       )}
     </>
+  );
+}
+
+function AlbumButton() {
+  const count = useStickers((s) => s.got.length);
+  const open = useGame((s) => s.setAlbumOpen);
+  return (
+    <button
+      className="relative flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-amber-500/90 text-white shadow-lg active:scale-90 sm:h-12 sm:w-12"
+      onClick={() => open(true)}
+      title="Sticker album"
+      data-testid="album-button"
+    >
+      <AlbumIcon size={24} />
+      {count > 0 && <span className="absolute -bottom-1 -right-1 rounded-full bg-white px-1.5 text-[11px] font-black text-amber-600 shadow">{count}</span>}
+    </button>
+  );
+}
+
+function StickerPopNow() {
+  const now = useNow(100);
+  return <StickerPop now={now} />;
+}
+
+/** Enough stickers: a new animal joins the park (it pops up big, and Select can now pick it). */
+function AnimalFlash() {
+  const joined = useStickers((s) => s.newAnimal);
+  const now = useNow(200);
+  // after the sticker itself has had its moment
+  const age = joined ? now - joined.at : Infinity;
+  if (!joined || age < 1800 || age > 4400) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" data-testid="animal-unlock">
+      <span className="emoji animate-party text-[30vmin] drop-shadow-2xl">{SPECIES_EMOJI[joined.species]}</span>
+    </div>
+  );
+}
+
+/** Something is happening in the park: its picture bounces under the stars. */
+function EventBadge() {
+  const kind = useEvents((s) => s.kind);
+  if (!kind) return null;
+  return (
+    <span className="emoji animate-hop text-4xl drop-shadow-lg" data-testid="event-badge">
+      {EVENT_ICON[kind]}
+    </span>
+  );
+}
+
+const RAINBOW_BANDS = ['#a855f7', '#3b82f6', '#22c55e', '#ffd23f', '#ff9f1c', '#ff4d5e'];
+
+/**
+ * After the rain: a rainbow over the park. The camera looks down at the ground and never sees
+ * the sky, so the rainbow is drawn over the top of the picture instead.
+ */
+function RainbowSky() {
+  const until = useEvents((s) => s.rainbowUntil);
+  const now = useNow(100);
+  const left = (until - now) / 1000;
+  if (left <= 0) return null;
+  const k = Math.max(0, Math.min(1, (RAINBOW_TIME - left) / 3, left / 4));
+  const stops = RAINBOW_BANDS.map((c, i) => `${c} ${56 + i * 3}% ${59 + i * 3}%`).join(', ');
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 z-[5] aspect-[2/1] w-[130vw] -translate-x-1/2"
+      style={{ top: '-18vw', opacity: 0.55 * k, background: `radial-gradient(circle at 50% 100%, transparent 56%, ${stops}, transparent 74%)` }}
+      data-testid="rainbow"
+    />
   );
 }

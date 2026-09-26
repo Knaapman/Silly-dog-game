@@ -11,6 +11,7 @@ import { useGame } from '../store';
 import { Ramp, StaticBox, useHint } from './common';
 import { useSurface } from './surface';
 import { gameClock, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 // ---------------------------------------------------------------------------
 // Ferris wheel: 8 gondolas you can jump into. The one at the top passes a golden star.
@@ -306,6 +307,7 @@ function HighStriker() {
           emit('star', [x, h, z], { count: 16, color: ['#ffd23f', '#ffffff'], speed: 6, up: 4 });
           shakeCamera(0.2);
           useGame.getState().addParty(PARTY_POINTS.goal * 0.5);
+          earnSticker('bell');
         }
       } else if (a.t < 1.6) y = h - 0.5 - (h - 1) * ((a.t - 0.5) / 1.1);
       else {

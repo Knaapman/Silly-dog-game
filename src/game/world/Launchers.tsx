@@ -8,6 +8,7 @@ import { lambert } from '../materials';
 import { players, props, propPosition, shakeCamera } from '../runtime';
 import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 let chevronCache: THREE.Shape | null = null;
 function chevronShape() {
@@ -58,6 +59,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
       if (distXZ(p.position.x, p.position.z, pad.position[0], pad.position[2]) > 1.3 || p.position.y > 1.6) return;
       cooldown.current.set(p.slot, now + 2500);
       p.launchTo(target, pad.apex);
+      earnSticker('pad');
       playWhoosh(p.position);
       shakeCamera(0.2);
     });
@@ -113,6 +115,7 @@ export function Geyser({ at, target, apex, period = 5, offset = 0 }: { at: Vec2;
         if (p.isLaunched() || p.flopped) return;
         if (distXZ(p.position.x, p.position.z, at[0], at[1]) > 1.4 || p.position.y > 2) return;
         p.launchTo(tgt, apex);
+        earnSticker('geyser');
         emit('drop', p.position, { count: 20, color: ['#bfe9ff', '#ffffff'], speed: 4, up: 8 });
       });
       props.forEach((prop) => {
@@ -183,6 +186,7 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
         p.hold(null);
         p.getBody()?.setTranslation(muzzle, true);
         p.launchTo(tgt, apex);
+        earnSticker('cannon');
         s.cooldown.set(p.slot, now + 3000);
         s.slot = null;
         s.recoil = 1;

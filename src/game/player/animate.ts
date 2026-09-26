@@ -80,7 +80,7 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
     r.body.position.z = THREE.MathUtils.lerp(r.body.position.z, bonking ? 0.28 : 0, 1 - Math.exp(-25 * dt));
     r.body.rotation.x = THREE.MathUtils.lerp(r.body.rotation.x, targetPitch, 1 - Math.exp(-(pooping ? 30 : 12) * dt));
     // A full tummy waddles.
-    const waddle = 0.04 + 0.03 * s.belly;
+    const waddle = (species === 'duck' ? 0.13 : 0.04) + 0.03 * s.belly;
     r.body.rotation.z = THREE.MathUtils.lerp(r.body.rotation.z, moving ? -Math.sin(s.walkPhase) * waddle : 0, 0.2);
   }
 
@@ -177,6 +177,12 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
   if (r.mud) {
     r.mud.visible = s.mud > 0.02;
     r.mud.scale.setScalar(Math.max(0.001, s.mud));
+  }
+
+  // a unicorn leaves a little rainbow of sparkles behind when it runs
+  if (species === 'unicorn' && hSpeed > 2 && !s.hidden && Math.random() < 0.4) {
+    tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6 * s.size);
+    emit('star', [tmp.c.x, t.y - 0.1, tmp.c.z], { count: 1, color: ['#ff4d5e', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'], speed: 0.6, up: 1, size: 0.1, life: 0.9 });
   }
 
   // ripples while paddling

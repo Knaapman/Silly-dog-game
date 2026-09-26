@@ -311,6 +311,26 @@ export function playAnimalNoise(species: Species, position?: AudioPosition) {
       v.tone({ type: 'square', from: 260 * p, to: 150 * p, at, dur: 0.13, gain: 0.14, filter: { type: 'bandpass', freq: 900, q: 3 } });
       v.noise({ at, dur: 0.12, gain: 0.08, filter: { type: 'lowpass', freq: 500 }, wobble: [40, 200] });
     }
+  } else if (species === 'cat') {
+    // "mee-OW"
+    v.tone({ type: 'sawtooth', from: 520 * p, to: 820 * p, dur: 0.22, gain: 0.08, attack: 0.03, filter: { type: 'bandpass', freq: 1400, q: 2 } });
+    v.tone({ type: 'sawtooth', from: 820 * p, to: 430 * p, at: 0.2, dur: 0.4, gain: 0.09, vibrato: [7, 20], filter: { type: 'bandpass', freq: 1200, q: 2 } });
+    v.tone({ type: 'sine', from: 1040 * p, to: 860 * p, at: 0.2, dur: 0.3, gain: 0.03 });
+  } else if (species === 'duck') {
+    // "quack quack"
+    for (let i = 0; i < 2; i += 1) {
+      const at = i * 0.2;
+      v.tone({ type: 'square', from: 520 * p, to: 360 * p, at, dur: 0.14, gain: 0.12, filter: { type: 'bandpass', freq: 1150, q: 4 } });
+      v.noise({ at, dur: 0.1, gain: 0.05, filter: { type: 'bandpass', freq: 1800, q: 3 } });
+    }
+  } else if (species === 'cow') {
+    // "mooooo"
+    v.tone({ type: 'sawtooth', from: 150 * p, to: 118 * p, dur: 0.95, gain: 0.17, attack: 0.12, vibrato: [4, 5], filter: { type: 'lowpass', freq: 560, q: 3 } });
+    v.tone({ type: 'sawtooth', from: 300 * p, to: 236 * p, dur: 0.9, gain: 0.05, attack: 0.15, filter: { type: 'bandpass', freq: 760, q: 2 } });
+  } else if (species === 'unicorn') {
+    // a whinny, then a magic twinkle
+    v.tone({ type: 'sawtooth', from: 980 * p, to: 520 * p, dur: 0.7, gain: 0.09, attack: 0.02, vibrato: [17, 70], filter: { type: 'bandpass', freq: 1500, q: 1.5 } });
+    [1568, 2093, 2637, 3136].forEach((f, i) => v.tone({ type: 'triangle', from: f, at: 0.55 + i * 0.07, dur: 0.3, gain: 0.05 }));
   } else {
     // "baaaa"
     v.tone({ type: 'sawtooth', from: 330 * p, to: 300 * p, dur: 0.8, gain: 0.13, attack: 0.05, vibrato: [6, 14], tremolo: [7, 0.4], filter: { type: 'bandpass', freq: 950, q: 1.2 } });
@@ -619,6 +639,24 @@ export function playTap() {
   const v = voice('ui');
   if (!v) return;
   v.tone({ from: 660, to: 990, dur: 0.08, gain: 0.08 });
+  v.finish();
+}
+
+/** One patter of rain (called a few times a second while it rains). */
+export function playRainPatter(strength: number) {
+  const v = voice('world', { gain: 0.5 * strength });
+  if (!v) return;
+  v.noise({ dur: 0.35, gain: rand(0.05, 0.09), attack: 0.08, filter: { type: 'lowpass', freq: rand(1800, 2800) } });
+  v.noise({ at: rand(0, 0.2), dur: 0.03, gain: 0.05, filter: { type: 'highpass', freq: 3500 } });
+  v.finish();
+}
+
+/** A sticker slapped into the album: a pat, and a sparkly run up. */
+export function playSticker() {
+  const v = voice('reward');
+  if (!v) return;
+  v.noise({ dur: 0.06, gain: 0.3, filter: { type: 'lowpass', freq: 900 } });
+  [784, 988, 1175, 1568].forEach((f, i) => v.tone({ type: 'triangle', from: f, at: 0.08 + i * 0.06, dur: 0.22, gain: 0.1 }));
   v.finish();
 }
 

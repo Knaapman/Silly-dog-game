@@ -1,12 +1,13 @@
-# Silly Park 🐶🐐🐷🐑
+# Silly Park 🐶🐐🐷🐑🐱🦆🐮🦄
 
 A Goat Simulator–style physics sandbox made for **young kids (around 5 years old)**, with local co-op for up to **4 players**.
-You play a dog, goat, pig or sheep in a big, busy theme park with eight themed areas. You can headbutt things, grab and
+You play a dog, goat, pig or sheep (and later a cat, duck, cow or unicorn) in a big, busy theme park with eight themed areas. You can headbutt things, grab and
 drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
 ride the rides and get flung around by geysers, cannons, see-saws and volcanoes. Magic food turns you into a giant, a
 fire-breathing speedster or a fart-powered rocket, the giant toilet flushes you across the park, friends can stack
-up into wobbly piggyback towers (or lick each other and throw each other around), golden stars unlock new hats, and
-a camera button takes a photo of the whole silly bunch.
+up into wobbly piggyback towers (or lick each other and throw each other around), golden stars unlock new hats, a
+sticker album fills up with every silly thing you do, surprises pop up (a runaway golden chicken, a present on a
+balloon, a rain shower with puddles), and a camera button takes a photo of the whole silly bunch.
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -28,24 +29,33 @@ so friends can drop in and out at any time. All players share one camera that zo
 | 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
+| 📒 Sticker album | — (grown-ups menu) | click the album button | | Orange album button (top right) |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
 | 👋 Leave the game | Hold Select (1.5 s) | — | — | — |
 
-The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a picture of
-all controls, and:
+The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
+tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
   before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
-  rumble on/off, and graphics (auto / low / high / ultra). *Auto* picks from the graphics card: a software renderer gets
-  low, a dedicated gaming card (RTX, Radeon RX 5000+, Arc, Apple M2+) gets ultra. Ultra means 4096 px shadows over a
-  wider area and supersampling: it draws up to a 4K-wide picture and scales it down, so edges are smooth on a 1080p or
-  1440p screen (never less sharp than the screen itself).
-- **Progress**: stars found and hats unlocked, with a "start over" button (tap twice).
-- **Photos**: every picture taken with the camera button (the newest 12 are kept on this device), to save or delete.
+  rumble on/off, surprises on/off, and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
+  then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
+  it steps back up (never above what the card was judged capable of, and not straight back to a level that just
+  stuttered). Ultra means 4096 px shadows over a wider area and supersampling: it draws up to a 4K-wide picture and
+  scales it down, so edges are smooth on a 1080p or 1440p screen (never less sharp than the screen itself). The frame
+  rate is shown under the settings.
+- **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
+- **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
+  without internet.
+- **Photos**: every picture taken with the camera button (the newest 48 are kept on this device), to save or delete.
+- **Controller tester**: every connected pad is drawn and lights up as you press it, by what the game makes of each
+  button, with the raw button numbers underneath, so a pad with an unusual layout is easy to spot. Hold the right face
+  button (or press `Esc`) to go back.
 
 Everything in the menu down to the settings works with a controller too: D-pad or stick up/down picks a row,
 left/right moves along it or changes the setting, **A** presses, **B** or **Start** closes. The photo gallery and
-progress reset are for a mouse or finger.
+progress reset are for a mouse or finger. The sticker album pauses the game like the menu does; any button closes it.
 
 ### Controllers
 
@@ -119,18 +129,41 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
   see-through so you never lose your animal.
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
+- **The sticker album** 📒: 36 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+  flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
+  chicken, jumping in a puddle...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
+  remembered on this device.
+- **New animals** join as the album fills up: a 🐱 cat at 3 stickers, a 🦆 duck at 7, a 🐮 cow at 12 and a 🦄 unicorn at
+  18 (which leaves rainbow sparkles). Select / Change animal cycles through the ones you have.
+- **Surprises**: about a minute into playing, and then every minute or two, something happens (its picture bounces
+  under the stars at the top of the screen):
+  - 🐔 a **golden chicken** runs around near you: catch it by touching or licking it (it gets tired after a while, so
+    small legs can catch it too; left alone, it gets away);
+  - 🎁 a **present on a balloon** floats over: jump into it or lick it, and everybody gets a new hat;
+  - ☔ a **rain shower**: puddles appear to jump in (splash!), and when it stops there's a rainbow.
+  Grown-ups can switch surprises off.
 
 ## Development
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
-npm run lint       # type-check
-npm test           # unit tests (vitest): input, clock, settings, progress, layout
-npm run test:e2e   # browser tests (Playwright, starts its own dev server)
+npm run play       # build and open the fast, installable version at http://localhost:4321
+npm run dev        # development server at http://localhost:3000
+npm run lint       # type-check (also flags unused code)
+npm test           # unit tests (vitest): input, clock, settings, progress, adaptive graphics, layout
+npm run test:e2e   # browser tests (Playwright, starts its own servers)
 npm run check      # lint + unit tests + build
+npm run ci         # everything GitHub Actions runs: check + browser tests
 npm run build
 ```
+
+### Playing at home without a terminal
+
+Run `npm run play` once and open the game in Chrome or Edge. The built game keeps all its files (a service worker,
+generated at build time by `sw-plugin.ts`), so it works offline, and the browser's install button (or *Put it on the
+desktop* in the grown-ups menu) gives it a desktop icon that opens full screen without the server running. After
+changing the game, run `npm run play` again and open it once: the new version replaces the old one.
 
 ### Tests and the test mode
 
@@ -139,9 +172,10 @@ moves until `window.__silly.step(frames)` is called, every step is exactly 1/60 
 all its work between steps, and only the last step of a batch is drawn. Nothing is read from or saved to the browser's
 storage. The same seed and the same presses therefore play out identically, down to the last bit, on any machine
 (`e2e/determinism.spec.ts` checks exactly that). The browser tests in `e2e/` drive the game this way through the
-helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect), plus one test of the normal
-real-time loop. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and build, then the browser
-tests.
+helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
+game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
+and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
+build, then the browser tests; `npm run ci` runs the same locally.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are
@@ -161,7 +195,10 @@ src/
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
     photo.ts            the camera: countdown, photos kept on this device
-    storage.ts          forgiving localStorage wrapper (off in test mode)
+    stickers.ts         the sticker album, and which animals it has unlocked
+    storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
+    perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
+    install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
     collision.ts        collision groups (animals walk through poops)
     audio.ts, music.ts  synthesised sound effects and background music (Web Audio)
@@ -182,10 +219,12 @@ src/
       Poop.tsx          poops: flies, slipping, splats, and the flowers they turn into
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
+      Events.tsx        surprises: golden chicken, present balloon, rain and puddles
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform
-  ui/                   HUD, title screen, touch controls, grown-ups menu (icons for kids, words for grown-ups)
+  ui/                   HUD, title screen, touch controls, sticker album, controller tester, grown-ups menu
+                        (icons for kids, words for grown-ups)
 tests/unit/             vitest unit tests (fake gamepads, fake storage)
 e2e/                    Playwright browser tests in test mode
 ```

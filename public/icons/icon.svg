@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8dcff"/>
+      <stop offset="1" stop-color="#5fb4f5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <ellipse cx="256" cy="520" rx="330" ry="120" fill="#6fcf5a"/>
+  <g id="dog">
+    <!-- floppy ears -->
+    <ellipse cx="128" cy="262" rx="46" ry="92" fill="#8a5a2b" transform="rotate(18 128 262)"/>
+    <ellipse cx="384" cy="262" rx="46" ry="92" fill="#8a5a2b" transform="rotate(-18 384 262)"/>
+    <!-- head -->
+    <circle cx="256" cy="286" r="142" fill="#c98a4b"/>
+    <ellipse cx="310" cy="220" rx="46" ry="38" fill="#a86d35"/>
+    <!-- muzzle, nose, mouth, tongue -->
+    <ellipse cx="256" cy="344" rx="88" ry="62" fill="#f3dcc0"/>
+    <path d="M262 372 q10 64 42 60 q30-6 16-62 z" fill="#ff6f9c" stroke="#d94f7e" stroke-width="5"/>
+    <path d="M206 360 q50 34 100 0" fill="none" stroke="#5a3a1c" stroke-width="9" stroke-linecap="round"/>
+    <ellipse cx="256" cy="316" rx="32" ry="23" fill="#2b1d12"/>
+    <ellipse cx="246" cy="309" rx="9" ry="5" fill="#ffffff" opacity="0.7"/>
+    <!-- googly eyes looking in different directions -->
+    <circle cx="198" cy="238" r="46" fill="#ffffff" stroke="#2b1d12" stroke-width="5"/>
+    <circle cx="316" cy="238" r="46" fill="#ffffff" stroke="#2b1d12" stroke-width="5"/>
+    <circle cx="182" cy="252" r="21" fill="#1a1a1a"/>
+    <circle cx="336" cy="224" r="21" fill="#1a1a1a"/>
+    <!-- party hat -->
+    <path d="M256 36 L312 158 Q256 176 200 158 Z" fill="#a855f7" stroke="#7e22ce" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M226 118 L286 118" stroke="#ffd23f" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="256" cy="38" r="20" fill="#ffd23f"/>
+  </g>
+</svg>

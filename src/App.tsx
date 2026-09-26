@@ -9,6 +9,7 @@ import { useGame } from './game/store';
 import { GrownUpMenu } from './ui/GrownUpMenu';
 import { Hud } from './ui/Hud';
 import { TitleScreen } from './ui/TitleScreen';
+import { StickerAlbum } from './ui/Stickers';
 import { TouchControls } from './ui/TouchControls';
 
 const IGNORED_TITLE_KEYS = new Set(['Escape', 'Tab', 'ShiftLeft', 'ControlLeft', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'CapsLock']);
@@ -17,6 +18,7 @@ const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 export default function App() {
   const phase = useGame((s) => s.phase);
   const menuOpen = useGame((s) => s.menuOpen);
+  const albumOpen = useGame((s) => s.albumOpen);
   const touchUi = useGame((s) => s.touchUi);
   const setMenuOpen = useGame((s) => s.setMenuOpen);
   const setTouchUi = useGame((s) => s.setTouchUi);
@@ -32,8 +34,10 @@ export default function App() {
     const onTouch = () => setTouchUi(true);
     const onKey = (e: KeyboardEvent) => {
       unlock();
-      if (e.code === 'Escape' && useGame.getState().phase === 'play') {
-        useGame.getState().setMenuOpen(!useGame.getState().menuOpen);
+      const game = useGame.getState();
+      if (e.code === 'Escape' && game.phase === 'play') {
+        if (game.albumOpen) game.setAlbumOpen(false);
+        else game.setMenuOpen(!game.menuOpen);
       }
     };
     window.addEventListener('pointerdown', unlock);
@@ -89,8 +93,9 @@ export default function App() {
         />
       )}
       {phase === 'play' && <Hud onOpenMenu={() => setMenuOpen(true)} />}
-      {phase === 'play' && touchUi && !menuOpen && <TouchControls />}
+      {phase === 'play' && touchUi && !menuOpen && !albumOpen && <TouchControls />}
       {menuOpen && <GrownUpMenu />}
+      {albumOpen && <StickerAlbum />}
     </div>
   );
 }

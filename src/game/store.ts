@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, SPECIES, type HatId, type Species } from './config';
+import { BASE_SPECIES, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
 import { padIdOf, rumbleAll, type SourceId } from './input';
 import { after, gameNow } from './clock';
 import { unlockedHats, useProgress } from './progress';
+import { earnSticker, unlockedSpecies } from './stickers';
 
 // Reactive state only for things the UI / scene graph needs to re-render on.
 // Per-frame data lives in runtime.ts.
@@ -35,6 +36,8 @@ interface GameStore {
   stars: boolean[];
   lastStarAt: number;
   menuOpen: boolean;
+  /** The sticker album is open (the game waits, like with the grown-ups menu). */
+  albumOpen: boolean;
   resetToken: number;
   touchUi: boolean;
 
@@ -53,6 +56,7 @@ interface GameStore {
   collectStar: (index: number, slot?: number) => void;
   resetPark: () => void;
   setMenuOpen: (open: boolean) => void;
+  setAlbumOpen: (open: boolean) => void;
   setTouchUi: (enabled: boolean) => void;
 }
 
@@ -74,6 +78,7 @@ export const useGame = create<GameStore>((set, get) => {
       players: state.players.map((p) => ({ ...p, hat: pickRandomHat(p.hat) }))
     }));
     playFanfare();
+    earnSticker('party');
     after(0.9, playCheer);
     runtimePlayers.forEach((p) => p.hop(12));
     rumbleAll(get().players.map((p) => p.source), 0.7, 0.9, 600);
@@ -89,6 +94,7 @@ export const useGame = create<GameStore>((set, get) => {
     stars: GOLDEN_STARS.map(() => false),
     lastStarAt: 0,
     menuOpen: false,
+    albumOpen: false,
     resetToken: 0,
     touchUi: false,
 
@@ -107,7 +113,7 @@ export const useGame = create<GameStore>((set, get) => {
       const player: PlayerInfo = {
         slot,
         source,
-        species: SPECIES[slot % SPECIES.length],
+        species: BASE_SPECIES[slot % BASE_SPECIES.length],
         hat: 'none',
         color: PLAYER_COLORS[slot],
         joinedAt: Date.now(),
@@ -125,14 +131,15 @@ export const useGame = create<GameStore>((set, get) => {
     reattach: (slot, source) =>
       set((state) => ({ players: state.players.map((p) => (p.slot === slot ? { ...p, source, asleep: false, padId: padIdOf(source) ?? p.padId } : p)) })),
 
-    backToTitle: () => set({ phase: 'title', players: [], menuOpen: false }),
+    backToTitle: () => set({ phase: 'title', players: [], menuOpen: false, albumOpen: false }),
 
     cycleSpecies: (slot, dir = 1) =>
       set((state) => ({
         players: state.players.map((p) => {
           if (p.slot !== slot) return p;
-          const i = SPECIES.indexOf(p.species);
-          return { ...p, species: SPECIES[(i + dir + SPECIES.length) % SPECIES.length] };
+          const all = unlockedSpecies();
+          const i = Math.max(0, all.indexOf(p.species));
+          return { ...p, species: all[(i + dir + all.length) % all.length] };
         })
       })),
 
@@ -165,6 +172,8 @@ export const useGame = create<GameStore>((set, get) => {
       if (state.stars[index]) return;
       const stars = state.stars.map((s, i) => (i === index ? true : s));
       set({ stars, lastStarAt: gameNow() });
+      earnSticker('star');
+      if (stars.every(Boolean)) earnSticker('allstars');
       // Every star counts towards new hats; whoever found it wears the new one straight away.
       const unlocked = useProgress.getState().addStar();
       if (unlocked && slot != null) get().setHat(slot, unlocked);
@@ -180,7 +189,9 @@ export const useGame = create<GameStore>((set, get) => {
 
     resetPark: () => set((state) => ({ resetToken: state.resetToken + 1 })),
 
-    setMenuOpen: (open) => set({ menuOpen: open }),
+    setMenuOpen: (open) => set(open ? { menuOpen: true, albumOpen: false } : { menuOpen: false }),
+
+    setAlbumOpen: (open) => set(open ? { albumOpen: true, menuOpen: false } : { albumOpen: false }),
 
     setTouchUi: (enabled) => set({ touchUi: enabled })
   };
@@ -188,4 +199,9 @@ export const useGame = create<GameStore>((set, get) => {
 
 export function isPartyTime() {
   return gameNow() < useGame.getState().partyUntil;
+}
+
+/** The game waits while a grown-up menu or the sticker album is open. */
+export function isPaused(state: { menuOpen: boolean; albumOpen: boolean } = useGame.getState()) {
+  return state.menuOpen || state.albumOpen;
 }

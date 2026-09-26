@@ -14,7 +14,7 @@ import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, players } from './runtime';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
-import { isPartyTime, useGame } from './store';
+import { isPartyTime, isPaused, useGame } from './store';
 import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Carnival } from './world/Carnival';
@@ -34,6 +34,7 @@ import { Food } from './world/Food';
 import { Poops } from './world/Poop';
 import { Trees } from './world/Trees';
 import { Winter } from './world/Winter';
+import { ParkEvents, weather } from './world/Events';
 import { LAUNCH_PADS } from './layout';
 
 function SkyDome() {
@@ -99,7 +100,10 @@ function Lighting() {
       sun.current.target.position.set(f.x, f.y, f.z);
       sun.current.target.updateMatrixWorld();
     }
+    // a rain shower makes everything a bit greyer
+    if (sun.current) sun.current.intensity = 2.3 * (1 - 0.5 * weather.rain);
     if (hemi.current) {
+      hemi.current.intensity = 1.6 * (1 - 0.25 * weather.rain);
       if (isPartyTime()) {
         partyColor.setHSL((gameClock.time * 0.6) % 1, 0.8, 0.75);
         hemi.current.color.lerp(partyColor, 0.2);
@@ -182,7 +186,7 @@ function InputSystem() {
   useFrame(() => {
     const pressed = pollInputs();
     const game = useGame.getState();
-    if (game.menuOpen) return;
+    if (isPaused(game)) return;
     if (game.phase === 'play' && photoPressed()) usePhotos.getState().request();
     if (game.phase === 'title') {
       // Keyboard starts are handled by App (any key works there); here: controllers and touch.
@@ -309,7 +313,7 @@ function Players() {
 }
 
 export function Scene() {
-  const menuOpen = useGame((s) => s.menuOpen);
+  const paused = useGame(isPaused);
   return (
     <>
       <FrameLoop />
@@ -322,7 +326,7 @@ export function Scene() {
       <AudioDirector />
       <PartyDirector />
       <PhotoDirector />
-      <Physics gravity={[0, GRAVITY, 0]} paused={menuOpen}>
+      <Physics gravity={[0, GRAVITY, 0]} paused={paused}>
         <Terrain />
         <Trees />
         <Hub />
@@ -342,6 +346,7 @@ export function Scene() {
         ))}
         <Balloons />
         <GoldenStars />
+        <ParkEvents />
         <Players />
       </Physics>
       <Sky />

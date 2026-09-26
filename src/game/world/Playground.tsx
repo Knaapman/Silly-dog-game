@@ -21,6 +21,7 @@ import { Prop } from './Prop';
 import { useSurface } from './surface';
 import { Trampoline } from './Toys';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 const CASTLE_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e'];
 
@@ -143,6 +144,7 @@ function SeeSaw({ index }: { index: number }) {
           flung.current.set(p.slot, now + 900);
           settled.current.delete(p.slot);
           debugInfo.seesawFlings = ((debugInfo.seesawFlings as number | undefined) ?? 0) + 1;
+          earnSticker('seesaw');
           p.hop(MOVE.trampolineVelocity * 0.85);
           playBoing(p.position, 0.8);
           emit('star', [p.position.x, p.position.y, p.position.z], { count: 8, color: ['#ffd23f', '#ffffff', colors[0]], speed: 4, up: 3 });

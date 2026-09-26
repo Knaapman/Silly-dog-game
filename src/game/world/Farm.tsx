@@ -14,6 +14,7 @@ import { Cows } from './Critters';
 import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
 import { useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 function Mud() {
   const bubbleTimer = useRef(0);
@@ -138,6 +139,7 @@ function Windmill() {
           emit('confetti', [x, 7, z + 1.5], { count: 20, color: ['#ffffff', '#ffd23f'], speed: 5, up: 2 });
           shakeCamera(0.15);
           useGame.getState().addParty(PARTY_POINTS.bonk * 2);
+          earnSticker('windmill');
         }
       }),
     [x, z]

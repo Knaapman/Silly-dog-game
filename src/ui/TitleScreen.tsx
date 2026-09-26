@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { PLAYER_COLORS, SPECIES, SPECIES_EMOJI } from '../game/config';
+import { PLAYER_COLORS, SPECIES_EMOJI } from '../game/config';
+import { unlockedSpecies, useStickers } from '../game/stickers';
 import { getConnectedPads } from '../game/input';
 import { ButtonDiamond } from './actions';
 import { GamepadIcon, HandIcon, KeyboardIcon, PlayIcon } from './Icons';
@@ -23,10 +24,12 @@ function usePadCount() {
 
 export function TitleScreen({ onPlay }: { onPlay: () => void }) {
   const pads = usePadCount();
+  const stickers = useStickers((s) => s.got.length);
+  const animals = unlockedSpecies(stickers);
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-gradient-to-b from-sky-400/30 via-transparent to-emerald-500/30 px-4 text-white">
       <div className="flex gap-3 sm:gap-6">
-        {SPECIES.map((s, i) => (
+        {animals.map((s, i) => (
           <span key={s} className="emoji animate-hop text-6xl drop-shadow-lg sm:text-8xl" style={{ animationDelay: `${i * 0.18}s` }}>
             {SPECIES_EMOJI[s]}
           </span>

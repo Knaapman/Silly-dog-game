@@ -12,6 +12,7 @@ import { allocPropId, debugInfo, drains, players, props, registerProp, spawners,
 import { settings, SPROUT_SECONDS } from '../settings';
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 // Poops! They plop out behind an animal that has eaten, get buzzed by flies, can be kicked
 // around, make you slip when you run over them, and after a while sprout into a flower.
@@ -56,12 +57,14 @@ const usePoops = create<{
     sproutNow.delete(id);
     set((s) => ({ poops: s.poops.filter((p) => p.id !== id) }));
   },
-  plant: (x, z) =>
+  plant: (x, z) => {
+    earnSticker('flower');
     set((s) => {
       const flowers = s.flowers.slice();
       flowers[s.nextFlower] = { x, z, color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)], born: gameNow() };
       return { flowers, nextFlower: (s.nextFlower + 1) % FLOWER_SLOTS };
-    }),
+    });
+  },
   clear: () => {
     sproutNow.clear();
     set({ poops: [], flowers: Array.from({ length: FLOWER_SLOTS }, () => null), nextFlower: 0 });

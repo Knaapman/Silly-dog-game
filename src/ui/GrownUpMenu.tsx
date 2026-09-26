@@ -2,12 +2,17 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setMusicEnabled, setMuted, setVolume, unlockAudio } from '../game/audio';
 import { KEYMAPS, onUiNav, type ActionName } from '../game/input';
 import { effectiveQuality, useSettings, type Level, type Quality, type Settings } from '../game/settings';
+import { installApp, useInstall } from '../game/install';
+import { perf } from '../game/perf';
 import { MAX_PHOTOS, usePhotos } from '../game/photo';
 import { HAT_UNLOCKS, useProgress } from '../game/progress';
+import { STICKERS, useStickers } from '../game/stickers';
 import { useGame } from '../game/store';
 import { ACTION_UI, ButtonDiamond } from './actions';
 import { useAudioState } from './Hud';
-import { CameraIcon, CloseIcon, FullscreenIcon, HomeIcon, MusicIcon, ResetIcon, SpeakerIcon, StarIcon } from './Icons';
+import { ControllerTester } from './ControllerTester';
+import { AlbumIcon } from './Stickers';
+import { CameraIcon, CloseIcon, FullscreenIcon, GamepadIcon, HomeIcon, MusicIcon, ResetIcon, SpeakerIcon, StarIcon } from './Icons';
 
 function RoundButton({
   onClick,
@@ -108,13 +113,22 @@ const LEVELS = (a: string, b: string, c: string) => [
   { value: 2 as Level, label: c }
 ];
 
-function settingRows(detected: Quality): ChoiceRow[] {
+function settingRows(autoLevel: Quality): ChoiceRow[] {
   const name = { low: 'Low', high: 'High', ultra: 'Ultra' };
   return [
     { key: 'speed', icon: '🏃', label: 'Running speed', options: LEVELS('Calm', 'Normal', 'Zoomy') },
     { key: 'together', icon: '🤝', label: 'Stay together', options: LEVELS('Close', 'Normal', 'Far') },
     { key: 'magic', icon: '✨', label: 'Magic food lasts', options: LEVELS('Short', 'Normal', 'Long') },
     { key: 'sprout', icon: '🌸', label: 'Poops turn into flowers', options: LEVELS('Soon', 'Normal', 'Late') },
+    {
+      key: 'surprises',
+      icon: '🎁',
+      label: 'Surprises (rain, runaway chicken, present balloon)',
+      options: [
+        { value: false, label: 'Off' },
+        { value: true, label: 'On' }
+      ]
+    },
     {
       key: 'rumble',
       icon: '📳',
@@ -129,7 +143,7 @@ function settingRows(detected: Quality): ChoiceRow[] {
       icon: '🖥️',
       label: 'Graphics',
       options: [
-        { value: 'auto', label: `Auto (${name[detected]})` },
+        { value: 'auto', label: `Auto (${name[autoLevel]})` },
         { value: 'low', label: 'Low' },
         { value: 'high', label: 'High' },
         { value: 'ultra', label: 'Ultra' }
@@ -221,16 +235,36 @@ function PhotoGallery() {
   );
 }
 
+/** Put the game on the desktop (when the browser offers it), and whether it works offline. */
+function InstallRow() {
+  const { canInstall, installed, offlineReady } = useInstall();
+  if (!canInstall && !installed && !offlineReady) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm font-bold" data-testid="install-row">
+      <span>{installed ? '🖥️ Installed as an app' : offlineReady ? '✈️ Works without internet' : '🖥️ Can be installed'}</span>
+      {canInstall && (
+        <button onClick={() => void installApp()} className="rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-slate-900 active:scale-90">
+          Put it on the desktop
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Stars found so far and the hats they unlocked, with a (two-step) reset. */
 function ProgressRow() {
   const starsEver = useProgress((s) => s.starsEver);
-  const reset = useProgress((s) => s.reset);
+  const stickers = useStickers((s) => s.got.length);
+  const reset = () => {
+    useProgress.getState().reset();
+    useStickers.getState().reset();
+  };
   const [sure, setSure] = useState(false);
   const unlocked = HAT_UNLOCKS.filter((u) => starsEver >= u.stars).length;
   return (
     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm font-bold">
       <span className="flex items-center gap-2">
-        <StarIcon size={20} /> {starsEver} stars found · {unlocked}/{HAT_UNLOCKS.length} hats
+        <StarIcon size={20} /> {starsEver} stars found · {unlocked}/{HAT_UNLOCKS.length} hats · {stickers}/{STICKERS.length} stickers
       </span>
       <button
         onClick={() => {
@@ -251,10 +285,10 @@ export function GrownUpMenu() {
   const resetPark = useGame((s) => s.resetPark);
   const backToTitle = useGame((s) => s.backToTitle);
   const audio = useAudioState();
-  const detected = useSettings((s) => s.detected);
+  const autoLevel = useSettings((s) => s.autoLevel);
   const gpu = useSettings((s) => s.gpu);
   const quality = useSettings(effectiveQuality);
-  const rows = settingRows(detected);
+  const rows = settingRows(autoLevel);
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -264,7 +298,7 @@ export function GrownUpMenu() {
   // Controller navigation, row by row: the round buttons, the volume, then each setting.
   // D-pad / stick up-down picks a row, left-right moves (or changes the setting), A presses,
   // B or Start closes.
-  const BUTTONS = 6;
+  const BUTTONS = 8;
   const SLIDER_ROW = 1;
   const FIRST_SETTING = 2;
   const ROWS = FIRST_SETTING + rows.length;
@@ -279,6 +313,7 @@ export function GrownUpMenu() {
   useEffect(
     () =>
       onUiNav((nav) => {
+        if (testerRef.current) return; // the controller tester uses every button itself
         const { row, col } = focusRef.current;
         const setting = rowsRef.current[row - FIRST_SETTING];
         if (nav === 'back') setMenuOpen(false);
@@ -299,10 +334,18 @@ export function GrownUpMenu() {
     buttons.current[i] = el;
   };
   const focused = (i: number) => focus.row === 0 && focus.col === i;
+  const [tester, setTester] = useState(false);
+  const testerRef = useRef(tester);
+  testerRef.current = tester;
+  const fps = useFps();
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setMenuOpen(false)}>
       <div className="max-h-full w-full max-w-3xl overflow-auto rounded-[2rem] border-4 border-white bg-slate-800/95 p-5 text-white shadow-2xl" onClick={(e) => e.stopPropagation()} data-testid="grown-up-menu">
+        {tester ? (
+          <ControllerTester onDone={() => setTester(false)} />
+        ) : (
+        <>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <RoundButton buttonRef={btnRef(0)} focused={focused(0)} onClick={() => { unlockAudio(); setMuted(!audio.muted); }} title={audio.muted ? 'Sound on' : 'Sound off'} active={!audio.muted}>
             <SpeakerIcon muted={audio.muted} size={30} />
@@ -319,7 +362,13 @@ export function GrownUpMenu() {
           <RoundButton buttonRef={btnRef(4)} focused={focused(4)} onClick={backToTitle} title="Back to start (everyone leaves)">
             <HomeIcon size={30} />
           </RoundButton>
-          <RoundButton buttonRef={btnRef(5)} focused={focused(5)} onClick={() => setMenuOpen(false)} title="Close" color="bg-emerald-500 text-white">
+          <RoundButton buttonRef={btnRef(5)} focused={focused(5)} onClick={() => setTester(true)} title="Test controllers">
+            <GamepadIcon size={30} />
+          </RoundButton>
+          <RoundButton buttonRef={btnRef(6)} focused={focused(6)} onClick={() => useGame.getState().setAlbumOpen(true)} title="Sticker album" color="bg-amber-500 text-white">
+            <AlbumIcon size={30} />
+          </RoundButton>
+          <RoundButton buttonRef={btnRef(7)} focused={focused(7)} onClick={() => setMenuOpen(false)} title="Close" color="bg-emerald-500 text-white">
             <CloseIcon size={30} />
           </RoundButton>
         </div>
@@ -343,11 +392,13 @@ export function GrownUpMenu() {
         </div>
         {gpu && (
           <p className="mt-1 text-center text-xs text-white/50" title={gpu}>
-            Graphics: {quality} · {gpu.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 80)}
+            Graphics: {quality}
+            {fps > 0 && <span data-testid="fps"> · {Math.round(fps)} fps</span>} · {gpu.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 80)}
           </p>
         )}
 
         <ProgressRow />
+        <InstallRow />
         <PhotoGallery />
 
         <div className="mt-5 grid gap-4 sm:grid-cols-[auto_1fr_1fr]">
@@ -366,9 +417,21 @@ export function GrownUpMenu() {
           <KeyboardLegend source="kb2" color="#3b82f6" />
         </div>
         <p className="mt-4 text-center text-sm text-white/75">
-          Up to 4 players: every controller joins by pressing any button. Tap Select to change animal, tap Start to change hat. Hold Start to open this menu (D-pad to move, A to press, B to close); hold Select to leave. If a controller disconnects, its animal naps until it comes back. Magic food on the plaza table: beans (poop button = rocket), mushroom (giant), chili (noise button = fire). Sit on the big toilet and poop to get flushed. Land on a friend's back to ride piggyback. Lick a friend to drag them along, lick again to throw them; jump to wriggle free. Golden stars unlock new hats: walk into one on the hat rack to wear it. Keyboard can host two players; <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
+          Up to 4 players: every controller joins by pressing any button. Tap Select to change animal, tap Start to change hat. Hold Start to open this menu (D-pad to move, A to press, B to close); hold Select to leave. If a controller disconnects, its animal naps until it comes back. Magic food on the plaza table: beans (poop button = rocket), mushroom (giant), chili (noise button = fire). Sit on the big toilet and poop to get flushed. Land on a friend's back to ride piggyback. Lick a friend to drag them along, lick again to throw them; jump to wriggle free. Golden stars unlock new hats: walk into one on the hat rack to wear it. Every silly thing earns a sticker, and new animals join at 3, 7, 12 and 18 stickers. Now and then there's a surprise: catch the golden chicken, jump into the floating present, splash in the rain puddles. Keyboard can host two players; <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
         </p>
+        </>
+        )}
       </div>
     </div>
   );
+}
+
+/** Frames per second of the real game loop, refreshed twice a second. */
+function useFps() {
+  const [fps, setFps] = useState(perf.fps);
+  useEffect(() => {
+    const id = window.setInterval(() => setFps(perf.fps), 500);
+    return () => window.clearInterval(id);
+  }, []);
+  return fps;
 }

@@ -12,6 +12,7 @@ import { useGame } from '../store';
 import { useHint } from './common';
 import { useSurface } from './surface';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 // Small interactive toys used around the park.
 
@@ -95,6 +96,7 @@ export function Balloons() {
     ring(s.pos, { color, radius: 1.8, duration: 0.3 });
     playPop(s.pos);
     useGame.getState().addParty(PARTY_POINTS.pop);
+    earnSticker('balloon');
   };
 
   useGameFrame((_, delta) => {
@@ -167,6 +169,7 @@ export function HatBox() {
     if ((cooldowns.current.get(slot) ?? 0) > now) return;
     cooldowns.current.set(slot, now + 2500);
     useGame.getState().randomHat(slot);
+    earnSticker('hat');
     useGame.getState().addParty(PARTY_POINTS.hat);
     lidState.current.v = 9;
     burstConfetti([x, size + 0.3, z], 40, 5);

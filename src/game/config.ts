@@ -2,14 +2,22 @@ export const MAX_PLAYERS = 4;
 
 export const PLAYER_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#fbbf24'] as const;
 
-export const SPECIES = ['dog', 'goat', 'pig', 'sheep'] as const;
+export const SPECIES = ['dog', 'goat', 'pig', 'sheep', 'cat', 'duck', 'cow', 'unicorn'] as const;
 export type Species = (typeof SPECIES)[number];
+/** Always there from the start. */
+export const BASE_SPECIES: Species[] = ['dog', 'goat', 'pig', 'sheep'];
+/** The others join as the sticker album fills up (number of stickers needed). */
+export const SPECIES_UNLOCKS: Partial<Record<Species, number>> = { cat: 3, duck: 7, cow: 12, unicorn: 18 };
 
 export const SPECIES_EMOJI: Record<Species, string> = {
   dog: '🐶',
   goat: '🐐',
   pig: '🐷',
-  sheep: '🐑'
+  sheep: '🐑',
+  cat: '🐱',
+  duck: '🦆',
+  cow: '🐮',
+  unicorn: '🦄'
 };
 
 export const HATS = ['none', 'party', 'crown', 'tophat', 'propeller', 'flower', 'cowboy', 'duck'] as const;

@@ -198,6 +198,14 @@ export function consumeKeyPresses() {
   keysPressed.clear();
 }
 
+/** Forget every press not yet handled (keys, touch, controllers): used after the controller tester. */
+export function discardPendingPresses() {
+  keysPressed.clear();
+  touch.presses.clear();
+  pressEdges.clear();
+  navEdges.clear();
+}
+
 /** Called for every fresh key press (used by the title screen). */
 export function onAnyKey(listener: ((code: string) => void) | null) {
   anyKeyListener = listener;
@@ -387,6 +395,36 @@ function readPadNav(gp: Gamepad) {
     if (count(9) > 0) holdFired.add(`${gp.index}:9`);
     emit('back');
   }
+}
+
+/** What the controller tester shows about one pad. */
+export type PadSnapshot = {
+  index: number;
+  id: string;
+  /** True when the browser knows the layout; false = read as DirectInput and translated. */
+  standard: boolean;
+  /** Buttons exactly as the pad reports them. */
+  raw: boolean[];
+  /** The same buttons in standard positions (what the game uses): 0 bottom, 1 right, ... 17 Capture. */
+  buttons: boolean[];
+  stick: [number, number];
+  dpad: [number, number];
+};
+
+export function padSnapshots(): PadSnapshot[] {
+  return getConnectedPads().map((gp) => {
+    const buttons = padButtons(gp);
+    const [hx, hz] = hatDirection(gp);
+    return {
+      index: gp.index,
+      id: gp.id,
+      standard: gp.mapping === 'standard',
+      raw: gp.buttons.map((b) => b.pressed || b.value > 0.5),
+      buttons,
+      stick: [gp.axes[0] ?? 0, gp.axes[1] ?? 0],
+      dpad: [(buttons[15] ? 1 : 0) - (buttons[14] ? 1 : 0) + hx, (buttons[13] ? 1 : 0) - (buttons[12] ? 1 : 0) + hz]
+    };
+  });
 }
 
 export function getConnectedPads(): Gamepad[] {

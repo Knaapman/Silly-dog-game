@@ -3,13 +3,16 @@ import { useEffect, useRef } from 'react';
 import { unstable_IdlePriority, unstable_scheduleCallback } from 'scheduler';
 import { gameClock, MAX_STEP, TEST_STEP, tickGameClock } from './clock';
 import { setInputClock } from './input';
-import { useGame } from './store';
+import { adaptQuality, newAdaptState } from './adaptive';
+import { perf, recordFrame } from './perf';
+import { useSettings } from './settings';
+import { isPaused } from './store';
 import { TEST_MODE } from './testMode';
 
 /** Ticks the game clock before any other frame callback. */
 function GameClockTick() {
   useFrame((_, delta) => {
-    gameClock.paused = useGame.getState().menuOpen;
+    gameClock.paused = isPaused();
     tickGameClock(delta);
   }, -100);
   return null;
@@ -24,10 +27,19 @@ function RealtimeDriver() {
     let raf = 0;
     let last = performance.now();
     let sim = 0;
+    const adapt = newAdaptState(last / 1000);
     const loop = (now: number) => {
       sim += Math.min(Math.max(0, (now - last) / 1000), MAX_STEP);
       last = now;
       advance(sim);
+      if (recordFrame(now) && !document.hidden) {
+        // Auto graphics: follow the frame rate (see adaptive.ts)
+        const s = useSettings.getState();
+        if (s.quality === 'auto') {
+          const next = adaptQuality(s.autoLevel, s.detected, perf.fps, now / 1000, adapt);
+          if (next !== s.autoLevel) useSettings.setState({ autoLevel: next });
+        } else adapt.ignoreUntil = now / 1000 + 5;
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

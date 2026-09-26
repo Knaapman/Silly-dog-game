@@ -13,6 +13,7 @@ import { players } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
 import { getStarGeometry, getStarMaterial } from './Stars';
+import { earnSticker } from '../stickers';
 
 // Every hat the stars can unlock, on its own wooden head. Walk into one to wear it. Hats that
 // are still locked are dark shadows with a little golden star: find more stars!
@@ -87,6 +88,7 @@ export function HatRack() {
       const player = useGame.getState().players.find((q) => q.slot === p.slot);
       if (!player || player.hat === hat) return;
       useGame.getState().setHat(p.slot, hat);
+      earnSticker('hat');
       useGame.getState().addParty(PARTY_POINTS.hat);
       burstConfetti([x, y + 0.8, z], 24, 4);
     });

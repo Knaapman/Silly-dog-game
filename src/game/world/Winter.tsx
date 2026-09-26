@@ -12,6 +12,7 @@ import { Breakable, type Piece } from './Breakable';
 import { SlideTower, useHint } from './common';
 import { useSurface } from './surface';
 import { after, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 function SnowHill() {
   const [hx, hz] = SNOW_HILL.center;
@@ -146,6 +147,7 @@ function SnowBall({ home }: { home: Vec3 }) {
         emit('chunk', p, { count: 20, color: '#ffffff', speed: 6, up: 7, size: 0.25 });
         playCrumble(p);
         useGame.getState().addParty(PARTY_POINTS.splat);
+        earnSticker('snowball');
         after(0, () => {
           respawn();
           poof([home[0], home[1] + 0.5, home[2]], '#ffffff', 10);

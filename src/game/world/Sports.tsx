@@ -10,6 +10,7 @@ import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { Prop } from './Prop';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 function findProps(kind: PropEntry['kind']) {
   const out: PropEntry[] = [];
@@ -82,6 +83,7 @@ export function Soccer() {
         playCheer();
         shakeCamera(0.3);
         useGame.getState().addParty(PARTY_POINTS.goal);
+        earnSticker('goal');
         after(1.8, () => {
           setBallKey((k) => k + 1);
           poof(SOCCER.kickoff, '#ffffff', 16);
@@ -177,6 +179,7 @@ export function Bowling() {
       burstConfetti([x, 1.5, BOWLING.pins[0][1] - 1], 80, 8);
       shakeCamera(0.3);
       useGame.getState().addParty(PARTY_POINTS.strike);
+      earnSticker('strike');
     }
     if (s.resetAt > 0 && now > s.resetAt) {
       s.fallen.clear();

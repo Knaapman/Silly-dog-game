@@ -11,6 +11,7 @@ import { useGame } from '../store';
 import { GIANT_SIZE, RADIUS } from './constants';
 import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './frame';
 import { ballistic, pickSpawn } from './physics';
+import { earnSticker } from '../stickers';
 
 /** Magic food wearing off, and growing / shrinking (the mushroom). Sets f.rad. */
 export function powerAndSize(f: FrameCtx) {
@@ -88,6 +89,7 @@ export function waterAndMud(f: FrameCtx) {
     emit('drop', [t.x, 0.3, t.z], { count: 26, color: ['#7fd3ff', '#ffffff'], speed: 4, up: 6 });
     ring([t.x, 0.06, t.z], { color: '#e0f6ff', radius: 2.5, duration: 0.7 });
     useGame.getState().addParty(PARTY_POINTS.splash);
+    earnSticker('swim');
     rumble(f.source, 0.2, 0.4, 120);
   }
   if (inMud && !s.inMud) {
@@ -252,6 +254,7 @@ export function landing(f: FrameCtx) {
         pb?.setLinvel({ x: ((tmp.p.x - t.x) / d) * push, y: push + 2, z: ((tmp.p.z - t.z) / d) * push }, true);
       });
       useGame.getState().addParty(PARTY_POINTS.bellyFlop);
+      earnSticker('bellyflop');
     }
   }
   s.lastVy = lv.y;

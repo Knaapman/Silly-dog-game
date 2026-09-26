@@ -22,6 +22,7 @@ import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, sp
 import { useGame } from '../store';
 import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
 import { releaseFriend, releaseHeld, type FrameCtx } from './frame';
+import { earnSticker } from '../stickers';
 
 /** How long a tongue can hang on to a friend (seconds). */
 const FRIEND_HOLD_MAX = 4;
@@ -41,6 +42,7 @@ function throwFriend(f: FrameCtx) {
     Math.max(-lim, Math.min(lim, s.pos.z + tmp.fwd.z * FRIEND_THROW))
   );
   friend.launchTo(tmp.c, Math.max(s.pos.y, friend.position.y) + 3.5);
+  earnSticker('throw');
   playThrow(s.pos);
   rumble(f.source, 0.5, 0.6, 180);
   useGame.getState().addParty(PARTY_POINTS.launch);
@@ -189,6 +191,7 @@ export function voice(f: FrameCtx) {
   if (input.pressed.noise && !s.flopped && s.power === 'chili') {
     // Hot hot hot! Dragon breath: a burst of flames that sends things flying.
     playFireBreath(s.pos);
+    earnSticker('fire');
     s.noiseTime = 0.5;
     for (let i = 0; i < 3; i += 1) {
       emit('puff', [tmp.mouth.x, tmp.mouth.y, tmp.mouth.z], { count: 8, color: ['#ff3d00', '#ff9100', '#ffd23f'], speed: 1.5, up: 0.6, size: 0.3 + i * 0.12, life: 0.55, dir: [tmp.fwd.x * (7 + i * 2.5), 0.4, tmp.fwd.z * (7 + i * 2.5)] });
@@ -257,6 +260,7 @@ export function poop(f: FrameCtx) {
         s.rocketCooldown = 0.28;
         s.pendingRocket = true;
         playBigFart(s.pos);
+        earnSticker('rocket');
         emit('puff', [tmp.c.x, s.pos.y - 0.3 * s.size, tmp.c.z], { count: 16, color: ['#b5e48c', '#99d98c', '#d9ed92', '#76c893'], speed: 2.5, up: -1, size: 0.55 * s.size, dir: [-tmp.fwd.x * 3, -3, -tmp.fwd.z * 3] });
         ring([t.x, s.groundY + 0.08, t.z], { color: '#b5e48c', radius: 2.4, duration: 0.45 });
         shakeCamera(0.2);
@@ -270,6 +274,7 @@ export function poop(f: FrameCtx) {
     } else if (waiting === 0 && s.poopCooldown <= 0) {
       s.poopCooldown = 0.25;
       playFart(s.pos);
+      earnSticker('toot');
       const green = ['#b5e48c', '#99d98c', '#d9ed92'];
       if (s.swimming) emit('drop', [tmp.c.x, s.pos.y + 0.1, tmp.c.z], { count: 12, color: ['#e0f7ff', '#ffffff'], speed: 1.2, up: 4, size: 0.16 });
       else emit('puff', [tmp.c.x, s.pos.y - 0.1, tmp.c.z], { count: 9, color: green, speed: 1.6, up: 0.8, size: 0.45, dir: [-tmp.fwd.x * 2, 0, -tmp.fwd.z * 2] });
@@ -315,6 +320,8 @@ export function poop(f: FrameCtx) {
       tmp.c.y = s.pos.y - 0.12 * s.size;
       tmp.v.set(-tmp.fwd.x * 2.2 + tmp.fwd.z * side * 2 + s.vel.x * 0.5, 0.6 + Math.max(0, s.vel.y) * 0.5, -tmp.fwd.z * 2.2 - tmp.fwd.x * side * 2 + s.vel.z * 0.5);
       spawners.poop(tmp.c, tmp.v, size * s.size, golden);
+      earnSticker('poop');
+      if (golden) earnSticker('golden');
       playPlop(s.pos, size, golden);
       s.squash = -0.3;
       rumble(source, golden ? 0.6 : 0.3, 0.2, golden ? 300 : 120);

@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 // Browser tests. The game runs in its "?test" mode: nothing moves unless a test steps it,
 // always by exactly 1/60 s, with seeded randomness, so results don't depend on the machine.
 const PORT = 4173;
+/** The built game (for the offline test), in its own folder so it never touches dist/. */
+export const BUILT_PORT = 4174;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -22,10 +24,18 @@ export default defineConfig({
     }
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 960, height: 540 } } }],
-  webServer: {
-    command: `npx vite --port ${PORT} --strictPort --host 127.0.0.1`,
-    url: `http://127.0.0.1:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000
-  }
+  webServer: [
+    {
+      command: `npx vite --port ${PORT} --strictPort --host 127.0.0.1`,
+      url: `http://127.0.0.1:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000
+    },
+    {
+      command: `npx vite build --outDir .e2e-dist --emptyOutDir && npx vite preview --outDir .e2e-dist --port ${BUILT_PORT} --strictPort --host 127.0.0.1`,
+      url: `http://127.0.0.1:${BUILT_PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000
+    }
+  ]
 });

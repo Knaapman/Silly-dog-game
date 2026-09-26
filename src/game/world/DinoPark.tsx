@@ -13,6 +13,7 @@ import { BabyDinos } from './Critters';
 import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 // ---------------------------------------------------------------------------
 // Volcano: climb in (or take the launch pad) and it erupts you into the sky.
@@ -92,6 +93,7 @@ function Volcano() {
         spit(2);
         shakeCamera(0.5);
         useGame.getState().addParty(PARTY_POINTS.launch);
+        earnSticker('volcano');
       }
       s.perPlayer.set(p.slot, rec);
     });
@@ -215,6 +217,7 @@ function TRex() {
           shakeCamera(0.7);
           emit('puff', [x + 2, 5, z], { count: 14, color: ['#ffffff', '#e0e0e0'], speed: 4, up: 1, size: 0.5, dir: [4, 0, 0] });
           useGame.getState().addParty(PARTY_POINTS.bonkCritter);
+          earnSticker('roar');
           props.forEach((prop) => {
             if (prop.heldBy != null || !propPosition(prop, tmp)) return;
             if (tmp.distanceTo(new THREE.Vector3(x, 0, z)) < 10) prop.getBody()?.applyImpulse({ x: 0, y: 1.5, z: 0 }, true);
@@ -317,6 +320,7 @@ function Egg({ index }: { index: number }) {
           emit('heart', [pos.x, pos.y + 0.8, pos.z], { count: 5, color: ['#ff8fb5', '#ff4d8d'], speed: 1, up: 2 });
           spawners.babyDino(slot, pos);
           useGame.getState().addParty(PARTY_POINTS.splat);
+          earnSticker('dino');
           after(20, () => {
             hatchedRef.current = false;
             setHatched(false);

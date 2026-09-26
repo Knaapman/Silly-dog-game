@@ -10,6 +10,7 @@ import { drains, players, shakeCamera, type Drain } from '../runtime';
 import { useGame } from '../store';
 import { Ramp, useHint } from './common';
 import { gameNow, useGameFrame } from '../clock';
+import { earnSticker } from '../stickers';
 
 // A giant toilet on the plaza. Sit on it and poop (or toot): FLUSH! Everything swirls away,
 // confetti pops, and whoever is sitting there gets flushed into the sky, landing somewhere fun.
@@ -110,6 +111,7 @@ export function Toilet() {
           rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
         }
         p.launchTo(target, 17);
+        earnSticker('flush');
         emit('drop', [p.position.x, p.position.y, p.position.z], { count: 30, color: ['#7fd3ff', '#ffffff'], speed: 4, up: 9 });
       }
     }

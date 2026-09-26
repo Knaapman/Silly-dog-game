@@ -10,7 +10,7 @@ import { getInput, NO_INPUT, rumble } from '../input';
 import { lambert } from '../materials';
 import { players, props, type PlayerRuntime } from '../runtime';
 import { MAGIC_FACTOR, settings } from '../settings';
-import { useGame, type PlayerInfo } from '../store';
+import { isPaused, useGame, type PlayerInfo } from '../store';
 import { tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
@@ -21,6 +21,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
+import { earnSticker } from '../stickers';
 
 // One animal. The per-frame logic lives in the modules next to this file and runs in a
 // fixed order (see the frame loop below); this component owns the physics body, the
@@ -91,6 +92,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.bellyVel += 3.5;
         if (s.belly < BELLY_MAX) {
           s.belly += 1;
+          if (s.belly === BELLY_MAX) earnSticker('full');
           return;
         }
         // Already stuffed: a big burp instead.
@@ -108,6 +110,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.powerTime = POWER_TIME[kind] * MAGIC_FACTOR[settings().magic];
         if (s.power === kind) return;
         s.power = kind;
+        if (kind === 'giant') earnSticker('giant');
         playPower(s.pos, true);
         ring([s.pos.x, s.pos.y - 0.4, s.pos.z], { color: POWER_COLOR[kind], radius: 3, duration: 0.6 });
         emit('star', [s.pos.x, s.pos.y + 0.5, s.pos.z], { count: 18, color: [POWER_COLOR[kind], '#ffffff', '#ffd23f'], speed: 4, up: 4 });
@@ -175,7 +178,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       hat,
       species,
       spec: SPECIES_SPECS[species],
-      input: game.phase === 'play' && !game.menuOpen && !napping ? getInput(sourceRef.current) : NO_INPUT,
+      input: game.phase === 'play' && !isPaused(game) && !napping ? getInput(sourceRef.current) : NO_INPUT,
       napping,
       dt: Math.min(delta, 1 / 20),
       time: gameClock.time,

@@ -17,6 +17,8 @@ export type Settings = {
   /** How far apart friends can wander before they're gently pulled together. */
   together: Level;
   rumble: boolean;
+  /** Park surprises now and then: rain, a runaway golden chicken, a present balloon. */
+  surprises: boolean;
   /** 'auto' picks from the graphics card. */
   quality: Quality | 'auto';
 };
@@ -27,7 +29,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, quality: 'auto' };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, quality: 'auto' };
 
 const KEY = 'settings:v1';
 
@@ -40,6 +42,7 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     sprout: level(raw?.sprout, DEFAULT_SETTINGS.sprout),
     together: level(raw?.together, DEFAULT_SETTINGS.together),
     rumble: typeof raw?.rumble === 'boolean' ? raw.rumble : DEFAULT_SETTINGS.rumble,
+    surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
     quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality
   };
 }
@@ -48,6 +51,8 @@ type SettingsStore = Settings & {
   /** What 'auto' turned out to be on this machine, and the graphics card it saw. */
   detected: Quality;
   gpu: string;
+  /** What 'auto' is using right now: starts at `detected`, lowered/raised by the frame rate. */
+  autoLevel: Quality;
   set: (patch: Partial<Settings>) => void;
   setDetected: (quality: Quality, gpu: string) => void;
 };
@@ -56,12 +61,13 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   ...sanitize(loadJson<Partial<Settings>>(KEY)),
   detected: 'high',
   gpu: '',
+  autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, rumble, quality } = get();
-    saveJson(KEY, { speed, magic, sprout, together, rumble, quality });
+    const { speed, magic, sprout, together, rumble, surprises, quality } = get();
+    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, quality });
   },
-  setDetected: (detected, gpu) => set({ detected, gpu })
+  setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));
 
 setRumbleEnabled(useSettings.getState().rumble);
@@ -71,8 +77,8 @@ export function settings() {
   return useSettings.getState();
 }
 
-export function effectiveQuality(s: Pick<SettingsStore, 'quality' | 'detected'> = useSettings.getState()): Quality {
-  return s.quality === 'auto' ? s.detected : s.quality;
+export function effectiveQuality(s: Pick<SettingsStore, 'quality' | 'autoLevel'> = useSettings.getState()): Quality {
+  return s.quality === 'auto' ? s.autoLevel : s.quality;
 }
 
 /** Guess a sensible graphics level from the WebGL renderer name. */

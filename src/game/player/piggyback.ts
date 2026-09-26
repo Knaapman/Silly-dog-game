@@ -8,6 +8,7 @@ import { useGame } from '../store';
 import { RADIUS } from './constants';
 import { startFlip, type FrameCtx } from './frame';
 import { lerpAngle } from './physics';
+import { earnSticker } from '../stickers';
 
 function setRiding(f: FrameCtx, on: number | null) {
   f.s.ridingOn = on;
@@ -46,6 +47,7 @@ export function piggyback(f: FrameCtx) {
       emit('heart', [t.x, t.y + 0.6, t.z], { count: 6, color: ['#ff4d8d', '#ff8fb5'], speed: 1.5, up: 2 });
       rumble(source, 0.3, 0.3, 120);
       useGame.getState().addParty(PARTY_POINTS.duet);
+      earnSticker('ride');
       let height = 2;
       for (let k: number | null = carrier.ridingOn; k != null && height < 6; k = players.get(k)?.ridingOn ?? null) height += 1;
       if (height >= 3) {
@@ -53,6 +55,7 @@ export function piggyback(f: FrameCtx) {
         burstConfetti([t.x, t.y + 1.5, t.z], 50, 6);
         playCheer();
         useGame.getState().addParty(PARTY_POINTS.star);
+        earnSticker('tower');
       }
     }
   }

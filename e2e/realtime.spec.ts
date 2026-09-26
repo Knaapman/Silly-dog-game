@@ -30,3 +30,12 @@ test('real-time play: the animal walks, and the grown-ups menu pauses the game',
   expect(await clock()).toBe(paused);
   expect(errors).toEqual([]);
 });
+
+test('auto graphics steps down by itself when the frame rate is low', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => (window as any).__silly?.runtime?.props.size > 50, null, { timeout: 60_000 });
+  // pretend the graphics card looked strong: this software-rendered browser can't keep up
+  await page.evaluate(() => (window as any).__silly.useSettings.getState().setDetected('ultra', 'test'));
+  await page.waitForFunction(() => (window as any).__silly.useSettings.getState().autoLevel === 'low', null, { timeout: 90_000 });
+  expect(await page.evaluate(() => (window as any).__silly.perf.fps)).toBeLessThan(48);
+});

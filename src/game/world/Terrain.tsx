@@ -275,7 +275,7 @@ function HotAirBalloons() {
   });
   return (
     <group>
-      {balloons.map((b, i) => (
+      {balloons.map((_, i) => (
         <group
           key={i}
           ref={(g) => {
