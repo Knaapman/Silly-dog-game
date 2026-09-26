@@ -5,7 +5,7 @@ import type { HatId, Species } from '../config';
 import { MOVE } from '../config';
 import { emit, poof } from '../fx';
 import { rumble, type InputFrame, type SourceId } from '../input';
-import { props, type PlayerRuntime, type Surface } from '../runtime';
+import { players, props, type PlayerRuntime, type Surface } from '../runtime';
 import { useGame } from '../store';
 import type { SPECIES_SPECS } from './AnimalModel';
 import type { Flip, PlayerState } from './state';
@@ -89,11 +89,21 @@ export function releaseHeld(f: FrameCtx, throwIt: boolean) {
   }
 }
 
+/** Let go of a friend held by the tongue (if they haven't wriggled free already). */
+export function releaseFriend(f: FrameCtx) {
+  const { s } = f;
+  if (s.heldFriend == null) return;
+  const friend = players.get(s.heldFriend);
+  if (friend?.grabbedBy === f.slot) friend.grabbedBy = null;
+  s.heldFriend = null;
+}
+
 export function startFlop(f: FrameCtx) {
   const { s, rb, col, lv, t } = f;
   s.flopped = true;
   s.flopTime = MOVE.flopDuration;
   releaseHeld(f, false);
+  releaseFriend(f);
   rb.setEnabledRotations(true, true, true, true);
   col?.setFriction(0.9);
   rb.setLinvel({ x: lv.x * 0.5, y: Math.max(lv.y, 6), z: lv.z * 0.5 }, true);

@@ -33,6 +33,8 @@ export const GEYSERS: Vec2[] = [
 ];
 export const HAT_BOX = { position: [-9, 0, -7] as Vec3, size: 1.6 };
 export const RED_BUTTON = { position: [9, 0, -7] as Vec3, radius: 1.2 };
+/** The hat rack: one wooden head per hat, in unlock order, facing the plaza. */
+export const HAT_RACK = { center: [-4.85, -10.3] as Vec2, spacing: 0.85, headHeight: 1.05 };
 export const SPAWN_POINTS: Vec3[] = [
   [-2.5, 1, 8],
   [2.5, 1, 8],

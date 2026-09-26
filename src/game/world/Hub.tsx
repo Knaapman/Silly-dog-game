@@ -8,6 +8,7 @@ import { Geyser } from './Launchers';
 import { Toilet } from './Toilet';
 import { HatBox, RedButton } from './Toys';
 import { gameClock, useGameFrame } from '../clock';
+import { HatRack } from './HatRack';
 
 function Fountain() {
   const [cx, cz] = FOUNTAIN.center;
@@ -116,6 +117,7 @@ export function Hub() {
         <Geyser key={i} at={g} target={top} apex={FOUNTAIN.topHeight + 5.5} period={5} offset={i * 1.66} />
       ))}
       <HatBox />
+      <HatRack />
       <RedButton />
       <Toilet />
       {[

@@ -19,7 +19,7 @@ function setRiding(f: FrameCtx, on: number | null) {
 /** Piggyback: land on a friend's back and ride along. Towers welcome. Sets f.riding. */
 export function piggyback(f: FrameCtx) {
   const { s, rb, t, lv, tmp, input, slot, source, dt } = f;
-  if (s.ridingOn == null && s.rideCooldown <= 0 && !s.flopped && !s.holdAt && s.launched <= 0 && !s.swimming && lv.y < 1) {
+  if (s.ridingOn == null && s.rideCooldown <= 0 && !s.flopped && !s.holdAt && s.launched <= 0 && !s.swimming && lv.y < 1 && f.rt?.grabbedBy == null) {
     let best: PlayerRuntime | null = null;
     players.forEach((c) => {
       if (c.slot === slot || c.flopped || c.isLaunched()) return;
@@ -62,7 +62,8 @@ export function piggyback(f: FrameCtx) {
     const hopOff = input.pressed.jump && !thrown;
     if (c) tmp.c.set(c.position.x, c.position.y + 0.45 * c.size + RADIUS * s.size, c.position.z);
     // (a bean rocket blasts you off the top of the tower, keeping its speed)
-    if (thrown || hopOff || f.rocketed || s.flopped || s.holdAt || s.pendingLaunch || s.stunned > 0 || tmp.c.distanceTo(s.pos) > 3) {
+    const licked = f.rt?.grabbedBy != null;
+    if (thrown || hopOff || licked || f.rocketed || s.flopped || s.holdAt || s.pendingLaunch || s.stunned > 0 || tmp.c.distanceTo(s.pos) > 3) {
       setRiding(f, null);
       s.rideCooldown = 0.6;
       if (hopOff) {

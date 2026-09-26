@@ -2,16 +2,18 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { getAudioState, updateListener } from './audio';
+import { getAudioState, playShutter, updateListener } from './audio';
 import { GRAVITY } from './config';
 import { emit } from './fx';
 import { gameClock, useGameFrame } from './clock';
 import { FrameLoop } from './FrameLoop';
 import { FxRenderer } from './FxRenderer';
-import { getInput, inputTime, isSourceConnected, padIdOf, pollInputs } from './input';
+import { getInput, inputTime, isSourceConnected, padIdOf, photoPressed, pollInputs } from './input';
+import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, players } from './runtime';
+import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, useGame } from './store';
 import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
@@ -71,6 +73,25 @@ function Lighting() {
     if (sun.current) scene.add(sun.current.target);
   }, [scene]);
 
+  // Graphics level: sharper shadows over a wider area on a strong graphics card.
+  const quality = QUALITY[useSettings(effectiveQuality)];
+  useEffect(() => {
+    const light = sun.current;
+    if (!light) return;
+    const { shadow } = light;
+    const cam = shadow.camera;
+    cam.left = cam.bottom = -quality.shadowExtent;
+    cam.right = cam.top = quality.shadowExtent;
+    cam.far = 60 + quality.shadowExtent;
+    cam.updateProjectionMatrix();
+    if (shadow.mapSize.x !== quality.shadowMap) {
+      shadow.mapSize.set(quality.shadowMap, quality.shadowMap);
+      // three only makes a new shadow texture when there is none
+      shadow.map?.dispose();
+      shadow.map = null;
+    }
+  }, [quality]);
+
   useFrame(() => {
     const f = camState.focus;
     if (sun.current) {
@@ -95,12 +116,7 @@ function Lighting() {
         intensity={2.3}
         color="#fff4dc"
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
         shadow-camera-near={1}
-        shadow-camera-far={90}
         shadow-bias={-0.0005}
         shadow-normalBias={0.03}
       />
@@ -167,6 +183,7 @@ function InputSystem() {
     const pressed = pollInputs();
     const game = useGame.getState();
     if (game.menuOpen) return;
+    if (game.phase === 'play' && photoPressed()) usePhotos.getState().request();
     if (game.phase === 'title') {
       // Keyboard starts are handled by App (any key works there); here: controllers and touch.
       const source = pressed.find((s) => s !== 'kb1' && s !== 'kb2');
@@ -248,6 +265,28 @@ function PartyDirector() {
   return null;
 }
 
+/** The camera: runs the photo countdown and, on the shutter frame, keeps what's on screen. */
+function PhotoDirector() {
+  const get = useThree((s) => s.get);
+  useFrame(() => {
+    if (!usePhotos.getState().tick()) return;
+    const { gl, scene, camera } = get();
+    // Draw now and copy straight away: the canvas is only readable until the browser shows it.
+    gl.render(scene, camera);
+    const src = gl.domElement;
+    const scale = Math.min(1, PHOTO_SIZE / Math.max(src.width, src.height));
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(src.width * scale));
+    out.height = Math.max(1, Math.round(src.height * scale));
+    const ctx = out.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(src, 0, 0, out.width, out.height);
+    usePhotos.getState().add(out.toDataURL('image/jpeg', 0.85));
+    playShutter();
+  });
+  return null;
+}
+
 function DevHook() {
   const gl = useThree((s) => s.gl);
   useEffect(() => {
@@ -282,6 +321,7 @@ export function Scene() {
       <InputSystem />
       <AudioDirector />
       <PartyDirector />
+      <PhotoDirector />
       <Physics gravity={[0, GRAVITY, 0]} paused={menuOpen}>
         <Terrain />
         <Trees />

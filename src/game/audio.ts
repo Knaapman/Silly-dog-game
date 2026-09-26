@@ -622,6 +622,24 @@ export function playTap() {
   v.finish();
 }
 
+/** Photo countdown: beep, beep, and a higher beep. */
+export function playPhotoBeep(last = false) {
+  const v = voice('ui');
+  if (!v) return;
+  v.tone({ type: 'sine', from: last ? 1320 : 880, dur: last ? 0.2 : 0.1, gain: 0.12 });
+  v.finish();
+}
+
+/** Camera shutter: click-clack, and a little film whirr. */
+export function playShutter() {
+  const v = voice('ui');
+  if (!v) return;
+  v.noise({ dur: 0.035, gain: 0.35, filter: { type: 'highpass', freq: 2500 } });
+  v.noise({ at: 0.07, dur: 0.05, gain: 0.3, filter: { type: 'bandpass', freq: 3200, q: 1 } });
+  v.tone({ type: 'sawtooth', from: 160, to: 320, at: 0.16, dur: 0.4, gain: 0.03, filter: { type: 'lowpass', freq: 900 } });
+  v.finish();
+}
+
 // ---------------------------------------------------------------------------
 // Rewards
 

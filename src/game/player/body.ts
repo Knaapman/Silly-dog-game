@@ -6,7 +6,7 @@ import { MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
 import { emit, poof, ring } from '../fx';
 import { rumble } from '../input';
 import { isInMud, isInPond } from '../layout';
-import { propPosition, props, shakeCamera, surfaces } from '../runtime';
+import { players, propPosition, props, shakeCamera, surfaces } from '../runtime';
 import { useGame } from '../store';
 import { GIANT_SIZE, RADIUS } from './constants';
 import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './frame';
@@ -165,6 +165,40 @@ export function impulses(f: FrameCtx) {
     rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
     f.v.x = f.v.y = f.v.z = 0;
   }
+}
+
+/** On the end of a friend's tongue: pulled along until you jump free (or get thrown). */
+export function tugged(f: FrameCtx) {
+  const { s, rt, rb, tmp, input } = f;
+  if (rt?.grabbedBy == null) return;
+  if (s.holdAt || s.pendingLaunch) {
+    rt.grabbedBy = null;
+    return;
+  }
+  if (input.pressed.jump) {
+    // wriggle free!
+    rt.grabbedBy = null;
+    f.v.y = Math.max(f.v.y, 8);
+    s.jumpBuffer = 0;
+    s.squash = -0.3;
+    startFlip(f, 'y', 0.5, Math.random() < 0.5 ? 1 : -1);
+    playBoing(s.pos, 1.4);
+    rumble(f.source, 0.3, 0.3, 120);
+    rb.setLinvel(f.v, true);
+    return;
+  }
+  // a springy pull towards the tongue tip (like a held ball, but a bit gentler), looking at
+  // whoever has got you
+  tmp.d.copy(rt.tug).sub(s.pos);
+  const holder = players.get(rt.grabbedBy);
+  if (holder) s.targetFacing = Math.atan2(holder.position.x - s.pos.x, holder.position.z - s.pos.z);
+  tmp.v.copy(tmp.d).multiplyScalar(10);
+  if (tmp.v.length() > 18) tmp.v.setLength(18);
+  const k = s.flopped ? 0.25 : 0.5;
+  f.v.x += (tmp.v.x - f.v.x) * k;
+  f.v.z += (tmp.v.z - f.v.z) * k;
+  if (tmp.d.y > 0.3) f.v.y += (tmp.v.y - f.v.y) * k * 0.5;
+  if (s.flopped) rb.setLinvel(f.v, true);
 }
 
 /** Launched by a pad / cannon / geyser / toilet: fly in a big arc to a fun spot. */

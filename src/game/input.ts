@@ -10,7 +10,11 @@ export type InputFrame = {
   z: number;
   held: Record<ActionName, boolean>;
   pressed: Record<ActionName, boolean>;
+  /** How many times each button went down since the last frame (mashing counts every press). */
+  presses: Record<ActionName, number>;
   anyPressed: boolean;
+  /** The camera button (Capture on Switch-style pads): take a photo. */
+  photo?: boolean;
   /** Controller only: Start held long enough to open the grown-ups menu. */
   menu?: boolean;
   /** Controller only: Select held long enough to leave the game. */
@@ -20,7 +24,7 @@ export type InputFrame = {
 /** Directional / confirm / back events for navigating menus with a controller. */
 export type UiNav = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
 
-type KeyMap = { up: string[]; down: string[]; left: string[]; right: string[]; actions: Record<ActionName, string[]> };
+type KeyMap = { up: string[]; down: string[]; left: string[]; right: string[]; actions: Record<ActionName, string[]>; photo: string[] };
 
 export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
   kb1: {
@@ -38,7 +42,8 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       poop: ['KeyG', 'KeyP'],
       species: ['Digit1', 'KeyC'],
       hat: ['Digit2', 'KeyX']
-    }
+    },
+    photo: ['KeyT']
   },
   kb2: {
     up: ['ArrowUp'],
@@ -54,7 +59,8 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       poop: ['Quote', 'Numpad5'],
       species: ['Comma', 'Numpad7'],
       hat: ['KeyM', 'Numpad9']
-    }
+    },
+    photo: ['Numpad8', 'Backslash']
   }
 };
 
@@ -70,17 +76,20 @@ const PAD_BUTTONS: Record<ActionName, number[]> = {
   species: [8],
   hat: [9]
 };
+/** Capture (the camera button on Switch-style pads; Chrome puts it after Home). */
+const PAD_CAPTURE = 17;
 
 const STICK_DEADZONE = 0.22;
 
 const keysHeld = new Set<string>();
-const keysPressed = new Set<string>();
+/** Key presses since the last frame, counted. */
+const keysPressed = new Map<string, number>();
 
 const touch = {
   x: 0,
   z: 0,
   held: emptyActions(),
-  pressed: new Set<ActionName>()
+  presses: new Map<ActionName, number>()
 };
 
 // Buttons seen down since the last frame. Sampled faster than the frame rate so a quick
@@ -90,7 +99,7 @@ const touch = {
 const sampledPad = new Map<number, boolean[]>();
 const pressEdges = new Map<number, number[]>();
 const frames = new Map<SourceId, InputFrame>();
-export const NO_INPUT: InputFrame = { x: 0, z: 0, held: emptyActions(), pressed: emptyActions(), anyPressed: false };
+export const NO_INPUT: InputFrame = { x: 0, z: 0, held: emptyActions(), pressed: emptyActions(), presses: noPresses(), anyPressed: false };
 
 // Start / Select do two things: a tap changes hat / animal, a long hold opens the menu / leaves.
 const TAP_MS = 550;
@@ -114,6 +123,10 @@ function emptyActions(): Record<ActionName, boolean> {
   return { jump: false, bonk: false, lick: false, noise: false, flop: false, poop: false, species: false, hat: false };
 }
 
+function noPresses(): Record<ActionName, number> {
+  return { jump: 0, bonk: 0, lick: 0, noise: 0, flop: 0, poop: 0, species: 0, hat: 0 };
+}
+
 const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Slash', 'Enter', 'Quote']);
 
 /** Clock for Start/Select hold timing: wall time normally, simulated time in test mode. */
@@ -133,8 +146,9 @@ let anyKeyListener: ((code: string) => void) | null = null;
 // DirectInput order: HORIPAD / other Switch-style wired pads, generic USB pads and PlayStation
 // pads in D-mode all use left, bottom, right, top, L, R, ZL, ZR, -, +, LS, RS, Home, Capture,
 // with the D-pad on a hat axis. Translate that to standard positions so "bottom = jump" holds
-// whatever letters are printed on the buttons.
-const DINPUT_TO_STANDARD = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1, -1, -1, -1, 12];
+// whatever letters are printed on the buttons (Home -> 16 and Capture -> 17, like Chrome does
+// for Switch pads it does recognise).
+const DINPUT_TO_STANDARD = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1, -1, -1, -1, 12, 13];
 
 /** Button states in standard-gamepad order (0 bottom, 1 right, 2 left, 3 top, ...). */
 function padButtons(gp: Gamepad): boolean[] {
@@ -170,7 +184,7 @@ export function installInput() {
     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
     if (PREVENT_DEFAULT.has(e.code)) e.preventDefault();
     if (!e.repeat) {
-      keysPressed.add(e.code);
+      keysPressed.set(e.code, (keysPressed.get(e.code) ?? 0) + 1);
       anyKeyListener?.(e.code);
     }
     keysHeld.add(e.code);
@@ -204,14 +218,15 @@ export function setTouchStick(x: number, z: number) {
 }
 
 export function setTouchButton(action: ActionName, down: boolean) {
-  if (down && !touch.held[action]) touch.pressed.add(action);
+  if (down && !touch.held[action]) touch.presses.set(action, (touch.presses.get(action) ?? 0) + 1);
   touch.held[action] = down;
 }
 
 function readKeyboard(source: 'kb1' | 'kb2'): InputFrame {
   const map = KEYMAPS[source];
   const any = (codes: string[]) => codes.some((c) => keysHeld.has(c));
-  const tapped = (codes: string[]) => codes.some((c) => keysPressed.has(c));
+  const count = (codes: string[]) => codes.reduce((n, c) => n + (keysPressed.get(c) ?? 0), 0);
+  const tapped = (codes: string[]) => count(codes) > 0;
   let x = (any(map.right) ? 1 : 0) - (any(map.left) ? 1 : 0);
   let z = (any(map.down) ? 1 : 0) - (any(map.up) ? 1 : 0);
   const len = Math.hypot(x, z);
@@ -221,24 +236,28 @@ function readKeyboard(source: 'kb1' | 'kb2'): InputFrame {
   }
   const held = emptyActions();
   const pressed = emptyActions();
+  const presses = noPresses();
   let anyPressed = tapped([...map.up, ...map.down, ...map.left, ...map.right]);
   for (const action of ACTIONS) {
     held[action] = any(map.actions[action]);
-    pressed[action] = tapped(map.actions[action]);
+    presses[action] = count(map.actions[action]);
+    pressed[action] = presses[action] > 0;
     anyPressed ||= pressed[action];
   }
-  return { x, z, held, pressed, anyPressed };
+  return { x, z, held, pressed, presses, anyPressed, photo: tapped(map.photo) };
 }
 
 function readTouch(): InputFrame {
   const pressed = emptyActions();
+  const presses = noPresses();
   let anyPressed = false;
-  touch.pressed.forEach((a) => {
+  touch.presses.forEach((n, a) => {
+    presses[a] = n;
     pressed[a] = true;
     anyPressed = true;
   });
-  touch.pressed.clear();
-  return { x: touch.x, z: touch.z, held: { ...touch.held }, pressed, anyPressed };
+  touch.presses.clear();
+  return { x: touch.x, z: touch.z, held: { ...touch.held }, pressed, presses, anyPressed };
 }
 
 /**
@@ -293,11 +312,13 @@ function readPad(gp: Gamepad): InputFrame {
 
   const held = emptyActions();
   const pressed = emptyActions();
+  const presses = noPresses();
   let anyPressed = false;
   for (const action of ACTIONS) {
     if (action === 'species' || action === 'hat') continue;
     held[action] = PAD_BUTTONS[action].some((i) => now[i]);
-    pressed[action] = PAD_BUTTONS[action].some((i) => tapped(i));
+    presses[action] = PAD_BUTTONS[action].reduce((n, i) => n + (downs[i] ?? 0), 0);
+    pressed[action] = presses[action] > 0;
     anyPressed ||= pressed[action];
   }
   if ([12, 13, 14, 15].some(tapped)) anyPressed = true;
@@ -322,14 +343,17 @@ function readPad(gp: Gamepad): InputFrame {
       else leave = true;
     }
     if (!now[button] && holdStart.has(key)) {
-      if (since < TAP_MS && !holdFired.has(key)) pressed[action] = true;
+      if (since < TAP_MS && !holdFired.has(key)) {
+        pressed[action] = true;
+        presses[action] = 1;
+      }
       holdStart.delete(key);
       holdFired.delete(key);
     }
     held[action] = now[button];
   }
   navEdges.set(gp.index, downs);
-  return { x, z, held, pressed, anyPressed, menu, leave };
+  return { x, z, held, pressed, presses, anyPressed, menu, leave, photo: tapped(PAD_CAPTURE) };
 }
 
 const navEdges = new Map<number, number[]>();
@@ -411,14 +435,26 @@ export function getInput(source: SourceId): InputFrame {
   return frames.get(source) ?? NO_INPUT;
 }
 
+/** Did any keyboard or controller press the camera button this frame? */
+export function photoPressed() {
+  for (const frame of frames.values()) if (frame.photo) return true;
+  return false;
+}
+
 export function isSourceConnected(source: SourceId) {
   if (!source.startsWith('pad')) return true;
   const index = Number(source.slice(3));
   return getConnectedPads().some((g) => g.index === index);
 }
 
+let rumbleEnabled = true;
+/** Grown-ups can switch controller rumble off. */
+export function setRumbleEnabled(on: boolean) {
+  rumbleEnabled = on;
+}
+
 export function rumble(source: SourceId, strong: number, weak: number, durationMs: number) {
-  if (!source.startsWith('pad')) return;
+  if (!rumbleEnabled || !source.startsWith('pad')) return;
   const index = Number(source.slice(3));
   const gp = getConnectedPads().find((g) => g.index === index);
   const actuator = gp?.vibrationActuator as

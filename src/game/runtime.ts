@@ -113,6 +113,10 @@ export type PlayerRuntime = {
   size: number;
   /** Slot of the friend this one is riding piggyback on. */
   ridingOn: number | null;
+  /** Slot of the friend whose tongue has got hold of this one (lick a friend!). */
+  grabbedBy: number | null;
+  /** Where that tongue is pulling us to (set by the friend every frame). */
+  tug: THREE.Vector3;
 };
 
 /** Magic foods: beans = fart rocket, mushroom = giant, chili = fire breath + fast feet. */

@@ -9,6 +9,7 @@ import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { isInPond, type Vec3 } from '../layout';
 import { allocPropId, debugInfo, drains, players, props, registerProp, spawners, type PropEntry } from '../runtime';
+import { settings, SPROUT_SECONDS } from '../settings';
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 
@@ -16,7 +17,6 @@ import { gameClock, gameNow, useGameFrame } from '../clock';
 // around, make you slip when you run over them, and after a while sprout into a flower.
 
 const MAX_POOPS = 24;
-const SPROUT_AFTER = 35;
 const FLOWER_SLOTS = 48;
 const FLIES_PER_POOP = 2;
 
@@ -196,7 +196,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
     const age = (gameNow() - born.current) / 1000;
     const p = rb.translation();
     if (p.y < -10) return finishRef.current('quiet');
-    if (age > SPROUT_AFTER || sproutNow.has(id)) return finishRef.current('sprout');
+    if (age > SPROUT_SECONDS[settings().sprout] || sproutNow.has(id)) return finishRef.current('sprout');
     // A flushing toilet sucks nearby poops over the rim, swirls them round and down the drain.
     const now = gameNow();
     for (const d of drains) {

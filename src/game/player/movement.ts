@@ -5,6 +5,7 @@ import { emit, ring } from '../fx';
 import { rumble } from '../input';
 import { distXZ, isOnSnow } from '../layout';
 import { players, playersCentroid } from '../runtime';
+import { LEASH_RADIUS, settings, SPEED_FACTOR } from '../settings';
 import { useGame } from '../store';
 import { startFlip, type FrameCtx } from './frame';
 import type { Flip } from './state';
@@ -27,13 +28,16 @@ export function movement(f: FrameCtx) {
     return;
   }
 
+  const prefs = settings();
   let speed: number = MOVE.speed;
   if (s.swimming) speed = MOVE.swimSpeed;
   else if (s.inMud) speed = MOVE.mudSpeed;
+  speed *= SPEED_FACTOR[prefs.speed];
   if (f.heavyDrag) speed *= 0.72;
   if (s.power === 'giant') speed *= 1.2;
   else if (s.power === 'chili') speed *= 1.5;
-  const controlling = s.launched <= 0 && s.stunned <= 0;
+  const grabbed = f.rt?.grabbedBy != null;
+  const controlling = s.launched <= 0 && s.stunned <= 0 && !grabbed;
   const mag = Math.hypot(input.x, input.z);
   const pv = s.platformVel;
   if (controlling) {
@@ -73,8 +77,9 @@ export function movement(f: FrameCtx) {
   if (players.size > 1 && s.launched <= 0) {
     playersCentroid(tmp.c, slot);
     const d = distXZ(t.x, t.z, tmp.c.x, tmp.c.z);
-    if (d > MOVE.leashRadius) {
-      const pull = Math.min(6, (d - MOVE.leashRadius) * 1.5);
+    const leash = LEASH_RADIUS[prefs.together];
+    if (d > leash) {
+      const pull = Math.min(6, (d - leash) * 1.5);
       v.x += ((tmp.c.x - t.x) / d) * pull;
       v.z += ((tmp.c.z - t.z) / d) * pull;
     }
@@ -145,6 +150,7 @@ export function movement(f: FrameCtx) {
     !s.swimming &&
     s.dashTime <= 0 &&
     s.stunned <= 0 &&
+    !grabbed &&
     v.y <= 1;
   const idle = still && f.onStatic;
   const grip = still && !f.onStatic;

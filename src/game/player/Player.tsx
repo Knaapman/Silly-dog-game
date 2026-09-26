@@ -9,11 +9,12 @@ import { emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
 import { lambert } from '../materials';
 import { players, props, type PlayerRuntime } from '../runtime';
+import { MAGIC_FACTOR, settings } from '../settings';
 import { useGame, type PlayerInfo } from '../store';
 import { tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
-import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, waterAndMud } from './body';
+import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
 import { MODEL_SCALE, POWER_COLOR, POWER_TIME, RADIUS } from './constants';
 import { createTmp, type FrameCtx } from './frame';
 import { movement } from './movement';
@@ -101,8 +102,10 @@ export function Player({ info }: { info: PlayerInfo }) {
       power: null,
       size: 1,
       ridingOn: null,
+      grabbedBy: null,
+      tug: new THREE.Vector3(),
       powerUp: (kind) => {
-        s.powerTime = POWER_TIME[kind];
+        s.powerTime = POWER_TIME[kind] * MAGIC_FACTOR[settings().magic];
         if (s.power === kind) return;
         s.power = kind;
         playPower(s.pos, true);
@@ -125,6 +128,8 @@ export function Player({ info }: { info: PlayerInfo }) {
         held.heldBy = null;
         held.onRelease?.();
       }
+      const friend = s.heldFriend != null ? players.get(s.heldFriend) : null;
+      if (friend?.grabbedBy === slot) friend.grabbedBy = null;
     };
   }, [slot]);
 
@@ -204,6 +209,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     headbutt(f);
     // what happens to us, then where we go
     impulses(f);
+    tugged(f);
     piggyback(f);
     launch(f);
     movement(f);

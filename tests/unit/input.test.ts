@@ -203,3 +203,91 @@ describe('keyboard maps', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 });
+
+describe('press counting', () => {
+  it('counts every trigger press between two slow frames (mashing poop)', async () => {
+    const pad = standardPad();
+    const t = await loadInput([pad]);
+    t.frame();
+    for (let i = 0; i < 3; i += 1) {
+      press(pad, 7, true);
+      t.tick(24);
+      press(pad, 7, false);
+      t.tick(24);
+    }
+    const f = t.frame();
+    expect(f.pressed.poop).toBe(true);
+    expect(f.presses.poop).toBe(3);
+    expect(t.frame().presses.poop).toBe(0);
+  });
+
+  it('counts keyboard presses too', async () => {
+    const t = await loadInput([]);
+    t.frame('kb1');
+    t.key('KeyG', true);
+    t.key('KeyG', false);
+    t.key('KeyP', true);
+    t.key('KeyP', false);
+    expect(t.frame('kb1').presses.poop).toBe(2);
+  });
+
+  it('a Start tap counts as one hat press', async () => {
+    const pad = standardPad();
+    const t = await loadInput([pad]);
+    t.frame();
+    press(pad, 9, true);
+    t.tick(100);
+    t.frame();
+    press(pad, 9, false);
+    t.tick(16);
+    expect(t.frame().presses.hat).toBe(1);
+  });
+});
+
+describe('camera button', () => {
+  it('Capture takes a photo on a Switch pad the browser recognises', async () => {
+    const pad = standardPad();
+    const t = await loadInput([pad]);
+    t.frame();
+    press(pad, 17, true);
+    t.tick(40);
+    t.frame();
+    expect(t.input.photoPressed()).toBe(true);
+    t.tick(40);
+    t.frame();
+    expect(t.input.photoPressed()).toBe(false);
+  });
+
+  it('Capture takes a photo on a HORIPAD (DirectInput button 13), and does not join', async () => {
+    const pad = horiPad();
+    const t = await loadInput([pad]);
+    t.frame();
+    press(pad, 13, true);
+    t.tick(40);
+    const pressedSources = t.input.pollInputs();
+    expect(t.input.photoPressed()).toBe(true);
+    expect(pressedSources).toEqual([]);
+  });
+
+  it('T takes a photo from the keyboard', async () => {
+    const t = await loadInput([]);
+    t.frame('kb1');
+    t.key('KeyT', true);
+    t.frame('kb1');
+    expect(t.input.photoPressed()).toBe(true);
+  });
+});
+
+describe('rumble', () => {
+  it('can be switched off', async () => {
+    const pad = standardPad();
+    const playEffect = vi.fn(() => Promise.resolve());
+    (pad as unknown as { vibrationActuator: unknown }).vibrationActuator = { playEffect };
+    const t = await loadInput([pad]);
+    t.input.rumble('pad0', 1, 1, 100);
+    expect(playEffect).toHaveBeenCalledTimes(1);
+    t.input.setRumbleEnabled(false);
+    t.input.rumble('pad0', 1, 1, 100);
+    expect(playEffect).toHaveBeenCalledTimes(1);
+  });
+});

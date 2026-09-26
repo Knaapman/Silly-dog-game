@@ -3,8 +3,10 @@ import { getAudioState, playTap, setMuted, subscribeAudio, unlockAudio } from '.
 import { MAX_PLAYERS, PLAYER_COLORS, SPECIES_EMOJI, type HatId } from '../game/config';
 import { getConnectedPads } from '../game/input';
 import { isPartyTime, useGame } from '../game/store';
-import { GamepadIcon, GearIcon, SpeakerIcon, StarIcon } from './Icons';
+import { CameraIcon, GamepadIcon, GearIcon, SpeakerIcon, StarIcon } from './Icons';
 import { gameNow } from '../game/clock';
+import { useProgress } from '../game/progress';
+import { PHOTO_BEEPS, usePhotos } from '../game/photo';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -143,6 +145,17 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         </div>
         <div className="pointer-events-auto order-2 flex gap-2 md:order-3">
           <button
+            className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-pink-500/85 text-white shadow-lg active:scale-90 sm:h-12 sm:w-12"
+            onClick={() => {
+              unlockAudio();
+              usePhotos.getState().request();
+            }}
+            title="Take a photo"
+            data-testid="camera-button"
+          >
+            <CameraIcon size={24} />
+          </button>
+          <button
             className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-sky-500/80 text-white shadow-lg active:scale-90 sm:h-12 sm:w-12"
             onClick={() => {
               unlockAudio();
@@ -162,6 +175,8 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         </div>
       </div>
       <PartyFlash />
+      <UnlockFlash />
+      <PhotoOverlay />
     </>
   );
 }
@@ -174,5 +189,52 @@ function PartyFlash() {
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
       <span className="emoji animate-party text-[22vmin] drop-shadow-2xl">🎉</span>
     </div>
+  );
+}
+
+/** A new hat was unlocked: it pops up big in the middle of the screen. */
+function UnlockFlash() {
+  const unlock = useProgress((s) => s.lastUnlock);
+  const now = useNow(200);
+  if (!unlock || now - unlock.at > 2200 || !HAT_EMOJI[unlock.hat]) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" data-testid="hat-unlock">
+      <span className="emoji animate-party text-[26vmin] drop-shadow-2xl">{HAT_EMOJI[unlock.hat]}</span>
+    </div>
+  );
+}
+
+/** Taking a photo: three dots count down, a white flash, then the picture pops up. */
+function PhotoOverlay() {
+  const startedAt = usePhotos((s) => s.startedAt);
+  const beeps = usePhotos((s) => s.beeps);
+  const latest = usePhotos((s) => s.latest);
+  const now = useNow(100);
+  const showing = latest && now - latest.at < 3400;
+  return (
+    <>
+      {startedAt != null && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-4" data-testid="photo-countdown">
+          <span className="animate-breathe text-white drop-shadow-2xl">
+            <CameraIcon size={120} />
+          </span>
+          <div className="flex gap-4">
+            {PHOTO_BEEPS.map((_, i) => (
+              <span key={i} className={`h-8 w-8 rounded-full border-4 border-white shadow-lg transition-colors ${i < beeps ? 'bg-amber-400' : 'bg-white/20'}`} />
+            ))}
+          </div>
+        </div>
+      )}
+      {showing && (
+        <>
+          <div key={`flash-${latest.photo.id}`} className="animate-flash pointer-events-none absolute inset-0 z-40 bg-white" />
+          <div key={`photo-${latest.photo.id}`} className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+            <div className="animate-polaroid rounded-md bg-white p-3 pb-10 shadow-2xl" data-testid="photo-preview">
+              <img src={latest.photo.url} alt="" className="block max-h-[55vh] max-w-[70vw] rounded-sm" />
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 type Vec = { x: number; y: number; z: number };
-export type PlayerState = { x: number; y: number; z: number; belly: number; power: string | null; size: number; ridingOn: number | null; flopped: boolean; launched: boolean };
+export type PlayerState = { x: number; y: number; z: number; belly: number; power: string | null; size: number; ridingOn: number | null; flopped: boolean; launched: boolean; grabbedBy: number | null };
 
 /**
  * Drives the game in test mode. Every helper steps the simulation explicitly, so a test reads
@@ -23,7 +23,7 @@ export class Game {
       const pads: (Record<string, unknown> | null)[] = [null, null, null, null];
       w.__pads = pads;
       w.__addPad = (i: number, mapping = 'standard', id = `Pad ${i}`) => {
-        pads[i] = { index: i, id, connected: true, mapping, axes: mapping === 'standard' ? [0, 0, 0, 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2857], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })), vibrationActuator: null };
+        pads[i] = { index: i, id, connected: true, mapping, axes: mapping === 'standard' ? [0, 0, 0, 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2857], buttons: Array.from({ length: 18 }, () => ({ pressed: false, touched: false, value: 0 })), vibrationActuator: null };
       };
       w.__unplug = (i: number) => {
         pads[i] = null;
@@ -72,7 +72,7 @@ export class Game {
   player(slot = 0): Promise<PlayerState> {
     return this.page.evaluate((slot) => {
       const p = (window as any).__silly.runtime.players.get(slot);
-      return { x: p.position.x, y: p.position.y, z: p.position.z, belly: p.belly, power: p.power, size: p.size, ridingOn: p.ridingOn, flopped: p.flopped, launched: p.isLaunched() };
+      return { x: p.position.x, y: p.position.y, z: p.position.z, belly: p.belly, power: p.power, size: p.size, ridingOn: p.ridingOn, flopped: p.flopped, launched: p.isLaunched(), grabbedBy: p.grabbedBy };
     }, slot);
   }
 

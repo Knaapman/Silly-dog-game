@@ -2,6 +2,7 @@ import type * as THREE from 'three';
 import {
   playAnimalNoise,
   playBigFart,
+  playBoing,
   playBonk,
   playChomp,
   playDuet,
@@ -9,19 +10,43 @@ import {
   playFireBreath,
   playPlop,
   playSlurp,
+  playThrow,
   playWhoosh
 } from '../audio';
 import { gameNow } from '../clock';
-import { BELLY_MAX, MOVE, PARTY_POINTS } from '../config';
+import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
 import { bonkStars, emit, ring } from '../fx';
 import { rumble } from '../input';
 import { distXZ, isOnGrass } from '../layout';
-import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PropEntry } from '../runtime';
+import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PlayerRuntime, type PropEntry } from '../runtime';
 import { useGame } from '../store';
-import { BONK_PITCH, MODEL_SCALE } from './constants';
-import { releaseHeld, type FrameCtx } from './frame';
+import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
+import { releaseFriend, releaseHeld, type FrameCtx } from './frame';
 
-/** Sticky tongue: lick to grab, eat food (or grass), lick again to throw; drags what it holds. */
+/** How long a tongue can hang on to a friend (seconds). */
+const FRIEND_HOLD_MAX = 4;
+/** How far a licked friend gets thrown. */
+const FRIEND_THROW = 7;
+
+/** Lick again while holding a friend: wheee, off they fly! */
+function throwFriend(f: FrameCtx) {
+  const { s, tmp } = f;
+  const friend = s.heldFriend != null ? players.get(s.heldFriend) : null;
+  releaseFriend(f);
+  if (!friend) return;
+  const lim = WORLD_HALF - 3;
+  tmp.c.set(
+    Math.max(-lim, Math.min(lim, s.pos.x + tmp.fwd.x * FRIEND_THROW)),
+    0,
+    Math.max(-lim, Math.min(lim, s.pos.z + tmp.fwd.z * FRIEND_THROW))
+  );
+  friend.launchTo(tmp.c, Math.max(s.pos.y, friend.position.y) + 3.5);
+  playThrow(s.pos);
+  rumble(f.source, 0.5, 0.6, 180);
+  useGame.getState().addParty(PARTY_POINTS.launch);
+}
+
+/** Sticky tongue: lick to grab, eat food (or grass) or a friend, lick again to throw; drags what it holds. */
 export function tongue(f: FrameCtx) {
   const { s, t, tmp, spec, input, slot, source } = f;
   const mouthOffsetY = (spec.head[1] - 0.1) * MODEL_SCALE * s.size - f.rad;
@@ -30,7 +55,8 @@ export function tongue(f: FrameCtx) {
   tmp.mouth.y += mouthOffsetY;
 
   if (input.pressed.lick && !s.flopped) {
-    if (s.held != null) releaseHeld(f, true);
+    if (s.heldFriend != null) throwFriend(f);
+    else if (s.held != null) releaseHeld(f, true);
     else {
       // Lower is better: close to the mouth and in front of it. -1 = out of reach.
       const tongueScore = (position: THREE.Vector3, radius: number) => {
@@ -62,9 +88,30 @@ export function tongue(f: FrameCtx) {
           bestFood = food;
         }
       });
-      const target = best as PropEntry | null;
-      const food = bestFood as FoodEntry | null;
-      if (food) {
+      // Friends can be licked too (and then dragged around, or thrown!)
+      let bestFriend: PlayerRuntime | null = null;
+      players.forEach((p) => {
+        if (p.slot === slot || p.grabbedBy != null || p.isLaunched() || p.ridingOn === slot || s.ridingOn === p.slot) return;
+        if (players.get(slot)?.grabbedBy === p.slot) return; // no licking back the one who's got you
+        const score = tongueScore(p.position, RADIUS * p.size);
+        if (score >= 0 && score < bestScore) {
+          bestScore = score;
+          bestFriend = p;
+        }
+      });
+      const friend = bestFriend as PlayerRuntime | null;
+      const target = friend ? null : (best as PropEntry | null);
+      const food = friend ? null : (bestFood as FoodEntry | null);
+      if (friend) {
+        friend.grabbedBy = slot;
+        friend.tug.copy(friend.position);
+        s.heldFriend = friend.slot;
+        s.friendHoldTime = 0;
+        playSlurp(s.pos);
+        playBoing(friend.position, 1.6);
+        rumble(source, 0.2, 0.4, 100);
+        useGame.getState().addParty(PARTY_POINTS.duet);
+      } else if (food) {
         food.eat(slot);
         playSlurp(s.pos);
         rumble(source, 0.15, 0.35, 80);
@@ -91,6 +138,18 @@ export function tongue(f: FrameCtx) {
   }
 
   f.heavyDrag = false;
+  if (s.heldFriend != null) {
+    const friend = players.get(s.heldFriend);
+    s.friendHoldTime += f.dt;
+    // They wriggled free (jump!), got launched, or it's been long enough: let go.
+    if (!friend || friend.grabbedBy !== slot || friend.isLaunched() || s.flopped || s.holdAt || s.friendHoldTime > FRIEND_HOLD_MAX || friend.position.distanceTo(tmp.mouth) > 7) {
+      releaseFriend(f);
+    } else {
+      friend.tug.copy(tmp.mouth).addScaledVector(tmp.fwd, 1 + RADIUS * friend.size);
+      friend.tug.y = Math.max(friend.tug.y, s.groundY + RADIUS * friend.size);
+      f.heavyDrag = true;
+    }
+  }
   if (s.held != null) {
     const prop = props.get(s.held);
     const pb = prop?.getBody();
@@ -206,7 +265,8 @@ export function poop(f: FrameCtx) {
         useGame.getState().addParty(PARTY_POINTS.fart * 2);
       }
     } else if (s.belly > waiting && !s.swimming) {
-      s.poopPresses += 1;
+      // every press counts, even several between two slow frames (one poop per bite)
+      s.poopPresses += Math.min(Math.max(1, input.presses.poop), s.belly - waiting);
     } else if (waiting === 0 && s.poopCooldown <= 0) {
       s.poopCooldown = 0.25;
       playFart(s.pos);

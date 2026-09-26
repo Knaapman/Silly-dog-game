@@ -4,7 +4,7 @@ import { gameNow } from '../clock';
 import { emit, ring } from '../fx';
 import { players, propPosition, props, shakeCamera } from '../runtime';
 import type { createRig } from './AnimalModel';
-import { MODEL_SCALE, UP } from './constants';
+import { MODEL_SCALE, RADIUS, UP } from './constants';
 import type { FrameCtx } from './frame';
 
 /** The scene objects one animal moves around every frame. */
@@ -260,7 +260,13 @@ function worldHelpers(f: FrameCtx, vis: PlayerVisuals) {
   }
   if (vis.tongue && vis.tongueTip) {
     let target: THREE.Vector3 | null = null;
-    if (s.held != null) {
+    const friend = s.heldFriend != null ? players.get(s.heldFriend) : undefined;
+    if (friend) {
+      // stuck to the friend's face
+      tmp.d.copy(tmp.mouth).sub(friend.position).normalize();
+      target = tmp.p.copy(friend.position).addScaledVector(tmp.d, RADIUS * friend.size * 0.9);
+      target.y += 0.25 * friend.size;
+    } else if (s.held != null) {
       const prop = props.get(s.held);
       if (prop && propPosition(prop, tmp.p)) {
         tmp.d.copy(tmp.mouth).sub(tmp.p).normalize();

@@ -17,10 +17,11 @@ export type FakePad = {
 export async function loadInput(pads: (FakePad | null)[]) {
   let clock = 0;
   let sampler: (() => void) | null = null;
+  const listeners = new Map<string, (e: unknown) => void>();
   vi.resetModules();
   vi.stubGlobal('performance', { now: () => clock });
   vi.stubGlobal('window', {
-    addEventListener: () => {},
+    addEventListener: (type: string, fn: (e: unknown) => void) => listeners.set(type, fn),
     setInterval: (fn: () => void) => {
       sampler = fn;
       return 1;
@@ -38,6 +39,10 @@ export async function loadInput(pads: (FakePad | null)[]) {
         sampler?.();
       }
     },
+    /** A real key event (not a repeat). */
+    key(code: string, down: boolean) {
+      listeners.get(down ? 'keydown' : 'keyup')?.({ code, repeat: false, target: null, preventDefault: () => {} });
+    },
     frame(source = 'pad0') {
       input.pollInputs();
       return input.getInput(source as Parameters<typeof input.getInput>[0]);
@@ -46,7 +51,7 @@ export async function loadInput(pads: (FakePad | null)[]) {
 }
 
 export function standardPad(index = 0): FakePad {
-  return { index, id: `Pad ${index}`, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+  return { index, id: `Pad ${index}`, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 18 }, () => ({ pressed: false, value: 0 })) };
 }
 
 /** A Switch-style wired pad (HORIPAD) the browser doesn't recognise: DirectInput order, hat on axis 9. */

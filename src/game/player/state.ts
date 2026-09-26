@@ -26,6 +26,9 @@ export function createState(spawn: THREE.Vector3) {
     dashTime: 0,
     bonkHits: new Set<number>(),
     held: null as number | null,
+    /** A friend on the end of the tongue, and for how long. */
+    heldFriend: null as number | null,
+    friendHoldTime: 0,
     lickMiss: 0,
     noiseTime: 0,
     launched: 0,

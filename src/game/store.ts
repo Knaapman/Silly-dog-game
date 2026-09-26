@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { HATS, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, SPECIES, type HatId, type Species } from './config';
+import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, SPECIES, type HatId, type Species } from './config';
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
 import { padIdOf, rumbleAll, type SourceId } from './input';
 import { after, gameNow } from './clock';
+import { unlockedHats, useProgress } from './progress';
 
 // Reactive state only for things the UI / scene graph needs to re-render on.
 // Per-frame data lives in runtime.ts.
@@ -46,15 +47,19 @@ interface GameStore {
   cycleSpecies: (slot: number, dir?: number) => void;
   nextHat: (slot: number) => void;
   randomHat: (slot: number) => void;
+  setHat: (slot: number, hat: HatId) => void;
   addParty: (amount: number) => void;
-  collectStar: (index: number) => void;
+  /** `slot`: who found it (they get to wear any hat it unlocks). */
+  collectStar: (index: number, slot?: number) => void;
   resetPark: () => void;
   setMenuOpen: (open: boolean) => void;
   setTouchUi: (enabled: boolean) => void;
 }
 
+/** A different hat, from the ones the stars have unlocked so far. */
 function pickRandomHat(current: HatId): HatId {
-  const options = HATS.filter((h) => h !== 'none' && h !== current);
+  const options = unlockedHats().filter((h) => h !== 'none' && h !== current);
+  if (options.length === 0) return current === 'none' ? (unlockedHats().find((h) => h !== 'none') ?? 'none') : current;
   return options[Math.floor(Math.random() * options.length)];
 }
 
@@ -131,10 +136,14 @@ export const useGame = create<GameStore>((set, get) => {
         })
       })),
 
-    nextHat: (slot) =>
+    nextHat: (slot) => {
+      const hats = unlockedHats();
       set((state) => ({
-        players: state.players.map((p) => (p.slot === slot ? { ...p, hat: HATS[(HATS.indexOf(p.hat) + 1) % HATS.length] } : p))
-      })),
+        players: state.players.map((p) => (p.slot === slot ? { ...p, hat: hats[(hats.indexOf(p.hat) + 1) % hats.length] } : p))
+      }));
+    },
+
+    setHat: (slot, hat) => set((state) => ({ players: state.players.map((p) => (p.slot === slot ? { ...p, hat } : p)) })),
 
     randomHat: (slot) => {
       set((state) => ({
@@ -151,11 +160,14 @@ export const useGame = create<GameStore>((set, get) => {
       else set({ party: next });
     },
 
-    collectStar: (index) => {
+    collectStar: (index, slot) => {
       const state = get();
       if (state.stars[index]) return;
       const stars = state.stars.map((s, i) => (i === index ? true : s));
       set({ stars, lastStarAt: gameNow() });
+      // Every star counts towards new hats; whoever found it wears the new one straight away.
+      const unlocked = useProgress.getState().addStar();
+      if (unlocked && slot != null) get().setHat(slot, unlocked);
       rumbleAll(state.players.map((p) => p.source), 0.4, 0.8, 300);
       if (stars.every(Boolean)) {
         // Every golden star found: huge party, then hide them all again for another round.

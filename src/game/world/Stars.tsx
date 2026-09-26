@@ -8,7 +8,7 @@ import { useGame } from '../store';
 import { gameClock, useGameFrame } from '../clock';
 
 let starGeometry: THREE.ExtrudeGeometry | null = null;
-function getStarGeometry() {
+export function getStarGeometry() {
   if (starGeometry) return starGeometry;
   const shape = new THREE.Shape();
   for (let i = 0; i <= 10; i += 1) {
@@ -23,7 +23,7 @@ function getStarGeometry() {
 }
 
 let starMaterial: THREE.MeshStandardMaterial | null = null;
-function getStarMaterial() {
+export function getStarMaterial() {
   if (!starMaterial) {
     starMaterial = new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb300', emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.3 });
   }
@@ -41,7 +41,7 @@ function checkCollect(index: number, pos: THREE.Vector3) {
     probe.copy(p.position);
     probe.y += 0.3;
     if (probe.distanceTo(pos) < 1.7) {
-      useGame.getState().collectStar(index);
+      useGame.getState().collectStar(index, p.slot);
       emit('star', pos, { count: 26, color: ['#ffd23f', '#fff3a8', '#ffffff'], speed: 7, up: 6 });
       burstConfetti(pos, 50);
       ring(pos, { color: '#ffd23f', radius: 3, duration: 0.5 });

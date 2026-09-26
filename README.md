@@ -4,8 +4,9 @@ A Goat Simulator–style physics sandbox made for **young kids (around 5 years o
 You play a dog, goat, pig or sheep in a big, busy theme park with eight themed areas. You can headbutt things, grab and
 drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
 ride the rides and get flung around by geysers, cannons, see-saws and volcanoes. Magic food turns you into a giant, a
-fire-breathing speedster or a fart-powered rocket, the giant toilet flushes you across the park, and friends can stack
-up into wobbly piggyback towers.
+fire-breathing speedster or a fart-powered rocket, the giant toilet flushes you across the park, friends can stack
+up into wobbly piggyback towers (or lick each other and throw each other around), golden stars unlock new hats, and
+a camera button takes a photo of the whole silly bunch.
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -20,17 +21,31 @@ so friends can drop in and out at any time. All players share one camera that zo
 | Move | Left stick or D-pad | `W A S D` | Arrow keys | Drag anywhere on the left half |
 | ⬆️ Jump (press again in the air to flip) | **A** / ✕ (bottom) | `Space` or `K` | `Enter` / `Num 0` | Green button |
 | 💥 Headbutt | **B** / ◯ (right) | `E` or `L` | `Right Shift` / `Num 2` | Red button |
-| 👅 Lick & grab (or eat), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
+| 👅 Lick & grab (or eat, or grab a friend), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
 | 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
 | 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
 | 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
+| 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
 | 👋 Leave the game | Hold Select (1.5 s) | — | — | — |
 
-The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, and a picture of
-all controls. It works with a controller too: D-pad or stick to move, **A** to press, **B** or **Start** to close.
+The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a picture of
+all controls, and:
+
+- **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
+  before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
+  rumble on/off, and graphics (auto / low / high / ultra). *Auto* picks from the graphics card: a software renderer gets
+  low, a dedicated gaming card (RTX, Radeon RX 5000+, Arc, Apple M2+) gets ultra. Ultra means 4096 px shadows over a
+  wider area and supersampling: it draws up to a 4K-wide picture and scales it down, so edges are smooth on a 1080p or
+  1440p screen (never less sharp than the screen itself).
+- **Progress**: stars found and hats unlocked, with a "start over" button (tap twice).
+- **Photos**: every picture taken with the camera button (the newest 12 are kept on this device), to save or delete.
+
+Everything in the menu down to the settings works with a controller too: D-pad or stick up/down picks a row,
+left/right moves along it or changes the setting, **A** presses, **B** or **Start** closes. The photo gallery and
+progress reset are for a mouse or finger.
 
 ### Controllers
 
@@ -39,14 +54,15 @@ all controls. It works with a controller too: D-pad or stick to move, **A** to p
 - Buttons are by **position**, not by letter: the bottom face button always jumps. That matters for Switch-style pads
   like the **HORI Pad Mini**: the bottom button is labelled B there, and it jumps. When the browser doesn't recognise a
   pad (it then reports a "non-standard" layout, which Switch-style wired pads often do on Windows), the game reads the
-  buttons in DirectInput order and translates them, so the positions still match the pictures. Home and Capture do
-  nothing.
+  buttons in DirectInput order and translates them, so the positions still match the pictures. **Capture** takes a
+  photo (on any Switch-style pad, recognised or not); Home does nothing.
 - A controller can start the game from the title screen; every extra controller joins with any button.
-- Button presses are sampled every 8 ms, so quick taps are never lost, even on a slow tablet.
+- Button presses are sampled every 8 ms and every press is counted, so quick taps are never lost and mashing the
+  poop button gives a whole row of poops, even on a slow tablet.
 - If a controller is unplugged or its battery dies, that animal falls asleep 💤 instead of disappearing. Plug the same
   controller back in (any port) and it wakes up with the same animal, hat and colour. After two minutes asleep it leaves.
 - Controllers that can rumble do so when you join, find a star and when the party starts (small pads like the
-  HORI Pad Mini usually have no rumble; nothing else depends on it).
+  HORI Pad Mini usually have no rumble; nothing else depends on it). Rumble can be switched off in the grown-ups menu.
 
 ## Things to discover
 
@@ -55,7 +71,7 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
 
 | Area | What is there |
 |---|---|
-| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat) and the big red button (puts the park back) |
+| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, and the big red button (puts the park back) |
 | 🎡 Carnival (north) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
@@ -82,6 +98,16 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
   castle or on the ice.
 - **Piggyback towers**: jump and land on a friend's back to ride along. A third friend can land on top. Jump to hop off;
   the one at the bottom can flop to throw everybody off, and a bean rocket blasts you off the top.
+- **Lick a friend**: the tongue grabs friends too. Walk off and they come along on the end of your tongue; lick again
+  and they fly off in a big arc. The one who is caught can jump to wriggle free, and nobody is held for more than a
+  few seconds.
+- **New hats from stars**: the party hat is there from the start; every golden star ever found counts towards the next
+  hat (crown, propeller, flower, cowboy hat, top hat, duck), and whoever finds the star that unlocks one wears it
+  straight away. The **hat rack** next to the present box shows all of them: walk into one to wear it; the dark ones
+  with a star above them are still to be found. Start (and the party) only picks from unlocked hats. Progress is
+  remembered on this device.
+- **The camera button** 📷: three beeps, everybody jumps, flash! The photo pops up for a moment and is kept for the
+  grown-ups (see the grown-ups menu).
 - **12 golden stars**, each marked by a beam of light: on top of the fountain, at the top of the ferris wheel, in the
   soccer goal, above the volcano, on the slide tower, on the lighthouse balcony, on the snow hill, on the barn roof,
   above the tallest mushroom, in the middle of the maze, on the brontosaurus's head and on the train's roof. When all
@@ -98,10 +124,24 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
-npm run lint     # type-check
+npm run dev        # http://localhost:3000
+npm run lint       # type-check
+npm test           # unit tests (vitest): input, clock, settings, progress, layout
+npm run test:e2e   # browser tests (Playwright, starts its own dev server)
+npm run check      # lint + unit tests + build
 npm run build
 ```
+
+### Tests and the test mode
+
+Opening the game with `?test=<seed>` (for example `http://localhost:3000/?test=7`) switches to **test mode**: nothing
+moves until `window.__silly.step(frames)` is called, every step is exactly 1/60 s, randomness is seeded, React finishes
+all its work between steps, and only the last step of a batch is drawn. Nothing is read from or saved to the browser's
+storage. The same seed and the same presses therefore play out identically, down to the last bit, on any machine
+(`e2e/determinism.spec.ts` checks exactly that). The browser tests in `e2e/` drive the game this way through the
+helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect), plus one test of the normal
+real-time loop. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and build, then the browser
+tests.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are
@@ -113,14 +153,26 @@ src/
   game/
     config.ts           tuning: speeds, party points, players, species, hats
     layout.ts           where everything in the park lives
-    input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection
+    input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
+    clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
+    FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
+    testMode.ts         ?test=<seed>
     store.ts            reactive state for UI: players, party meter, stars, menu
+    settings.ts         grown-ups settings and graphics quality
+    progress.ts         stars found ever and the hats they unlock
+    photo.ts            the camera: countdown, photos kept on this device
+    storage.ts          forgiving localStorage wrapper (off in test mode)
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
     collision.ts        collision groups (animals walk through poops)
     audio.ts, music.ts  synthesised sound effects and background music (Web Audio)
     fx.ts, FxRenderer   pooled particles (instanced) and shockwave rings
     Scene.tsx           lights, sky, shared camera, input loop, party director
-    player/             animal controller (Player.tsx), models, hats
+    player/             one animal: Player.tsx runs these steps in order every frame:
+      body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
+      actions.ts        tongue (props, food, friends), noise, poop, animal/hat, headbutt
+      piggyback.ts, movement.ts, animate.ts
+      frame.ts, state.ts, constants.ts, physics.ts
+      AnimalModel.tsx, Hat.tsx
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
@@ -129,10 +181,13 @@ src/
       Food.tsx          lickable food spots that grow back (bowls, picnic, carrots, ice cream)
       Poop.tsx          poops: flies, slipping, splats, and the flowers they turn into
       Toilet.tsx        the flushing toilet on the plaza
+      HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform
-  ui/                   HUD, title screen, touch controls, grown-ups menu (icons only)
+  ui/                   HUD, title screen, touch controls, grown-ups menu (icons for kids, words for grown-ups)
+tests/unit/             vitest unit tests (fake gamepads, fake storage)
+e2e/                    Playwright browser tests in test mode
 ```
 
 ### Design rules

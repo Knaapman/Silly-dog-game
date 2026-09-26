@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { unlockAudio } from './game/audio';
 import { consumeKeyPresses, installInput, onAnyKey } from './game/input';
 import { Scene } from './game/Scene';
+import { detectQuality, effectiveQuality, qualityDpr, useSettings } from './game/settings';
 import { useGame } from './game/store';
 import { GrownUpMenu } from './ui/GrownUpMenu';
 import { Hud } from './ui/Hud';
@@ -20,6 +21,7 @@ export default function App() {
   const setMenuOpen = useGame((s) => s.setMenuOpen);
   const setTouchUi = useGame((s) => s.setTouchUi);
   const start = useGame((s) => s.start);
+  const quality = useSettings(effectiveQuality);
 
   useEffect(() => {
     installInput();
@@ -62,12 +64,17 @@ export default function App() {
       <Canvas
         frameloop="never"
         shadows="percentage"
-        dpr={[1, 1.75]}
+        dpr={qualityDpr(quality, window.devicePixelRatio, window.innerWidth)}
         camera={{ position: [0, 44, 62], fov: 45, near: 0.5, far: 700 }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
+          // "Auto" graphics: pick a level from the graphics card's name.
+          const ctx = gl.getContext();
+          const info = ctx.getExtension('WEBGL_debug_renderer_info');
+          const renderer = String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER));
+          useSettings.getState().setDetected(detectQuality(renderer, window.matchMedia('(pointer: coarse)').matches), renderer);
         }}
       >
         <Scene />
