@@ -2,8 +2,8 @@
 // pollInputs() runs once per frame; players read their frame with getInput(source).
 
 export type SourceId = 'kb1' | 'kb2' | 'touch' | `pad${number}`;
-export type ActionName = 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'species' | 'hat';
-export const ACTIONS: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'species', 'hat'];
+export type ActionName = 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'species' | 'hat';
+export const ACTIONS: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'species', 'hat'];
 
 export type InputFrame = {
   x: number;
@@ -35,6 +35,7 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       lick: ['KeyQ', 'KeyJ'],
       noise: ['KeyR', 'KeyI'],
       flop: ['KeyF', 'KeyU', 'KeyO'],
+      poop: ['KeyG', 'KeyP'],
       species: ['Digit1', 'KeyC'],
       hat: ['Digit2', 'KeyX']
     }
@@ -50,6 +51,7 @@ export const KEYMAPS: Record<'kb1' | 'kb2', KeyMap> = {
       lick: ['ControlRight', 'Numpad1'],
       noise: ['Slash', 'Numpad3'],
       flop: ['Period', 'NumpadDecimal'],
+      poop: ['Quote', 'Numpad5'],
       species: ['Comma', 'Numpad7'],
       hat: ['KeyM', 'Numpad9']
     }
@@ -62,7 +64,9 @@ const PAD_BUTTONS: Record<ActionName, number[]> = {
   bonk: [1],
   lick: [2],
   noise: [3],
-  flop: [4, 5, 6, 7],
+  // bumpers flop, triggers poop (big, easy buttons for small hands)
+  flop: [4, 5],
+  poop: [6, 7],
   species: [8],
   hat: [9]
 };
@@ -105,10 +109,10 @@ export function onUiNav(listener: (nav: UiNav) => void) {
 }
 
 function emptyActions(): Record<ActionName, boolean> {
-  return { jump: false, bonk: false, lick: false, noise: false, flop: false, species: false, hat: false };
+  return { jump: false, bonk: false, lick: false, noise: false, flop: false, poop: false, species: false, hat: false };
 }
 
-const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Slash', 'Enter']);
+const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Slash', 'Enter', 'Quote']);
 
 let installed = false;
 let anyKeyListener: ((code: string) => void) | null = null;

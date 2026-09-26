@@ -22,7 +22,7 @@ import {
   melonTexture,
   soccerTexture
 } from '../materials';
-import { allocPropId, registerProp, type PropEntry, type PropKind } from '../runtime';
+import { allocPropId, players, registerProp, type PropEntry, type PropKind } from '../runtime';
 import { useGame } from '../store';
 
 type PropDef = {
@@ -36,7 +36,7 @@ type PropDef = {
   angularDamping: number;
 };
 
-type SimpleKind = Exclude<PropKind, 'chicken' | 'cow' | 'dino' | 'snowball'>;
+type SimpleKind = Exclude<PropKind, 'chicken' | 'cow' | 'dino' | 'snowball' | 'poop'>;
 
 const DEFS: Record<SimpleKind, PropDef> = {
   ball: { radius: 0.3, launch: 16, heavy: false, density: 0.5, restitution: 0.8, friction: 0.6, linearDamping: 0.2, angularDamping: 0.3 },
@@ -284,11 +284,12 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
       heldBy: null,
       onBonk: splatty ? () => window.setTimeout(splat, 0) : kind === 'duck' ? () => playSqueak(body.current?.translation()) : undefined,
       onGrab: edible
-        ? () => {
+        ? (slot) => {
             const rb = body.current;
             if (!rb) return false;
             const p = rb.translation();
             playChomp(p);
+            players.get(slot)?.feed();
             emit('heart', [p.x, p.y + 0.8, p.z], { count: 6, color: ['#ff4d8d', '#ff8fb5'], speed: 1.5, up: 2 });
             emit('chunk', [p.x, p.y, p.z], { count: 8, color: ['#fff3c4', '#e53935'], speed: 2, up: 3, size: 0.08 });
             useGame.getState().addParty(PARTY_POINTS.eat);

@@ -400,6 +400,52 @@ export function playChomp(position?: AudioPosition) {
   v.finish();
 }
 
+// ---------------------------------------------------------------------------
+// Tummy noises
+
+/** Empty-belly toot. Low buzzy flutter; every one sounds a little different. */
+export function playFart(position?: AudioPosition) {
+  const v = voice('action', { position });
+  if (!v) return;
+  const base = rand(62, 105);
+  const dur = rand(0.3, 0.62);
+  v.tone({ type: 'sawtooth', from: base * 1.25, to: base * 0.75, dur, gain: 0.15, attack: 0.02, vibrato: [rand(20, 34), base * 0.4], filter: { type: 'lowpass', freq: 560, q: 5 } });
+  v.noise({ dur: dur * 0.9, gain: 0.07, filter: { type: 'lowpass', freq: 380, q: 6 }, wobble: [rand(18, 30), 150] });
+  v.finish();
+}
+
+/** Squeeze... plop! Bigger poops plop lower; golden ones sparkle. */
+export function playPlop(position?: AudioPosition, size = 1, golden = false) {
+  const v = voice('action', { position });
+  if (!v) return;
+  v.tone({ type: 'sawtooth', from: rand(150, 190), to: rand(95, 120), dur: 0.18, gain: 0.07, vibrato: [30, 22], filter: { type: 'lowpass', freq: 700, q: 3 } });
+  const f = 560 / Math.sqrt(size);
+  v.tone({ type: 'sine', from: f, to: f * 0.32, at: 0.17, dur: 0.15, gain: 0.22 });
+  v.noise({ at: 0.17, dur: 0.1, gain: 0.07, filter: { type: 'lowpass', freq: 800 } });
+  if (golden) [1568, 2093, 2637, 3136].forEach((fr, i) => v.tone({ from: fr, at: 0.32 + i * 0.07, dur: 0.3, gain: 0.06 }));
+  v.finish();
+}
+
+export function playBurp(position?: AudioPosition) {
+  if (throttled('burp', 300)) return;
+  const v = voice('action', { position });
+  if (!v) return;
+  const f = rand(80, 105);
+  v.tone({ type: 'sawtooth', from: f * 1.2, to: f * 0.78, dur: 0.6, gain: 0.18, attack: 0.03, vibrato: [11, 7], filter: { type: 'bandpass', freq: 520, q: 1.5 } });
+  v.noise({ dur: 0.45, gain: 0.04, filter: { type: 'bandpass', freq: 650, q: 2 } });
+  v.finish();
+}
+
+/** "Bleh!" after licking something you really shouldn't. */
+export function playYuck(position?: AudioPosition) {
+  if (throttled('yuck', 250)) return;
+  const v = voice('action', { position });
+  if (!v) return;
+  v.tone({ type: 'square', from: 430, to: 250, dur: 0.34, gain: 0.07, vibrato: [34, 30], filter: { type: 'lowpass', freq: 1400, q: 2 } });
+  v.noise({ at: 0.05, dur: 0.24, gain: 0.07, filter: { type: 'bandpass', freq: 1200, q: 2 }, wobble: [30, 400] });
+  v.finish();
+}
+
 export function playPoof(position?: AudioPosition) {
   const v = voice('reward', { position });
   if (!v) return;

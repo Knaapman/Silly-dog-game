@@ -20,7 +20,8 @@ export type PropKind =
   | 'chicken'
   | 'cow'
   | 'dino'
-  | 'snowball';
+  | 'snowball'
+  | 'poop';
 
 export type PropEntry = {
   id: number;
@@ -98,9 +99,37 @@ export type PlayerRuntime = {
   /** Pin the player at a point (e.g. inside a cannon), hidden or not. null releases. */
   hold: (position: THREE.Vector3 | null, hidden?: boolean) => void;
   isLaunched: () => boolean;
+  /** Bites in the belly (0..BELLY_MAX). Each one comes back out with the poop button. */
+  belly: number;
+  /** Eat something: the belly grows (or, when already full, a big burp). */
+  feed: () => void;
 };
 
 export const players = new Map<number, PlayerRuntime>();
+
+/** Food that stays put (bowls, cakes, carrots...). Only the tongue looks at these. */
+export type FoodEntry = {
+  id: number;
+  position: THREE.Vector3;
+  radius: number;
+  enabled: boolean;
+  /** Called when licked; the food handles its own crumbs and regrowing. */
+  eat: (slot: number) => void;
+};
+
+export const foods = new Map<number, FoodEntry>();
+let nextFoodId = 1;
+
+export function registerFood(entry: Omit<FoodEntry, 'id'>) {
+  const full: FoodEntry = { ...entry, id: nextFoodId++ };
+  foods.set(full.id, full);
+  return {
+    entry: full,
+    unregister: () => {
+      foods.delete(full.id);
+    }
+  };
+}
 
 /** Recent animal noises; critters listen to these. */
 export const noises: { position: THREE.Vector3; time: number; slot: number }[] = [];
@@ -125,10 +154,12 @@ export function shakeCamera(amount: number) {
   camera.shake = Math.min(1.2, Math.max(camera.shake, amount));
 }
 
-/** Spawns an apple from a tree; set by the orchard component. */
+/** World spawners, filled in by the components that own those things. */
 export const spawners = {
   apple: (_position: THREE.Vector3, _color?: string) => {},
-  babyDino: (_ownerSlot: number, _position: THREE.Vector3) => {}
+  babyDino: (_ownerSlot: number, _position: THREE.Vector3) => {},
+  /** size ~0.8 (one bite) .. 1.4 (full belly); golden is the rare shiny one. */
+  poop: (_position: THREE.Vector3, _velocity: THREE.Vector3, _size: number, _golden: boolean) => {}
 };
 
 export function playersCentroid(out: THREE.Vector3, excludeSlot?: number) {

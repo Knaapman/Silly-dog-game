@@ -2,8 +2,8 @@
 
 A Goat Simulator–style physics sandbox made for **young kids (around 5 years old)**, with local co-op for up to **4 players**.
 You play a dog, goat, pig or sheep in a big, busy theme park with eight themed areas. You can headbutt things, grab and
-drag them with a sticky tongue, flop over like a ragdoll, ride the rides and get flung around by geysers, cannons,
-see-saws and volcanoes.
+drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
+ride the rides and get flung around by geysers, cannons, see-saws and volcanoes.
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -18,9 +18,10 @@ so friends can drop in and out at any time. All players share one camera that zo
 | Move | Left stick or D-pad | `W A S D` | Arrow keys | Drag anywhere on the left half |
 | ⬆️ Jump (press again in the air to flip) | **A** / ✕ (bottom) | `Space` or `K` | `Enter` / `Num 0` | Green button |
 | 💥 Headbutt | **B** / ◯ (right) | `E` or `L` | `Right Shift` / `Num 2` | Red button |
-| 👅 Lick & grab, press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
+| 👅 Lick & grab (or eat), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
-| 🌀 Flop (ragdoll, steer by rolling) | Any bumper or trigger | `F`, `U` or `O` | `.` | Purple button |
+| 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
+| 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
 | 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
@@ -56,6 +57,12 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
 | 🚜 Farm (west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
 | 🍄 Forest (north-west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
 
+- **Eating and pooping.** Lick food to eat it: dog bowls next to the fountain, cupcakes on the picnic blanket,
+  carrots on the farm, ice creams on the carnival stalls, apples and coconuts that fall from trees, or just the grass
+  anywhere. Every bite makes your tummy rounder (5 bites is full; one more and you burp). Press 💩 and one poop comes
+  out for every bite, with a smiley face and flies buzzing around it. A full tummy sometimes makes a **golden poop**.
+  With an empty tummy you toot instead: a green cloud and a little hop. Run over a poop and you slip and flip; lick
+  one and it's *bleh*; headbutt one and it flies off and splats. After a while every poop grows into a flower.
 - **12 golden stars**, each marked by a beam of light: on top of the fountain, at the top of the ferris wheel, in the
   soccer goal, above the volcano, on the slide tower, on the lighthouse balcony, on the snow hill, on the barn roof,
   above the tallest mushroom, in the middle of the maze, on the brontosaurus's head and on the train's roof. When all
@@ -89,7 +96,8 @@ src/
     layout.ts           where everything in the park lives
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection
     store.ts            reactive state for UI: players, party meter, stars, menu
-    runtime.ts          non-reactive per-frame registry (players, props, statics, surfaces, hints, camera)
+    runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
+    collision.ts        collision groups (animals walk through poops)
     audio.ts, music.ts  synthesised sound effects and background music (Web Audio)
     fx.ts, FxRenderer   pooled particles (instanced) and shockwave rings
     Scene.tsx           lights, sky, shared camera, input loop, party director
@@ -99,6 +107,8 @@ src/
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
+      Food.tsx          lickable food spots that grow back (bowls, picnic, carrots, ice cream)
+      Poop.tsx          poops: flies, slipping, splats, and the flowers they turn into
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform

@@ -7,10 +7,14 @@ import {
   playBonk,
   playBoing,
   playBounce,
+  playBurp,
+  playChomp,
   playDuet,
+  playFart,
   playFlop,
   playHatTada,
   playJump,
+  playPlop,
   playPoof,
   playSlideWhistle,
   playSlurp,
@@ -20,12 +24,14 @@ import {
   playThud,
   playWhoosh
 } from '../audio';
-import { GRAVITY, MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
+import { ANIMAL_GROUPS } from '../collision';
+import { BELLY_MAX, GRAVITY, MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
 import { bonkStars, burstConfetti, emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
-import { distXZ, isInMud, isInPond, isOnSnow, SPAWN_POINTS } from '../layout';
+import { distXZ, isInMud, isInPond, isOnGrass, isOnSnow, SPAWN_POINTS } from '../layout';
 import { lambert } from '../materials';
 import {
+  foods,
   noises,
   players,
   playersCentroid,
@@ -33,8 +39,10 @@ import {
   props,
   pushNoise,
   shakeCamera,
+  spawners,
   statics,
   surfaces,
+  type FoodEntry,
   type PlayerRuntime,
   type PropEntry
 } from '../runtime';
@@ -86,6 +94,8 @@ function createState(spawn: THREE.Vector3) {
     stunned: 0,
     pendingBump: null as THREE.Vector3 | null,
     pendingHop: 0,
+    /** Small upward nudge without a flip (the toot hop). */
+    pendingNudge: 0,
     pendingLaunch: null as { target: THREE.Vector3; apex: number } | null,
     holdAt: null as THREE.Vector3 | null,
     hidden: false,
@@ -94,6 +104,17 @@ function createState(spawn: THREE.Vector3) {
     stepTimer: 0,
     gravityOff: false,
     grip: false,
+    // tummy: bites eaten, the squat while pooping, chewing, and the belly's wobbly size
+    belly: 0,
+    chew: 0,
+    poopTime: 0,
+    poopCooldown: 0,
+    /** Presses waiting for the current squat to finish: mashing = a row of poops. */
+    poopPresses: 0,
+    poopQueued: null as { size: number; golden: boolean } | null,
+    fartedInAir: false,
+    bellyScale: 0.8,
+    bellyVel: 0,
     jumpedAt: 0,
     noiseAt: 0,
     flip: null as Flip | null,
@@ -138,6 +159,7 @@ function pickSpawn(slot: number) {
 const BONK_PITCH: Partial<Record<PropEntry['kind'], number>> = {
   chicken: 1.6,
   dino: 1.9,
+  poop: 0.5,
   cow: 0.6,
   snowball: 0.8,
   duck: 1.8,
@@ -218,7 +240,21 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.holdAt = position ? position.clone() : null;
         s.hidden = position ? hidden : false;
       },
-      isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null
+      isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null,
+      belly: 0,
+      feed: () => {
+        s.chew = 0.7;
+        s.bellyVel += 3.5;
+        if (s.belly < BELLY_MAX) {
+          s.belly += 1;
+          return;
+        }
+        // Already stuffed: a big burp instead.
+        playBurp(s.pos);
+        s.squash = -0.3;
+        ring([s.pos.x, s.pos.y + 0.6, s.pos.z], { color: '#c8f7c5', radius: 2.2, duration: 0.5 });
+        emit('puff', [s.pos.x, s.pos.y + 0.7, s.pos.z], { count: 6, color: ['#e8ffe0', '#ffffff'], speed: 1.5, up: 1.5, size: 0.3 });
+      }
     };
     players.set(slot, rt);
     // "I'm here!" - buzz the controller that just joined.
@@ -277,7 +313,7 @@ export function Player({ info }: { info: PlayerInfo }) {
 
     // ----- ground probe (also places the landing-shadow ring)
     ray.origin = { x: t.x, y: t.y, z: t.z };
-    const hit = world.castRay(ray, 40, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS, undefined, undefined, rb);
+    const hit = world.castRay(ray, 40, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS, ANIMAL_GROUPS, undefined, rb);
     const groundDist = hit ? hit.timeOfImpact : 99;
     s.groundY = t.y - groundDist;
     const wasGrounded = s.grounded;
@@ -403,25 +439,43 @@ export function Player({ info }: { info: PlayerInfo }) {
     if (input.pressed.lick && !s.flopped) {
       if (s.held != null) releaseHeld(true);
       else {
+        // Lower is better: close to the mouth and in front of it. -1 = out of reach.
+        const tongueScore = (position: THREE.Vector3, radius: number) => {
+          tmp.d.copy(position).sub(tmp.mouth);
+          const dist = tmp.d.length() - radius;
+          if (dist > 2.6) return -1;
+          const flat = Math.hypot(tmp.d.x, tmp.d.z) || 1;
+          const facing = (tmp.d.x * tmp.fwd.x + tmp.d.z * tmp.fwd.z) / flat;
+          if (facing < 0.15 && dist > 0.8) return -1;
+          return dist - facing + 1;
+        };
         let best: PropEntry | null = null;
         let bestScore = Infinity;
         props.forEach((prop) => {
           if (!prop.grabbable || !prop.enabled || prop.heldBy != null) return;
           if (!propPosition(prop, tmp.p)) return;
-          tmp.d.copy(tmp.p).sub(tmp.mouth);
-          const dist = tmp.d.length() - prop.radius;
-          if (dist > 2.6) return;
-          const flat = Math.hypot(tmp.d.x, tmp.d.z) || 1;
-          const facing = (tmp.d.x * tmp.fwd.x + tmp.d.z * tmp.fwd.z) / flat;
-          if (facing < 0.15 && dist > 0.8) return;
-          const score = dist - facing;
-          if (score < bestScore) {
+          const score = tongueScore(tmp.p, prop.radius);
+          if (score >= 0 && score < bestScore) {
             bestScore = score;
             best = prop;
           }
         });
+        let bestFood: FoodEntry | null = null;
+        foods.forEach((food) => {
+          if (!food.enabled) return;
+          const score = tongueScore(food.position, food.radius);
+          if (score >= 0 && score < bestScore) {
+            bestScore = score;
+            bestFood = food;
+          }
+        });
         const target = best as PropEntry | null;
-        if (target) {
+        const food = bestFood as FoodEntry | null;
+        if (food) {
+          food.eat(slot);
+          playSlurp(s.pos);
+          rumble(source, 0.15, 0.35, 80);
+        } else if (target) {
           const keep = target.onGrab?.(slot);
           if (keep !== false) {
             target.heldBy = slot;
@@ -429,6 +483,13 @@ export function Player({ info }: { info: PlayerInfo }) {
           }
           playSlurp(s.pos);
           rumble(source, 0.1, 0.3, 60);
+        } else if (s.grounded && s.groundY < 0.5 && isOnGrass(t.x, t.z)) {
+          // Nothing to lick, but there's always grass: munch!
+          s.lickMiss = 0.32;
+          playChomp(s.pos);
+          emit('chunk', [tmp.mouth.x, s.groundY + 0.15, tmp.mouth.z], { count: 8, color: ['#5fbf4a', '#8bd96b', '#3f9b3a'], speed: 2, up: 2.5, size: 0.07 });
+          rt?.feed();
+          useGame.getState().addParty(PARTY_POINTS.eat * 0.5);
         } else {
           s.lickMiss = 0.32;
           playSlurp(s.pos, true);
@@ -489,6 +550,74 @@ export function Player({ info }: { info: PlayerInfo }) {
         if (prop.heavy || prop.heldBy != null || !propPosition(prop, tmp.p)) return;
         if (tmp.p.distanceTo(s.pos) < 3.5) prop.getBody()?.applyImpulse({ x: 0, y: 0.6, z: 0 }, true);
       });
+    }
+
+    // ----- poop! (or, with an empty tummy, a toot)
+    s.poopCooldown -= dt;
+    s.chew -= dt;
+    if (s.grounded || s.swimming) s.fartedInAir = false;
+    if (input.pressed.poop && !s.flopped && !s.holdAt) {
+      tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6);
+      const waiting = s.poopPresses + (s.poopQueued ? 1 : 0);
+      if (s.belly > waiting && !s.swimming) {
+        s.poopPresses += 1;
+      } else if (waiting === 0 && s.poopCooldown <= 0) {
+        s.poopCooldown = 0.25;
+        playFart(s.pos);
+        const green = ['#b5e48c', '#99d98c', '#d9ed92'];
+        if (s.swimming) emit('drop', [tmp.c.x, s.pos.y + 0.1, tmp.c.z], { count: 12, color: ['#e0f7ff', '#ffffff'], speed: 1.2, up: 4, size: 0.16 });
+        else emit('puff', [tmp.c.x, s.pos.y - 0.1, tmp.c.z], { count: 9, color: green, speed: 1.6, up: 0.8, size: 0.45, dir: [-tmp.fwd.x * 2, 0, -tmp.fwd.z * 2] });
+        s.squash = -0.25;
+        // A little toot hop, once per jump in the air.
+        if (s.grounded) s.pendingNudge = 4;
+        else if (!s.fartedInAir && !s.swimming) {
+          s.fartedInAir = true;
+          s.pendingNudge = 4.5;
+        }
+        pushNoise(s.pos, slot);
+        rumble(source, 0.35, 0.1, 160);
+        useGame.getState().addParty(PARTY_POINTS.fart);
+      }
+    }
+    if (s.poopTime <= 0 && s.poopPresses > 0 && !s.flopped && !s.holdAt) {
+      // Squat for a moment; the poop comes out partway through.
+      s.poopPresses -= 1;
+      s.poopTime = 0.34;
+      s.poopQueued = { size: 0.75 + 0.13 * s.belly, golden: s.belly >= BELLY_MAX && Math.random() < 0.35 };
+      s.squash = 0.25;
+    }
+    if (s.flopped || s.holdAt) {
+      // interrupted mid-squat: the bite stays in the tummy
+      s.poopPresses = 0;
+      s.poopQueued = null;
+      s.poopTime = 0;
+    }
+    if (s.poopTime > 0) {
+      const before = s.poopTime;
+      s.poopTime -= dt;
+      if (before > 0.16 && s.poopTime <= 0.16 && s.poopQueued) {
+        const { size, golden } = s.poopQueued;
+        s.poopQueued = null;
+        s.belly = Math.max(0, s.belly - 1);
+        s.bellyVel -= 2.5;
+        const back = 0.55 + 0.26 * size;
+        // a little to the left or right, so a row of poops spreads out instead of stacking
+        const side = (Math.random() - 0.5) * 0.6;
+        tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -back);
+        tmp.c.x += tmp.fwd.z * side;
+        tmp.c.z -= tmp.fwd.x * side;
+        tmp.c.y = s.pos.y - 0.12;
+        tmp.v.set(-tmp.fwd.x * 2.2 + tmp.fwd.z * side * 2 + s.vel.x * 0.5, 0.6 + Math.max(0, s.vel.y) * 0.5, -tmp.fwd.z * 2.2 - tmp.fwd.x * side * 2 + s.vel.z * 0.5);
+        spawners.poop(tmp.c, tmp.v, size, golden);
+        playPlop(s.pos, size, golden);
+        s.squash = -0.3;
+        rumble(source, golden ? 0.6 : 0.3, 0.2, golden ? 300 : 120);
+        if (golden) {
+          emit('star', [tmp.c.x, tmp.c.y + 0.3, tmp.c.z], { count: 16, color: ['#ffd23f', '#fff3a8', '#ffffff'], speed: 4, up: 4 });
+          ring([tmp.c.x, s.groundY + 0.08, tmp.c.z], { color: '#ffd23f', radius: 2.5, duration: 0.6 });
+        }
+        useGame.getState().addParty(golden ? PARTY_POINTS.goldenPoop : PARTY_POINTS.poop);
+      }
     }
 
     // ----- change animal / hat (Select / Start on a controller)
@@ -571,6 +700,10 @@ export function Player({ info }: { info: PlayerInfo }) {
       playBoing(s.pos, 1.5);
       rumble(source, 0.5, 0.5, 160);
       s.pendingBump = null;
+    }
+    if (s.pendingNudge > 0) {
+      if (!s.flopped) vy = Math.max(vy, s.pendingNudge);
+      s.pendingNudge = 0;
     }
     if (s.pendingHop > 0 && !s.flopped) {
       vy = Math.max(vy, s.pendingHop);
@@ -803,6 +936,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       rt.flopped = s.flopped;
       rt.jumpedAt = s.jumpedAt;
       rt.noiseAt = s.noiseAt;
+      rt.belly = s.belly;
     }
 
     // =====================================================================
@@ -851,19 +985,34 @@ export function Player({ info }: { info: PlayerInfo }) {
       const bonking = s.bonkTime > 0;
       const moving = hSpeed > 0.6 && s.grounded;
       if (moving) s.walkPhase += hSpeed * dt * 2.3;
+      const pooping = s.poopTime > 0;
       const bob = moving ? Math.abs(Math.sin(s.walkPhase)) * 0.06 : Math.sin(time * 2.2) * 0.012;
-      const targetPitch = bonking ? 0.35 : airborne ? THREE.MathUtils.clamp(-lv.y * 0.03, -0.35, 0.35) : 0;
-      r.body.position.y = bob;
+      // Squatting: bottom down, nose up, with a little straining shiver.
+      const targetPitch = pooping ? -0.3 : bonking ? 0.35 : airborne ? THREE.MathUtils.clamp(-lv.y * 0.03, -0.35, 0.35) : 0;
+      r.body.position.y = pooping ? -0.12 : bob;
+      r.body.position.x = pooping ? Math.sin(time * 70) * 0.012 : 0;
       r.body.position.z = THREE.MathUtils.lerp(r.body.position.z, bonking ? 0.28 : 0, 1 - Math.exp(-25 * dt));
-      r.body.rotation.x = THREE.MathUtils.lerp(r.body.rotation.x, targetPitch, 1 - Math.exp(-12 * dt));
-      r.body.rotation.z = THREE.MathUtils.lerp(r.body.rotation.z, moving ? -Math.sin(s.walkPhase) * 0.04 : 0, 0.2);
+      r.body.rotation.x = THREE.MathUtils.lerp(r.body.rotation.x, targetPitch, 1 - Math.exp(-(pooping ? 30 : 12) * dt));
+      // A full tummy waddles.
+      const waddle = 0.04 + 0.03 * s.belly;
+      r.body.rotation.z = THREE.MathUtils.lerp(r.body.rotation.z, moving ? -Math.sin(s.walkPhase) * waddle : 0, 0.2);
+    }
+
+    // Belly: a springy size that jiggles on every bite and shrinks with every poop.
+    const bellyTarget = s.belly === 0 ? 0.8 : 0.96 + 0.11 * s.belly;
+    s.bellyVel += (-170 * (s.bellyScale - bellyTarget) - 8 * s.bellyVel) * dt;
+    s.bellyScale = Math.max(0.5, s.bellyScale + s.bellyVel * dt);
+    if (r.belly) {
+      r.belly.scale.setScalar(s.bellyScale);
+      r.belly.visible = s.bellyScale > 0.82;
     }
 
     if (r.head) {
       const bonking = s.bonkTime > 0;
       s.idleTime = hSpeed < 0.3 && s.grounded ? s.idleTime + dt : 0;
       const lookAround = s.idleTime > 2 ? Math.sin(time * 0.9) * 0.5 : 0;
-      const targetX = napping ? 0.7 : bonking ? 0.55 : s.noiseTime > 0 ? -0.5 + Math.sin(time * 40) * 0.05 : s.held != null ? 0.15 : 0;
+      const chewing = s.chew > 0 ? Math.sin(time * 30) * 0.12 : 0;
+      const targetX = (napping ? 0.7 : bonking ? 0.55 : s.noiseTime > 0 ? -0.5 + Math.sin(time * 40) * 0.05 : s.held != null ? 0.15 : 0) + chewing;
       r.head.rotation.x = THREE.MathUtils.lerp(r.head.rotation.x, targetX, 1 - Math.exp(-18 * dt));
       r.head.rotation.y = THREE.MathUtils.lerp(r.head.rotation.y, lookAround, 1 - Math.exp(-4 * dt));
       r.head.rotation.z = s.flopped ? Math.sin(time * 9) * 0.3 : THREE.MathUtils.lerp(r.head.rotation.z, 0, 0.2);
@@ -886,6 +1035,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     if (r.tail) {
       const wag = species === 'pig' ? 0 : Math.sin(time * (9 + hSpeed)) * (s.noiseTime > 0 || hSpeed > 1 ? 0.8 : 0.35);
       r.tail.rotation.y = wag;
+      r.tail.rotation.x = THREE.MathUtils.lerp(r.tail.rotation.x, s.poopTime > 0 ? -1.1 : 0, 1 - Math.exp(-20 * dt));
       if (species === 'pig') r.tail.rotation.z += dt * (4 + hSpeed * 2);
     }
 
@@ -1008,7 +1158,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         ccd
         canSleep={false}
       >
-        <BallCollider ref={collider} args={[RADIUS]} friction={0} restitution={0} density={4} />
+        <BallCollider ref={collider} args={[RADIUS]} friction={0} restitution={0} density={4} collisionGroups={ANIMAL_GROUPS} />
         <group ref={yawGroup} position={[0, -RADIUS, 0]}>
           <group ref={squashGroup}>
             <group ref={flipGroup} position={[0, 0.6, 0]}>

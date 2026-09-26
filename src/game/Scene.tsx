@@ -25,6 +25,8 @@ import { GoldenStars } from './world/Stars';
 import { Sky, Terrain } from './world/Terrain';
 import { Balloons } from './world/Toys';
 import { Train } from './world/Train';
+import { Food } from './world/Food';
+import { Poops } from './world/Poop';
 import { Trees } from './world/Trees';
 import { Winter } from './world/Winter';
 import { LAUNCH_PADS } from './layout';
@@ -289,6 +291,8 @@ export function Scene() {
         <Farm />
         <Forest />
         <Train />
+        <Food />
+        <Poops />
         {LAUNCH_PADS.slice(1).map((pad, i) => (
           <LaunchPad key={i} pad={pad} />
         ))}

@@ -212,6 +212,28 @@ export const GOLDEN_STARS: (Vec3 | 'train')[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Food: lick it to fill your belly (and then... the poop button).
+
+export type SnackKind = 'kibble' | 'cake' | 'carrot' | 'icecream';
+export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
+  // dog bowls right next to where everyone spawns
+  { kind: 'kibble', position: [-5, 0, 7.5] },
+  { kind: 'kibble', position: [5, 0, 7.5] },
+  // picnic blanket between the plaza and the beach
+  { kind: 'cake', position: [6.4, 0.06, 20] },
+  { kind: 'cake', position: [7.6, 0.06, 21] },
+  { kind: 'cake', position: [6.6, 0.06, 21.3] },
+  // carrot patch on the farm
+  ...([[-32, 3], [-30.6, 3], [-29.2, 3], [-32, 4.6], [-30.6, 4.6], [-29.2, 4.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: [c[0], 0, c[1]] as Vec3 })),
+  // ice creams on the carnival stall counters
+  { kind: 'icecream', position: [-9.6, 1.2, -28.6] },
+  { kind: 'icecream', position: [-8.4, 1.2, -28.6] },
+  { kind: 'icecream', position: [21.4, 1.2, -30.6] },
+  { kind: 'icecream', position: [22.6, 1.2, -30.6] }
+];
+export const PICNIC = { center: [7, 20.6] as Vec2, size: 2.8 };
+
+// ---------------------------------------------------------------------------
 
 export const PATHS: [Vec2, Vec2][] = [
   [[0, -12], [0, -30]],
@@ -301,4 +323,37 @@ export function isInMud(x: number, z: number) {
 
 export function isOnSnow(x: number, z: number) {
   return distXZ(x, z, SNOW.center[0], SNOW.center[1]) < SNOW.radius;
+}
+
+/** Coloured ground in each area. Everything outside these (and the paths) is grass. */
+export type FloorKind = 'forest' | 'dirt' | 'dino' | 'rubber' | 'carnival' | 'snow' | 'sand' | 'plaza';
+export const FLOOR_PATCHES: { center: Vec2; radius: number; kind: FloorKind; y: number }[] = [
+  { center: ZONES.forest, radius: 20, kind: 'forest', y: 0.006 },
+  { center: ZONES.farm, radius: 13, kind: 'dirt', y: 0.007 },
+  { center: [40, 2], radius: 17, kind: 'dino', y: 0.007 },
+  { center: [33, 37], radius: 17, kind: 'rubber', y: 0.007 },
+  { center: [0, -40], radius: 15, kind: 'carnival', y: 0.007 },
+  { center: SNOW.center, radius: SNOW.radius, kind: 'snow', y: 0.008 },
+  { center: LAKE.center, radius: LAKE.radius + 2.6, kind: 'sand', y: 0.009 },
+  { center: PLAZA.center, radius: PLAZA.radius, kind: 'plaza', y: 0.01 }
+];
+export const PATH_WIDTH = 2.6;
+
+function distToSegment(x: number, z: number, a: Vec2, b: Vec2) {
+  const dx = b[0] - a[0];
+  const dz = b[1] - a[1];
+  const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+  return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
+}
+
+/** Somewhere an animal can nibble grass (the forest floor counts). */
+export function isOnGrass(x: number, z: number) {
+  if (isInPond(x, z)) return false;
+  const onPath = PATHS.some(([a, b]) => distToSegment(x, z, a, b) < PATH_WIDTH / 2);
+  // patches are drawn in order, later ones on top: the topmost one decides
+  for (let i = FLOOR_PATCHES.length - 1; i >= 0; i -= 1) {
+    const p = FLOOR_PATCHES[i];
+    if (distXZ(x, z, p.center[0], p.center[1]) < p.radius) return p.kind === 'forest' && !onPath;
+  }
+  return !onPath;
 }

@@ -50,6 +50,7 @@ const KEY_LABELS: Record<string, string> = {
   Slash: '/',
   Period: '.',
   Comma: ',',
+  Quote: "'",
   Digit1: '1',
   Digit2: '2',
   NumpadDecimal: 'Num .'
@@ -65,7 +66,7 @@ function KeyCap({ code }: { code: string }) {
 
 function KeyboardLegend({ source, color }: { source: 'kb1' | 'kb2'; color: string }) {
   const map = KEYMAPS[source];
-  const rows: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'species', 'hat'];
+  const rows: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'species', 'hat'];
   return (
     <div className="rounded-2xl border-4 bg-white/10 p-3" style={{ borderColor: color }}>
       <div className="mb-2 flex gap-1">
@@ -168,7 +169,8 @@ export function GrownUpMenu() {
           <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-white/10 p-3">
             <ButtonDiamond size={36} />
             <div className="flex gap-2 text-xs">
-              <span className="rounded-md bg-white/20 px-2 py-1" title="Shoulder buttons / triggers">LB RB LT RT = {ACTION_UI.flop.icon}</span>
+              <span className="rounded-md bg-white/20 px-2 py-1" title="Shoulder buttons (bumpers)">LB RB = {ACTION_UI.flop.icon}</span>
+              <span className="rounded-md bg-white/20 px-2 py-1" title="Triggers">LT RT = {ACTION_UI.poop.icon}</span>
             </div>
             <div className="flex gap-2 text-xs">
               <span className="rounded-md bg-white/20 px-2 py-1" title="Back / Select / View (hold: leave)">⧉ = {ACTION_UI.species.icon}</span>

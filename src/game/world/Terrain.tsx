@@ -3,7 +3,7 @@ import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { WORLD_HALF } from '../config';
-import { distXZ, LAKE, MAZE, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
+import { distXZ, FLOOR_PATCHES, LAKE, MAZE, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
 import { GroundPatch, HedgeSegment } from './common';
 
@@ -65,14 +65,9 @@ function ZoneFloors() {
   );
   return (
     <group>
-      <GroundPatch center={ZONES.forest} radius={20} color="" material={mats.forest} y={0.006} />
-      <GroundPatch center={ZONES.farm} radius={13} color="" material={mats.dirt} y={0.007} />
-      <GroundPatch center={[40, 2]} radius={17} color="" material={mats.dino} y={0.007} />
-      <GroundPatch center={[33, 37]} radius={17} color="" material={mats.rubber} y={0.007} />
-      <GroundPatch center={[0, -40]} radius={15} color="" material={mats.carnival} y={0.007} />
-      <GroundPatch center={SNOW.center} radius={SNOW.radius} color="" material={mats.snow} y={0.008} />
-      <GroundPatch center={LAKE.center} radius={LAKE.radius + 2.6} color="" material={mats.sand} y={0.009} />
-      <GroundPatch center={PLAZA.center} radius={PLAZA.radius} color="" material={mats.plaza} y={0.01} />
+      {FLOOR_PATCHES.map((p) => (
+        <GroundPatch key={p.kind} center={p.center} radius={p.radius} color="" material={mats[p.kind]} y={p.y} />
+      ))}
     </group>
   );
 }
@@ -93,10 +88,10 @@ function Paths() {
         return (
           <group key={i}>
             <mesh receiveShadow rotation={[-Math.PI / 2, 0, -angle]} position={[(a[0] + b[0]) / 2, 0.009, (a[1] + b[1]) / 2]} material={material}>
-              <planeGeometry args={[len, 2.6]} />
+              <planeGeometry args={[len, PATH_WIDTH]} />
             </mesh>
             <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[b[0], 0.009, b[1]]} material={material}>
-              <circleGeometry args={[1.3, 20]} />
+              <circleGeometry args={[PATH_WIDTH / 2, 20]} />
             </mesh>
           </group>
         );

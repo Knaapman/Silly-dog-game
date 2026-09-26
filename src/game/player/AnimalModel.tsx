@@ -16,11 +16,13 @@ export type Rig = {
   ears: (THREE.Group | null)[];
   pupils: (THREE.Group | null)[];
   mud: THREE.Group | null;
+  /** Round tummy that grows with every bite (scaled by the controller). */
+  belly: THREE.Group | null;
   eyeRadius: number;
 };
 
 export function createRig(): Rig {
-  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, eyeRadius: 0.09 };
+  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, belly: null, eyeRadius: 0.09 };
 }
 
 type SpeciesSpec = {
@@ -104,6 +106,23 @@ function Mesh({ children, color, ...rest }: { children: ReactNode; color: string
     <mesh castShadow material={lambert(color)} {...rest}>
       {children}
     </mesh>
+  );
+}
+
+/** Hidden inside the body when empty; the controller scales it up as the animal eats. */
+function Belly({ spec, rig, radius, color }: { spec: SpeciesSpec; rig: MutableRefObject<Rig>; radius: number; color: string }) {
+  return (
+    <group
+      position={[0, spec.bodyY - 0.07, 0.04]}
+      scale={0.8}
+      ref={(g) => {
+        rig.current.belly = g;
+      }}
+    >
+      <Mesh color={color} scale={[1, 0.92, 1.12]}>
+        <sphereGeometry args={[radius, 18, 14]} />
+      </Mesh>
+    </group>
   );
 }
 
@@ -231,6 +250,7 @@ function Dog({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <sphereGeometry args={[0.1, 10, 8]} />
         </Mesh>
         <Collar spec={spec} color={color} />
+        <Belly spec={spec} rig={rig} radius={0.27} color={light} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={fur}>
             <sphereGeometry args={[0.27, 16, 12]} />
@@ -286,6 +306,7 @@ function Goat({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <sphereGeometry args={[0.2, 10, 8]} />
         </Mesh>
         <Collar spec={spec} color={color} bell />
+        <Belly spec={spec} rig={rig} radius={0.26} color={fur} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={fur} rotation={[Math.PI / 2 - 0.35, 0, 0]}>
             <capsuleGeometry args={[0.16, 0.2, 6, 12]} />
@@ -344,6 +365,7 @@ function Pig({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <sphereGeometry args={[0.44, 18, 14]} />
         </Mesh>
         <Collar spec={spec} color={color} />
+        <Belly spec={spec} rig={rig} radius={0.37} color={'#ffbdd6'} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={skin}>
             <sphereGeometry args={[0.28, 16, 12]} />
@@ -407,6 +429,7 @@ function Sheep({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           </Mesh>
         ))}
         <Collar spec={spec} color={color} bell />
+        <Belly spec={spec} rig={rig} radius={0.35} color={wool} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={face} scale={[0.9, 1, 1.2]}>
             <sphereGeometry args={[0.19, 14, 10]} />

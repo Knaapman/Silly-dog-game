@@ -114,6 +114,7 @@ export function TouchControls() {
       <div className="absolute right-6 flex gap-3" style={{ bottom: span + 40 }}>
         <ActionButton action="hat" size={54} className="!relative" />
         <ActionButton action="flop" size={54} className="!relative" />
+        <ActionButton action="poop" size={64} className="!relative" />
       </div>
     </div>
   );

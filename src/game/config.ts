@@ -51,7 +51,13 @@ export const PARTY_POINTS = {
   bellyFlop: 0.04,
   hat: 0.03,
   eat: 0.03,
-  splash: 0.02
+  splash: 0.02,
+  poop: 0.04,
+  goldenPoop: 0.15,
+  fart: 0.015
 } as const;
+
+/** Bites a belly holds. Every bite comes back out as one poop. */
+export const BELLY_MAX = 5;
 
 export const PARTY_DURATION_MS = 7000;
