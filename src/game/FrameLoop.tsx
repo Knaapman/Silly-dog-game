@@ -1,5 +1,6 @@
-import { advance, useFrame } from '@react-three/fiber';
+import { advance, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
+import { unstable_IdlePriority, unstable_scheduleCallback } from 'scheduler';
 import { gameClock, MAX_STEP, TEST_STEP, tickGameClock } from './clock';
 import { setInputClock } from './input';
 import { useGame } from './store';
@@ -38,6 +39,7 @@ function RealtimeDriver() {
 /** Test mode: frames only advance through window.__silly.step(), and only the last one is drawn. */
 function TestDriver() {
   const draw = useRef(true);
+  const get = useThree((state) => state.get);
   // Taking over rendering (priority > 0) lets steps skip the expensive draw.
   useFrame(({ gl, scene, camera }) => {
     if (draw.current) gl.render(scene, camera);
@@ -47,27 +49,25 @@ function TestDriver() {
     setInputClock(() => sim * 1000);
     const w = window as unknown as { __silly?: Record<string, unknown> };
     w.__silly = w.__silly ?? {};
-    // Like real frames (each its own browser task), let React commit between steps: new
-    // things spawned in one frame (a poop, a baby dino) must exist in the next.
-    const yieldToReact = () =>
-      new Promise<void>((resolve) => {
-        const channel = new MessageChannel();
-        channel.port1.onmessage = () => resolve();
-        channel.port2.postMessage(null);
-      });
+    // Like real frames, let React finish between steps: new things spawned in one frame (a
+    // poop, a baby dino) must exist in the next. React renders in 5 ms slices of *real* time,
+    // so a single yield isn't enough on a busy machine; an idle-priority callback only runs
+    // once every render and effect React has queued is done.
+    const reactIdle = () => new Promise<void>((resolve) => unstable_scheduleCallback(unstable_IdlePriority, () => resolve()));
     w.__silly.step = async (frames = 1, render = true) => {
       for (let i = 0; i < frames; i += 1) {
         draw.current = render && i === frames - 1;
         sim += TEST_STEP;
         advance(sim);
-        await yieldToReact();
+        await reactIdle();
       }
       return gameClock.time;
     };
-    // draw a first frame (after mounting has settled) so screenshots aren't blank
+    // Draw the scene once so the page isn't blank, without running a frame of the game:
+    // that would happen at an unpredictable point during loading.
     const raf = requestAnimationFrame(() => {
-      sim += TEST_STEP;
-      advance(sim);
+      const { gl, scene, camera } = get();
+      gl.render(scene, camera);
     });
     return () => {
       cancelAnimationFrame(raf);

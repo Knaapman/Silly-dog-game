@@ -1,0 +1,91 @@
+import * as THREE from 'three';
+import type { PowerKind } from '../runtime';
+
+export type Flip = { axis: 'x' | 'y' | 'z'; t: number; dur: number; dir: number };
+type Pupil = { x: number; y: number; vx: number; vy: number };
+
+/** Everything an animal remembers between frames. */
+export function createState(spawn: THREE.Vector3) {
+  return {
+    pos: spawn.clone(),
+    vel: new THREE.Vector3(),
+    prevVel: new THREE.Vector3(),
+    facing: 0,
+    targetFacing: 0,
+    grounded: false,
+    airTime: 0,
+    coyote: 0,
+    jumpBuffer: 0,
+    jumps: 0,
+    lastVy: 0,
+    groundY: 0,
+    flopped: false,
+    flopTime: 0,
+    bonkTime: 0,
+    bonkCooldown: 0,
+    dashTime: 0,
+    bonkHits: new Set<number>(),
+    held: null as number | null,
+    lickMiss: 0,
+    noiseTime: 0,
+    launched: 0,
+    padCooldown: 0,
+    launchAirborne: false,
+    bounceCooldown: 0,
+    stunned: 0,
+    pendingBump: null as THREE.Vector3 | null,
+    pendingHop: 0,
+    /** Small upward nudge without a flip (the toot hop). */
+    pendingNudge: 0,
+    pendingLaunch: null as { target: THREE.Vector3; apex: number } | null,
+    holdAt: null as THREE.Vector3 | null,
+    hidden: false,
+    platformVel: new THREE.Vector3(),
+    sliding: false,
+    stepTimer: 0,
+    gravityOff: false,
+    grip: false,
+    // tummy: bites eaten, the squat while pooping, chewing, and the belly's wobbly size
+    belly: 0,
+    chew: 0,
+    poopTime: 0,
+    poopCooldown: 0,
+    /** Presses waiting for the current squat to finish: mashing = a row of poops. */
+    poopPresses: 0,
+    poopQueued: null as { size: number; golden: boolean } | null,
+    fartedInAir: false,
+    bellyScale: 0.8,
+    bellyVel: 0,
+    // magic food
+    power: null as PowerKind | null,
+    powerTime: 0,
+    powerFx: 0,
+    rocketCooldown: 0,
+    pendingRocket: false,
+    size: 1,
+    sizeVel: 0,
+    colliderSize: 1,
+    stompTimer: 0,
+    // piggyback
+    ridingOn: null as number | null,
+    rideCooldown: 0,
+    jumpedAt: 0,
+    noiseAt: 0,
+    poopAt: 0,
+    flip: null as Flip | null,
+    squash: 0,
+    squashVel: 0,
+    mud: 0,
+    swimming: false,
+    inMud: false,
+    rippleTimer: 0,
+    walkPhase: 0,
+    idleTime: 0,
+    pupils: [
+      { x: 0, y: 0, vx: 0, vy: 0 },
+      { x: 0, y: 0, vx: 0, vy: 0 }
+    ] as Pupil[]
+  };
+}
+
+export type PlayerState = ReturnType<typeof createState>;

@@ -1,0 +1,255 @@
+import type { RapierRigidBody } from '@react-three/rapier';
+import type { Ray, World } from '@dimforge/rapier3d-compat';
+import { playBoing, playBounce, playPower, playSlideWhistle, playSplash, playSquelch, playThud } from '../audio';
+import { ANIMAL_GROUPS } from '../collision';
+import { MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
+import { emit, poof, ring } from '../fx';
+import { rumble } from '../input';
+import { isInMud, isInPond } from '../layout';
+import { propPosition, props, shakeCamera, surfaces } from '../runtime';
+import { useGame } from '../store';
+import { GIANT_SIZE, RADIUS } from './constants';
+import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './frame';
+import { ballistic, pickSpawn } from './physics';
+
+/** Magic food wearing off, and growing / shrinking (the mushroom). Sets f.rad. */
+export function powerAndSize(f: FrameCtx) {
+  const { s, rb, t, dt } = f;
+  if (s.power) {
+    s.powerTime -= dt;
+    if (s.powerTime <= 0) {
+      s.power = null;
+      playPower(s.pos, false);
+      poof([t.x, t.y, t.z], '#ffffff', 12);
+    }
+  }
+  const sizeTarget = s.power === 'giant' ? GIANT_SIZE : 1;
+  s.sizeVel += (-60 * (s.size - sizeTarget) - 9 * s.sizeVel) * dt;
+  s.size = Math.max(0.6, s.size + s.sizeVel * dt);
+  if (Math.abs(s.size - s.colliderSize) > 0.01) {
+    const grow = (s.size - s.colliderSize) * RADIUS;
+    f.col?.setRadius(RADIUS * s.size);
+    // grow upwards, not into the ground
+    if (grow > 0) rb.setTranslation({ x: t.x, y: t.y + grow, z: t.z }, true);
+    s.colliderSize = s.size;
+  }
+  f.rad = RADIUS * s.size;
+}
+
+/** What's underneath: ground distance, special surfaces, moving platforms. */
+export function probeGround(f: FrameCtx, world: World, ray: Ray, excludeSensors: number) {
+  const { s, rb, t, lv } = f;
+  ray.origin = { x: t.x, y: t.y, z: t.z };
+  const hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
+  f.hit = hit;
+  f.groundDist = hit ? hit.timeOfImpact : 99;
+  s.groundY = t.y - f.groundDist;
+  f.wasGrounded = s.grounded;
+  f.surface = hit && f.groundDist < f.rad + 0.4 ? surfaces.get(hit.collider.handle) : undefined;
+  const groundBody = hit ? hit.collider.parent() : null;
+  f.onStatic = !groundBody || groundBody.isFixed();
+  // Generous so slopes (roof, hill, island) still count as ground for jumping. Moving
+  // platforms can rise faster than a normal "falling" check allows.
+  const riseLimit = f.surface?.velocityAt ? 12 : 4;
+  s.grounded = !s.flopped && f.groundDist < f.rad + 0.25 && lv.y < riseLimit;
+  if (s.grounded && f.surface?.velocityAt) f.surface.velocityAt(s.pos, s.platformVel);
+  else s.platformVel.set(0, 0, 0);
+}
+
+export function tickTimers(f: FrameCtx) {
+  const { s, dt, tmp } = f;
+  s.jumpBuffer -= dt;
+  s.coyote -= dt;
+  s.bonkTime -= dt;
+  s.bonkCooldown -= dt;
+  s.dashTime -= dt;
+  s.lickMiss -= dt;
+  s.noiseTime -= dt;
+  s.launched -= dt;
+  s.padCooldown -= dt;
+  s.bounceCooldown -= dt;
+  s.stunned -= dt;
+  s.rideCooldown -= dt;
+  s.airTime = s.grounded ? 0 : s.airTime + dt;
+  // A launch ends as soon as we touch down again, so nobody slides off the landing spot.
+  if (s.launched > 0) {
+    if (!s.grounded) s.launchAirborne = true;
+    else if (s.launchAirborne) s.launched = 0;
+  }
+  tmp.fwd.set(Math.sin(s.facing), 0, Math.cos(s.facing));
+}
+
+export function waterAndMud(f: FrameCtx) {
+  const { s, t, dt } = f;
+  const swimming = isInPond(t.x, t.z) && t.y < 1.3;
+  const inMud = isInMud(t.x, t.z) && t.y < 1.3;
+  if (swimming && !s.swimming) {
+    playSplash(s.pos);
+    emit('drop', [t.x, 0.3, t.z], { count: 26, color: ['#7fd3ff', '#ffffff'], speed: 4, up: 6 });
+    ring([t.x, 0.06, t.z], { color: '#e0f6ff', radius: 2.5, duration: 0.7 });
+    useGame.getState().addParty(PARTY_POINTS.splash);
+    rumble(f.source, 0.2, 0.4, 120);
+  }
+  if (inMud && !s.inMud) {
+    playSquelch(s.pos);
+    emit('chunk', [t.x, 0.2, t.z], { count: 16, color: ['#6b4a2b', '#4d341e'], speed: 3, up: 5, size: 0.14 });
+  }
+  s.swimming = swimming;
+  s.inMud = inMud;
+  if (inMud) s.mud = Math.min(1, s.mud + dt * 2.5);
+  else if (swimming && s.mud > 0) {
+    s.mud = Math.max(0, s.mud - dt * 1.2);
+    if (Math.random() < 0.2) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: '#ffffff', size: 0.2, speed: 1, up: 1 });
+  } else s.mud = Math.max(0, s.mud - dt * 0.015);
+}
+
+/** Flop (ragdoll): start, wake up, and steer the tumbling body. */
+export function flop(f: FrameCtx) {
+  const { s, rb, input, dt } = f;
+  if (input.pressed.flop && !s.flopped) startFlop(f);
+  else if (s.flopped) {
+    s.flopTime -= dt;
+    const canWake = s.flopTime < MOVE.flopDuration - 0.6;
+    if (s.flopTime <= 0 || (canWake && (input.pressed.flop || input.pressed.jump))) endFlop(f);
+    else if (Math.hypot(input.x, input.z) > 0.2) {
+      // steer the tumbling body by spinning it like a ball
+      const av = rb.angvel();
+      const k = 1 - Math.exp(-6 * dt);
+      rb.setAngvel({ x: av.x + (input.z * 14 - av.x) * k, y: av.y, z: av.z + (-input.x * 14 - av.z) * k }, true);
+    }
+  }
+}
+
+/** Things done to us: bumped by a friend, a bean rocket, a toot hop, a party hop, a cannon. */
+export function impulses(f: FrameCtx) {
+  const { s, rb, t, tmp } = f;
+  if (s.pendingBump) {
+    if (s.flopped) endFlop(f);
+    releaseHeld(f, false);
+    f.v.x = s.pendingBump.x * 7;
+    f.v.z = s.pendingBump.z * 7;
+    f.v.y = 9;
+    s.stunned = 0.55;
+    startFlip(f, 'y', 0.55, Math.random() < 0.5 ? 1 : -1);
+    playBoing(s.pos, 1.5);
+    rumble(f.source, 0.5, 0.5, 160);
+    s.pendingBump = null;
+  }
+  f.rocketed = false;
+  if (s.pendingRocket) {
+    s.pendingRocket = false;
+    f.rocketed = true;
+    if (!s.flopped) {
+      // straight up (not above the treetops... well, a bit above), and a push forward
+      f.v.y = Math.max(f.v.y, t.y > 24 ? 0 : 10.5);
+      f.v.x += tmp.fwd.x * 5;
+      f.v.z += tmp.fwd.z * 5;
+      s.squash = 0.45;
+    }
+  }
+  if (s.pendingNudge > 0) {
+    if (!s.flopped) f.v.y = Math.max(f.v.y, s.pendingNudge);
+    s.pendingNudge = 0;
+  }
+  if (s.pendingHop > 0 && !s.flopped) {
+    f.v.y = Math.max(f.v.y, s.pendingHop);
+    startFlip(f, 'x', 0.7);
+    s.pendingHop = 0;
+  }
+
+  // held in place (inside a cannon...)
+  if (s.holdAt) {
+    if (s.flopped) endFlop(f);
+    releaseHeld(f, false);
+    rb.setTranslation(s.holdAt, true);
+    rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    f.v.x = f.v.y = f.v.z = 0;
+  }
+}
+
+/** Launched by a pad / cannon / geyser / toilet: fly in a big arc to a fun spot. */
+export function launch(f: FrameCtx) {
+  const { s, rb, t, tmp } = f;
+  if (!s.pendingLaunch || s.holdAt) return;
+  if (s.flopped) endFlop(f);
+  const { target, apex } = s.pendingLaunch;
+  s.pendingLaunch = null;
+  tmp.c.set(target.x, target.y + f.rad + 0.1, target.z);
+  const flight = ballistic(s.pos, tmp.c, apex, tmp.v);
+  f.v.x = tmp.v.x;
+  f.v.y = tmp.v.y;
+  f.v.z = tmp.v.z;
+  s.launched = flight;
+  s.launchAirborne = false;
+  if (Math.hypot(tmp.v.x, tmp.v.z) > 0.5) s.targetFacing = s.facing = Math.atan2(tmp.v.x, tmp.v.z);
+  s.jumps = 1;
+  s.squash = 0.5;
+  startFlip(f, 'x', Math.min(1.2, flight * 0.8));
+  releaseHeld(f, false);
+  playSlideWhistle('up', s.pos);
+  poof([t.x, t.y - 0.3, t.z], '#fff3a8', 12);
+  rumble(f.source, 0.8, 0.8, 250);
+  useGame.getState().addParty(PARTY_POINTS.launch);
+  rb.setLinvel(f.v, true);
+}
+
+/** Touching down: squash, dust, and a belly-flop shockwave from high up. */
+export function landing(f: FrameCtx) {
+  const { s, t, lv, tmp } = f;
+  if (s.grounded && !f.wasGrounded) {
+    const impact = -s.lastVy;
+    if (impact > 7) {
+      s.squash = Math.min(0.5, impact * 0.025);
+      emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 8, color: s.inMud ? '#6b4a2b' : '#f5f0e6', speed: 3, up: 0.6, size: 0.3 });
+      playBounce(s.pos, 0.3);
+    }
+    if (impact > 16) {
+      // Belly-flop shockwave: everything nearby jumps.
+      ring([t.x, s.groundY + 0.08, t.z], { color: '#ffffff', radius: 4.5, duration: 0.5 });
+      playThud(s.pos);
+      shakeCamera(0.4);
+      rumble(f.source, 0.9, 0.6, 200);
+      props.forEach((prop) => {
+        if (prop.heldBy != null || !propPosition(prop, tmp.p)) return;
+        const d = tmp.p.distanceTo(s.pos);
+        if (d > 4 || d < 0.01) return;
+        const pb = prop.getBody();
+        const push = (1 - d / 4) * prop.launch * 0.7;
+        pb?.setLinvel({ x: ((tmp.p.x - t.x) / d) * push, y: push + 2, z: ((tmp.p.z - t.z) / d) * push }, true);
+      });
+      useGame.getState().addParty(PARTY_POINTS.bellyFlop);
+    }
+  }
+  s.lastVy = lv.y;
+}
+
+/** Fell out of the world? Pop back in next to the others. */
+export function respawnIfLost(f: FrameCtx, rb: RapierRigidBody) {
+  const { t } = f;
+  if (t.y < -8 || Math.abs(t.x) > WORLD_HALF + 6 || Math.abs(t.z) > WORLD_HALF + 6) {
+    const p = pickSpawn(f.slot);
+    rb.setTranslation(p, true);
+    rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    poof([p.x, p.y, p.z], f.color, 18);
+  }
+}
+
+/** Publish what others need to know about us (camera, critters, friends, rides). */
+export function syncRuntime(f: FrameCtx) {
+  const { s, rt, t, dt } = f;
+  if (f.napping && Math.random() < dt * 1.5) {
+    emit('puff', [t.x + 0.3, t.y + 1.2, t.z], { count: 1, color: '#e3f2fd', size: 0.18, speed: 0.2, up: 1.2, gravity: -1, life: 1.5 });
+  }
+  if (!rt) return;
+  rt.source = f.source;
+  rt.asleep = f.napping;
+  rt.facing = s.facing;
+  rt.flopped = s.flopped;
+  rt.jumpedAt = s.jumpedAt;
+  rt.noiseAt = s.noiseAt;
+  rt.poopAt = s.poopAt;
+  rt.belly = s.belly;
+  rt.power = s.power;
+  rt.size = s.size;
+  rt.ridingOn = s.ridingOn;
+}

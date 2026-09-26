@@ -1,3 +1,4 @@
+import { seededRandom } from './clock';
 import type { Species } from './config';
 
 // Everything is synthesised with Web Audio: no asset downloads, works offline.
@@ -27,7 +28,10 @@ const MAX_VOICES = 48;
 const settings = { muted: false, music: true, volume: 0.85 };
 const listeners = new Set<() => void>();
 
-const rand = (min: number, max: number) => Math.random() * (max - min) + min;
+// Sounds get their own dice. Whether a sound plays depends on real time (throttling, voice
+// limits), so sharing the game's random numbers would make the game itself unrepeatable.
+const random = seededRandom(0x5111);
+const rand = (min: number, max: number) => random() * (max - min) + min;
 
 function toXYZ(p: AudioPosition) {
   return Array.isArray(p) ? { x: p[0], y: p[1], z: p[2] } : p;
@@ -57,7 +61,7 @@ function getCtx() {
     });
     const n = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const data = n.getChannelData(0);
-    for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < data.length; i += 1) data[i] = random() * 2 - 1;
     noiseBuffer = n;
     applyMix();
     ctx.addEventListener('statechange', emit);
@@ -259,7 +263,7 @@ function voice(category: AudioCategory, options: ChannelOptions = {}) {
       f.connect(g);
       g.connect(input);
       if (spec.wobble) lfo(f.frequency, spec.wobble[0], spec.wobble[1], t0, spec.dur);
-      src.start(t0, Math.random() * Math.max(0, noiseBuffer.duration - spec.dur - 0.05));
+      src.start(t0, random() * Math.max(0, noiseBuffer.duration - spec.dur - 0.05));
       src.stop(t0 + spec.dur + 0.02);
       nodes.push(src, f, g);
       end = Math.max(end, t0 + spec.dur);
@@ -290,7 +294,7 @@ export function playAnimalNoise(species: Species, position?: AudioPosition) {
   if (!v) return;
   const p = rand(0.92, 1.1);
   if (species === 'dog') {
-    const barks = Math.random() < 0.4 ? 2 : 1;
+    const barks = random() < 0.4 ? 2 : 1;
     for (let i = 0; i < barks; i += 1) {
       const at = i * 0.17;
       v.tone({ type: 'square', from: 420 * p, to: 140 * p, at, dur: 0.16, gain: 0.16, filter: { type: 'lowpass', freq: 1800 } });
@@ -562,7 +566,7 @@ export function playCluck(position?: AudioPosition) {
   if (throttled('cluck', 350)) return;
   const v = voice('world', { position, gain: 0.8 });
   if (!v) return;
-  const n = Math.random() < 0.5 ? 2 : 3;
+  const n = random() < 0.5 ? 2 : 3;
   for (let i = 0; i < n; i += 1) {
     v.tone({ type: 'square', from: rand(560, 680), to: rand(380, 450), at: i * 0.11, dur: 0.06, gain: 0.06, filter: { type: 'bandpass', freq: 1100, q: 2 } });
   }
