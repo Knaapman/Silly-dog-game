@@ -5,12 +5,15 @@ import * as THREE from 'three';
 import { getAudioState, updateListener } from './audio';
 import { GRAVITY } from './config';
 import { emit } from './fx';
+import { gameClock, useGameFrame } from './clock';
+import { FrameLoop } from './FrameLoop';
 import { FxRenderer } from './FxRenderer';
-import { getInput, isSourceConnected, padIdOf, pollInputs } from './input';
+import { getInput, inputTime, isSourceConnected, padIdOf, pollInputs } from './input';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, players } from './runtime';
 import { isPartyTime, useGame } from './store';
+import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Carnival } from './world/Carnival';
 import { DinoPark } from './world/DinoPark';
@@ -68,7 +71,7 @@ function Lighting() {
     if (sun.current) scene.add(sun.current.target);
   }, [scene]);
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const f = camState.focus;
     if (sun.current) {
       sun.current.position.set(f.x + 14, f.y + 28, f.z + 12);
@@ -77,7 +80,7 @@ function Lighting() {
     }
     if (hemi.current) {
       if (isPartyTime()) {
-        partyColor.setHSL((clock.elapsedTime * 0.6) % 1, 0.8, 0.75);
+        partyColor.setHSL((gameClock.time * 0.6) % 1, 0.8, 0.75);
         hemi.current.color.lerp(partyColor, 0.2);
       } else hemi.current.color.lerp(baseSky, 0.05);
     }
@@ -185,7 +188,7 @@ function InputSystem() {
       if (frame.leave) game.leave(p.slot);
     }
     // Unplugged controllers: the animal naps (and leaves after a long while).
-    const now = performance.now();
+    const now = inputTime();
     game.players.forEach((p) => {
       if (isSourceConnected(p.source)) {
         missingSince.current.delete(p.slot);
@@ -218,7 +221,7 @@ function AudioDirector() {
 function PartyDirector() {
   const confettiTimer = useRef(0);
   const fireworkTimer = useRef(0);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     if (!isPartyTime()) return;
     const f = camState.focus;
     confettiTimer.current -= delta;
@@ -248,7 +251,7 @@ function PartyDirector() {
 function DevHook() {
   const gl = useThree((s) => s.gl);
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
+    if (!import.meta.env.DEV && !TEST_MODE) return;
     const w = window as unknown as { __silly?: Record<string, unknown> };
     if (w.__silly) w.__silly.gl = gl;
   }, [gl]);
@@ -270,6 +273,7 @@ export function Scene() {
   const menuOpen = useGame((s) => s.menuOpen);
   return (
     <>
+      <FrameLoop />
       <DevHook />
       <SkyDome />
       <fog attach="fog" args={['#d6f1ff', 90, 230]} />

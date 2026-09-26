@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -11,6 +10,7 @@ import { debugInfo, registerStatic, shakeCamera, type Surface } from '../runtime
 import { useGame } from '../store';
 import { Ramp, StaticBox, useHint } from './common';
 import { useSurface } from './surface';
+import { gameClock, useGameFrame } from '../clock';
 
 // ---------------------------------------------------------------------------
 // Ferris wheel: 8 gondolas you can jump into. The one at the top passes a golden star.
@@ -37,7 +37,7 @@ function Gondola({ index, angle }: { index: number; angle: { current: number } }
   const start = useMemo<Vec3>(() => [cx + Math.cos(phase) * FERRIS.radius, cy + Math.sin(phase) * FERRIS.radius - HANG, cz], [cx, cy, cz, phase]);
   const next = useMemo(() => new THREE.Vector3(), []);
 
-  useFrame(() => {
+  useGameFrame(() => {
     const rb = body.current;
     if (!rb) return;
     const a = angle.current + phase;
@@ -100,14 +100,14 @@ function FerrisWheel() {
     m.instanceMatrix.needsUpdate = true;
   }, [R]);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     angle.current += Math.min(delta, 0.05) * FERRIS.speed;
     debugInfo.ferrisAngle = angle.current;
     if (wheel.current) wheel.current.rotation.z = angle.current;
     const m = lights.current;
     if (m && m.instanceColor) {
       const c = new THREE.Color();
-      const t = clock.elapsedTime;
+      const t = gameClock.time;
       for (let i = 0; i < LIGHTS * 2; i += 1) {
         const on = Math.sin(t * 4 + i * 0.7) > 0;
         c.set(GONDOLA_COLORS[(i + Math.floor(t * 2)) % GONDOLA_COLORS.length]).multiplyScalar(on ? 1 : 0.45);
@@ -183,8 +183,8 @@ function FerrisWheel() {
 
 function Horse({ angle, color, index }: { angle: number; color: string; index: number }) {
   const g = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (g.current) g.current.position.y = 1.2 + Math.sin(clock.elapsedTime * 2.5 + index * 1.3) * 0.35;
+  useGameFrame(() => {
+    if (g.current) g.current.position.y = 1.2 + Math.sin(gameClock.time * 2.5 + index * 1.3) * 0.35;
   });
   const r = CAROUSEL.radius - 1.3;
   return (
@@ -234,7 +234,7 @@ function Carousel() {
   );
   useHint([cx, 0.5, cz + CAROUSEL.radius], 'walk', 4);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     angle.current += Math.min(delta, 0.05) * CAROUSEL.speed;
     q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, angle.current);
     body.current?.setNextKinematicRotation(q);
@@ -291,7 +291,7 @@ function HighStriker() {
     [x, z]
   );
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const a = anim.current;
     let y = 0.5;
     if (a.t >= 0) {

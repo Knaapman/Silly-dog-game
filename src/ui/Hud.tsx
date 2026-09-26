@@ -4,6 +4,7 @@ import { MAX_PLAYERS, PLAYER_COLORS, SPECIES_EMOJI, type HatId } from '../game/c
 import { getConnectedPads } from '../game/input';
 import { isPartyTime, useGame } from '../game/store';
 import { GamepadIcon, GearIcon, SpeakerIcon, StarIcon } from './Icons';
+import { gameNow } from '../game/clock';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -22,9 +23,10 @@ export function useAudioState() {
 }
 
 function useNow(intervalMs: number) {
-  const [now, setNow] = useState(Date.now());
+  // game time, so the party and star animations pause with the game
+  const [now, setNow] = useState(gameNow());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+    const id = window.setInterval(() => setNow(gameNow()), intervalMs);
     return () => window.clearInterval(id);
   }, [intervalMs]);
   return now;

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { BallCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import { distXZ, PASTURE, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { allocPropId, players, registerProp, spawners, type PropEntry } from '../runtime';
 import { useGame } from '../store';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 function lerpAngle(a: number, b: number, t: number) {
   let d = b - a;
@@ -95,7 +95,7 @@ function Cow({ index }: { index: number }) {
     s.current.mode = 'graze';
   }, [resetToken, home]);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry) return;
@@ -103,7 +103,7 @@ function Cow({ index }: { index: number }) {
     const c = s.current;
     const t = rb.translation();
     const v = rb.linvel();
-    const time = clock.elapsedTime + index * 3;
+    const time = gameClock.time + index * 3;
     c.timer -= dt;
     if (entry.heldBy != null) c.mode = 'held';
     else if (c.mode === 'held') c.mode = 'graze';
@@ -277,13 +277,13 @@ function BabyDino({ info, onGone }: { info: DinoInfo; onGone: (id: number) => vo
     return registerProp(entry);
   }, [id]);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const rb = body.current;
     const entry = entryRef.current;
     const c = s.current;
     if (!rb || !entry || c.gone) return;
     const dt = Math.min(delta, 0.05);
-    const now = performance.now();
+    const now = gameNow();
     const t = rb.translation();
     const v = rb.linvel();
     const owner = players.get(info.owner);
@@ -359,7 +359,7 @@ function BabyDino({ info, onGone }: { info: DinoInfo; onGone: (id: number) => vo
     const hs = Math.hypot(v.x, v.z);
     c.walk += hs * dt * 4;
     if (yaw.current && c.tumble <= 0) yaw.current.rotation.y = c.facing;
-    if (tail.current) tail.current.rotation.y = Math.sin(clock.elapsedTime * 8 + info.id) * 0.5;
+    if (tail.current) tail.current.rotation.y = Math.sin(gameClock.time * 8 + info.id) * 0.5;
     legs.current.forEach((l, i) => {
       if (l) l.rotation.x = hs > 0.3 ? Math.sin(c.walk + i * Math.PI) * 0.8 : 0;
     });

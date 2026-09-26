@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { BallCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import { CHICKEN_HOME, distXZ } from '../layout';
 import { lambert } from '../materials';
 import { allocPropId, noises, players, registerProp, type PropEntry } from '../runtime';
 import { useGame } from '../store';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 type Mode = 'wander' | 'peck' | 'flee' | 'tumble' | 'dizzy' | 'held';
 
@@ -86,7 +86,7 @@ function Chicken({ index }: { index: number }) {
     s.current.mode = 'wander';
   }, [resetToken, home]);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry) return;
@@ -94,7 +94,7 @@ function Chicken({ index }: { index: number }) {
     const c = s.current;
     const t = rb.translation();
     const v = rb.linvel();
-    const time = clock.elapsedTime + index;
+    const time = gameClock.time + index;
     c.timer -= dt;
     c.flap = Math.max(0, c.flap - dt);
 
@@ -133,7 +133,7 @@ function Chicken({ index }: { index: number }) {
           nearest = p.position;
         }
       });
-      const now = performance.now();
+      const now = gameNow();
       for (const n of noises) {
         if (n.time > c.lastNoise && now - n.time < 300 && distXZ(n.position.x, n.position.z, t.x, t.z) < 8) {
           c.lastNoise = n.time;

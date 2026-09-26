@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import {
   CuboidCollider,
   CylinderCollider,
@@ -11,6 +10,7 @@ import type { Vec2, Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { registerHint, type Hint, type Surface } from '../runtime';
 import { useSurface } from './surface';
+import { useGameFrame } from '../clock';
 
 let hintId = 1;
 
@@ -253,7 +253,7 @@ export function SlideTower({ base, height, rampAngle, rampLength, slideAngle, sl
 /** Gently bobbing + spinning helper used by decorative bits. */
 export function Spinner({ speed = 1, axis = 'y', children, position }: { speed?: number; axis?: 'x' | 'y' | 'z'; children: React.ReactNode; position?: Vec3 }) {
   const g = useRef<THREE.Group>(null);
-  useFrame((_, dt) => {
+  useGameFrame((_, dt) => {
     if (g.current) g.current.rotation[axis] += dt * speed;
   });
   return (

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody, type RapierCollider } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import type { Surface } from '../runtime';
 import { useHint } from './common';
 import { Prop } from './Prop';
 import { useSurface } from './surface';
+import { gameNow, useGameFrame } from '../clock';
 
 /** Giant mushroom: the cap is a trampoline. Hop from cap to cap up the spiral. */
 function Mushroom({ index }: { index: number }) {
@@ -16,11 +16,11 @@ function Mushroom({ index }: { index: number }) {
   const col = useRef<RapierCollider>(null);
   const cap = useRef<THREE.Group>(null);
   const lastBounce = useRef(-1e9);
-  const surface = useMemo<Surface>(() => ({ bounce: 13, onBounce: () => (lastBounce.current = performance.now()) }), []);
+  const surface = useMemo<Surface>(() => ({ bounce: 13, onBounce: () => (lastBounce.current = gameNow()) }), []);
   useSurface(col, surface);
-  useFrame(() => {
+  useGameFrame(() => {
     if (!cap.current) return;
-    const since = (performance.now() - lastBounce.current) / 1000;
+    const since = (gameNow() - lastBounce.current) / 1000;
     const squish = since < 0.5 ? Math.sin(since * 20) * Math.exp(-since * 7) * 0.2 : 0;
     cap.current.scale.set(1 + squish, 1 - squish, 1 + squish);
   });

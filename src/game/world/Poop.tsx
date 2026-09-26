@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import { memo, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -11,6 +10,7 @@ import { emit, poof } from '../fx';
 import { isInPond, type Vec3 } from '../layout';
 import { allocPropId, debugInfo, drains, players, props, registerProp, spawners, type PropEntry } from '../runtime';
 import { useGame } from '../store';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 // Poops! They plop out behind an animal that has eaten, get buzzed by flies, can be kicked
 // around, make you slip when you run over them, and after a while sprout into a flower.
@@ -59,7 +59,7 @@ const usePoops = create<{
   plant: (x, z) =>
     set((s) => {
       const flowers = s.flowers.slice();
-      flowers[s.nextFlower] = { x, z, color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)], born: performance.now() };
+      flowers[s.nextFlower] = { x, z, color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)], born: gameNow() };
       return { flowers, nextFlower: (s.nextFlower + 1) % FLOWER_SLOTS };
     }),
   clear: () => {
@@ -124,7 +124,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
   const { id, size, golden } = data;
   const body = useRef<RapierRigidBody>(null);
   const propId = useMemo(() => allocPropId(), []);
-  const born = useRef(performance.now());
+  const born = useRef(gameNow());
   const lastSpeed = useRef(0);
   const stink = useRef(Math.random() * 1.5);
   const gone = useRef(false);
@@ -190,15 +190,15 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const rb = body.current;
     if (!rb || gone.current) return;
-    const age = (performance.now() - born.current) / 1000;
+    const age = (gameNow() - born.current) / 1000;
     const p = rb.translation();
     if (p.y < -10) return finishRef.current('quiet');
     if (age > SPROUT_AFTER || sproutNow.has(id)) return finishRef.current('sprout');
     // A flushing toilet sucks nearby poops over the rim, swirls them round and down the drain.
-    const now = performance.now();
+    const now = gameNow();
     for (const d of drains) {
       if (now > d.flushingUntil) continue;
       const dx = p.x - d.x;
@@ -266,10 +266,10 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
 function Flies() {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  useFrame(({ clock }) => {
+  useGameFrame(() => {
     const m = mesh.current;
     if (!m) return;
-    const t = clock.elapsedTime;
+    const t = gameClock.time;
     let i = 0;
     live.forEach((poop, id) => {
       const rb = poop.body();
@@ -317,11 +317,11 @@ function Garden() {
   }, [flowers, color]);
 
   // Grow in over half a second, then gently sway.
-  useFrame(({ clock }) => {
+  useGameFrame(() => {
     const s = stems.current;
     const h = heads.current;
     if (!s || !h) return;
-    const now = performance.now();
+    const now = gameNow();
     flowers.forEach((f, i) => {
       if (!f) {
         dummy.position.set(0, -50, 0);
@@ -330,7 +330,7 @@ function Garden() {
         const grow = Math.min(1, (now - f.born) / 600);
         const k = grow < 1 ? grow * (1.6 - 0.6 * grow) : 1;
         dummy.position.set(f.x, 0, f.z);
-        dummy.rotation.set(Math.sin(clock.elapsedTime * 1.5 + i) * 0.08, i, 0);
+        dummy.rotation.set(Math.sin(gameClock.time * 1.5 + i) * 0.08, i, 0);
         dummy.scale.setScalar(Math.max(0.001, k * 1.3));
       }
       dummy.updateMatrix();

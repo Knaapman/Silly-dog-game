@@ -1,5 +1,4 @@
 import { CoefficientCombineRule } from '@dimforge/rapier3d-compat';
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody, type RapierCollider } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -12,6 +11,7 @@ import { players, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
 import { useSurface } from './surface';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 // Small interactive toys used around the park.
 
@@ -22,11 +22,11 @@ export function Trampoline({ position, radius, color = 0 }: { position: Vec3; ra
   const mat = useRef<THREE.Group>(null);
   const col = useRef<RapierCollider>(null);
   const lastBounce = useRef(-1e9);
-  const surface = useMemo<Surface>(() => ({ bounce: MOVE.trampolineVelocity, onBounce: () => (lastBounce.current = performance.now()) }), []);
+  const surface = useMemo<Surface>(() => ({ bounce: MOVE.trampolineVelocity, onBounce: () => (lastBounce.current = gameNow()) }), []);
   useSurface(col, surface);
-  useFrame(() => {
+  useGameFrame(() => {
     if (!mat.current) return;
-    const since = (performance.now() - lastBounce.current) / 1000;
+    const since = (gameNow() - lastBounce.current) / 1000;
     const dip = since < 0.6 ? Math.sin(since * 22) * Math.exp(-since * 6) * 0.25 : 0;
     mat.current.position.y = TRAMPOLINE_TOP - 0.04 - Math.max(0, dip);
     mat.current.scale.setScalar(1 + Math.abs(dip) * 0.15);
@@ -89,7 +89,7 @@ export function Balloons() {
     const s = state[i];
     if (s.popped) return;
     s.popped = true;
-    s.respawnAt = performance.now() + 7000;
+    s.respawnAt = gameNow() + 7000;
     const color = BALLOON_COLORS[i % BALLOON_COLORS.length];
     emit('confetti', s.pos, { count: 36, color: [color, '#ffffff', '#ffd23f'], speed: 6, up: 4 });
     ring(s.pos, { color, radius: 1.8, duration: 0.3 });
@@ -97,9 +97,9 @@ export function Balloons() {
     useGame.getState().addParty(PARTY_POINTS.pop);
   };
 
-  useFrame(({ clock }, delta) => {
-    const t = clock.elapsedTime;
-    const now = performance.now();
+  useGameFrame((_, delta) => {
+    const t = gameClock.time;
+    const now = gameNow();
     BALLOONS.forEach(([x, y, z], i) => {
       const g = groups.current[i];
       const s = state[i];
@@ -163,7 +163,7 @@ export function HatBox() {
   useHint([x, size, z], 'walk', 5);
 
   const giveHat = (slot: number) => {
-    const now = performance.now();
+    const now = gameNow();
     if ((cooldowns.current.get(slot) ?? 0) > now) return;
     cooldowns.current.set(slot, now + 2500);
     useGame.getState().randomHat(slot);
@@ -184,7 +184,7 @@ export function HatBox() {
     []
   );
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const ls = lidState.current;
     ls.v -= 30 * delta;
     ls.y = Math.max(0, ls.y + ls.v * delta);
@@ -237,8 +237,8 @@ export function RedButton() {
   const pressedUntil = useRef(0);
   const [x, , z] = RED_BUTTON.position;
   useHint([x, 0.6, z], 'walk', 5);
-  useFrame(() => {
-    const now = performance.now();
+  useGameFrame(() => {
+    const now = gameNow();
     let someoneOn = false;
     players.forEach((p) => {
       if (distXZ(p.position.x, p.position.z, x, z) < RED_BUTTON.radius && p.position.y < 1.4) someoneOn = true;

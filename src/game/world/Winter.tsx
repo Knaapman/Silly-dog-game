@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { BallCollider, CylinderCollider, RigidBody, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -12,6 +11,7 @@ import { useGame } from '../store';
 import { Breakable, type Piece } from './Breakable';
 import { SlideTower, useHint } from './common';
 import { useSurface } from './surface';
+import { after, useGameFrame } from '../clock';
 
 function SnowHill() {
   const [hx, hz] = SNOW_HILL.center;
@@ -146,11 +146,11 @@ function SnowBall({ home }: { home: Vec3 }) {
         emit('chunk', p, { count: 20, color: '#ffffff', speed: 6, up: 7, size: 0.25 });
         playCrumble(p);
         useGame.getState().addParty(PARTY_POINTS.splat);
-        window.setTimeout(() => {
+        after(0, () => {
           respawn();
           poof([home[0], home[1] + 0.5, home[2]], '#ffffff', 10);
           playPoof(home);
-        }, 0);
+        });
       }
     };
     entryRef.current = entry;
@@ -166,7 +166,7 @@ function SnowBall({ home }: { home: Vec3 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetToken]);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const rb = body.current;
     if (!rb) return;
     const t = rb.translation();
@@ -197,7 +197,7 @@ function SnowBall({ home }: { home: Vec3 }) {
 
 function Snowfall() {
   const timer = useRef(0);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const f = camera.focus;
     if (distXZ(f.x, f.z, SNOW.center[0], SNOW.center[1]) > SNOW.radius + 12) return;
     timer.current -= delta;

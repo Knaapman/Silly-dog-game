@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -14,10 +13,11 @@ import { StaticBox, useHint } from './common';
 import { Cows } from './Critters';
 import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
+import { useGameFrame } from '../clock';
 
 function Mud() {
   const bubbleTimer = useRef(0);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     bubbleTimer.current -= delta;
     if (bubbleTimer.current <= 0) {
       bubbleTimer.current = 0.4 + Math.random() * 0.8;
@@ -142,7 +142,7 @@ function Windmill() {
       }),
     [x, z]
   );
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     spin.current = Math.max(0, spin.current - delta);
     if (sails.current) sails.current.rotation.z -= delta * (0.4 + spin.current * 3);
   });

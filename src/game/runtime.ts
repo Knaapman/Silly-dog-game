@@ -1,5 +1,6 @@
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { gameNow } from './clock';
 
 // Mutable, non-reactive world registry. Everything that changes every frame lives here
 // (never in zustand) so 60fps updates don't trigger React renders.
@@ -147,7 +148,7 @@ export function registerFood(entry: Omit<FoodEntry, 'id'>) {
 export const noises: { position: THREE.Vector3; time: number; slot: number }[] = [];
 
 export function pushNoise(position: THREE.Vector3, slot: number) {
-  const now = performance.now();
+  const now = gameNow();
   noises.push({ position: position.clone(), time: now, slot });
   while (noises.length > 0 && now - noises[0].time > 2000) noises.shift();
 }

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useRef } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import { lambert } from '../materials';
 import { Geyser } from './Launchers';
 import { Toilet } from './Toilet';
 import { HatBox, RedButton } from './Toys';
+import { gameClock, useGameFrame } from '../clock';
 
 function Fountain() {
   const [cx, cz] = FOUNTAIN.center;
@@ -15,9 +15,9 @@ function Fountain() {
   const water = useRef<THREE.Mesh>(null);
   const drip = useRef(0);
   const segments = 20;
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const m = water.current?.material as THREE.MeshStandardMaterial | undefined;
-    if (m) m.color.setHSL(0.55, 0.8, 0.62 + Math.sin(clock.elapsedTime * 2) * 0.03);
+    if (m) m.color.setHSL(0.55, 0.8, 0.62 + Math.sin(gameClock.time * 2) * 0.03);
     drip.current -= delta;
     if (drip.current <= 0) {
       drip.current = 0.05;

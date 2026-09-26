@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, RigidBody, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
@@ -10,6 +9,7 @@ import { camera, debugInfo, players, type Surface } from '../runtime';
 import { Ramp, StaticBox, useHint } from './common';
 import { GoldenStar } from './Stars';
 import { useSurface } from './surface';
+import { gameNow, useGameFrame } from '../clock';
 
 // The track is a rounded rectangle; `trackAt(s)` gives position + heading at distance s.
 
@@ -132,7 +132,7 @@ function Car({ index, cars, trainSpeed }: { index: number; cars: MutableRefObjec
     return { pos: [p.x, 0, p.z] as [number, number, number], yaw: Math.atan2(p.dx, p.dz) };
   }, [index]);
 
-  useFrame(() => {
+  useGameFrame(() => {
     const rb = body.current;
     const c = cars.current[index];
     if (!rb || !c) return;
@@ -233,7 +233,7 @@ export function Train() {
   const starOffset = useMemo(() => new THREE.Vector3(), []);
   const starIndex = GOLDEN_STARS.indexOf('train');
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const st = state.current;
     // Speed profile: cruise, brake into the station, wait, pull away with a toot.
@@ -282,7 +282,7 @@ export function Train() {
 
     // Friendly bump for anyone standing on the track in front of the train.
     st.tootCooldown -= dt;
-    const now = performance.now();
+    const now = gameNow();
     if (speed.current > 1) {
       const fx = loco.x + loco.dx * 2.4;
       const fz = loco.z + loco.dz * 2.4;

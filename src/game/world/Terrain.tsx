@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -6,6 +5,7 @@ import { WORLD_HALF } from '../config';
 import { distXZ, FLOOR_PATCHES, LAKE, MAZE, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
 import { GroundPatch, HedgeSegment } from './common';
+import { gameClock, useGameFrame } from '../clock';
 
 function Ground() {
   const material = useMemo(() => new THREE.MeshLambertMaterial({ map: grassTexture() }), []);
@@ -231,7 +231,7 @@ export function Clouds() {
       speed: 0.6 + rnd() * 0.8
     }));
   }, []);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     group.current?.children.forEach((c, i) => {
       c.position.x += clouds[i].speed * delta;
       if (c.position.x > 130) c.position.x = -130;
@@ -263,8 +263,8 @@ function HotAirBalloons() {
     []
   );
   const mats = useMemo(() => balloons.map((b, i) => new THREE.MeshLambertMaterial({ map: stripeTexture(`hab${i}`, b.colors) })), [balloons]);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
+  useGameFrame(() => {
+    const t = gameClock.time;
     balloons.forEach((b, i) => {
       const g = refs.current[i];
       if (!g) return;

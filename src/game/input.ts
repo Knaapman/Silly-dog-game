@@ -97,6 +97,8 @@ const TAP_MS = 550;
 const MENU_HOLD_MS = 900;
 const LEAVE_HOLD_MS = 1500;
 const holdStart = new Map<string, number>();
+/** When the sampler first saw each button go down (per pad), so holds are timed from the real press. */
+const pressedAt = new Map<number, number[]>();
 const holdFired = new Set<string>();
 const prevNav = new Map<number, { dir: string }>();
 const navListeners = new Set<(nav: UiNav) => void>();
@@ -113,6 +115,16 @@ function emptyActions(): Record<ActionName, boolean> {
 }
 
 const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Slash', 'Enter', 'Quote']);
+
+/** Clock for Start/Select hold timing: wall time normally, simulated time in test mode. */
+let inputNow = () => performance.now();
+export function setInputClock(now: () => number) {
+  inputNow = now;
+}
+/** Current time on the input clock (ms). */
+export function inputTime() {
+  return inputNow();
+}
 
 let installed = false;
 let anyKeyListener: ((code: string) => void) | null = null;
@@ -136,9 +148,14 @@ function samplePads() {
     const last = sampledPad.get(gp.index) ?? [];
     const downs = pressEdges.get(gp.index) ?? [];
     const cur = padButtons(gp);
+    const times = pressedAt.get(gp.index) ?? [];
     cur.forEach((d, i) => {
-      if (d && !last[i]) downs[i] = (downs[i] ?? 0) + 1;
+      if (d && !last[i]) {
+        downs[i] = (downs[i] ?? 0) + 1;
+        times[i] = inputNow();
+      }
     });
+    pressedAt.set(gp.index, times);
     sampledPad.set(gp.index, cur);
     pressEdges.set(gp.index, downs);
   }
@@ -251,7 +268,7 @@ function readPad(gp: Gamepad): InputFrame {
   const tapped = (i: number) => (downs[i] ?? 0) > 0;
   // Held this frame, or pressed-and-released since the last one.
   const buttons = now.map((down, i) => down || tapped(i));
-  const clock = performance.now();
+  const clock = inputNow();
 
   let x = gp.axes[0] ?? 0;
   let z = gp.axes[1] ?? 0;
@@ -295,7 +312,7 @@ function readPad(gp: Gamepad): InputFrame {
     const key = `${gp.index}:${button}`;
     if (tapped(button)) {
       if (!holdStart.has(key)) holdFired.delete(key);
-      holdStart.set(key, clock);
+      holdStart.set(key, pressedAt.get(gp.index)?.[button] ?? clock);
       anyPressed = true;
     }
     const since = holdStart.has(key) ? clock - holdStart.get(key)! : 0;

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { BallCollider, CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -8,13 +7,14 @@ import { Breakable, type Piece } from './Breakable';
 import { Ramp, StaticBox } from './common';
 import { Cannon } from './Launchers';
 import { Prop } from './Prop';
+import { gameClock, useGameFrame } from '../clock';
 
 function Lake() {
   const water = useRef<THREE.Mesh>(null);
   const capAngle = Math.acos((ISLAND.sphereRadius - ISLAND.height) / ISLAND.sphereRadius);
-  useFrame(({ clock }) => {
+  useGameFrame(() => {
     const m = water.current?.material as THREE.MeshStandardMaterial | undefined;
-    if (m) m.color.setHSL(0.56, 0.75, 0.58 + Math.sin(clock.elapsedTime * 1.5) * 0.025);
+    if (m) m.color.setHSL(0.56, 0.75, 0.58 + Math.sin(gameClock.time * 1.5) * 0.025);
   });
   return (
     <group>
@@ -46,7 +46,7 @@ function Lighthouse() {
     t.needsUpdate = true;
     return new THREE.MeshLambertMaterial({ map: t });
   }, []);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     if (beam.current) beam.current.rotation.y += delta * 0.8;
   });
   const base = ISLAND.height - 0.1;
@@ -104,8 +104,8 @@ function PirateShip() {
   const deck = SHIP.deck;
   const flag = useRef<THREE.Mesh>(null);
   const sail = useMemo(() => new THREE.MeshLambertMaterial({ map: stripeTexture('sail', ['#ffffff', '#ff4d5e', '#ffffff', '#ff4d5e'], false), side: THREE.DoubleSide }), []);
-  useFrame(({ clock }) => {
-    if (flag.current) flag.current.rotation.y = Math.sin(clock.elapsedTime * 3) * 0.3;
+  useGameFrame(() => {
+    if (flag.current) flag.current.rotation.y = Math.sin(gameClock.time * 3) * 0.3;
   });
   const [lx, lz] = LIGHTHOUSE.center;
   const cannonAt: Vec3 = [sx + L / 2 - 1.3, deck, sz];

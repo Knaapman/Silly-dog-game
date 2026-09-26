@@ -9,6 +9,7 @@ import { lambert } from '../materials';
 import { registerStatic } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
+import { after, gameNow } from '../clock';
 
 export type Piece = { shape: 'box' | 'ball'; size: number; color: string; offset: Vec3 };
 
@@ -52,7 +53,7 @@ export function Breakable({
           if (brokenRef.current) return;
           brokenRef.current = true;
           setBroken({
-            at: performance.now(),
+            at: gameNow(),
             velocities: pieces.map((p) => {
               const spread = new THREE.Vector3(p.offset[0], 0, p.offset[2]).normalize().multiplyScalar(3);
               return {
@@ -71,13 +72,12 @@ export function Breakable({
 
   useEffect(() => {
     if (!broken) return;
-    const t = window.setTimeout(() => {
+    return after(respawnMs / 1000, () => {
       brokenRef.current = false;
       setBroken(null);
       poof(center, dust[0], 12);
       playPoof(center);
-    }, respawnMs);
-    return () => window.clearTimeout(t);
+    });
   }, [broken, center, dust, respawnMs]);
 
   const lastReset = useRef(resetToken);

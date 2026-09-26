@@ -1,8 +1,7 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { playFlush } from '../audio';
+import { playFlush, playPlop } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, emit, ring } from '../fx';
 import { BALL_PIT, BOUNCY_CASTLE, distXZ, ICE, LAKE, TOILET } from '../layout';
@@ -10,6 +9,7 @@ import { lambert } from '../materials';
 import { drains, players, shakeCamera, type Drain } from '../runtime';
 import { useGame } from '../store';
 import { Ramp, useHint } from './common';
+import { gameNow, useGameFrame } from '../clock';
 
 // A giant toilet on the plaza. Sit on it and poop (or toot): FLUSH! Everything swirls away,
 // confetti pops, and whoever is sitting there gets flushed into the sky, landing somewhere fun.
@@ -32,6 +32,7 @@ export function Toilet() {
   const cooldown = useRef(0);
   const launch = useRef<{ at: number; slot: number } | null>(null);
   const seen = useRef(new Map<number, number>());
+  const seated = useRef(new Set<number>());
   const drain = useMemo<Drain>(() => ({ x: cx, z: cz, radius: BOWL_R + 0.25, top: TOP, flushingUntil: 0 }), [cx, cz]);
   useHint([cx, TOP + 1, cz], 'poop', 3.2);
 
@@ -43,7 +44,7 @@ export function Toilet() {
   }, [drain]);
 
   const flush = (slot: number) => {
-    const now = performance.now();
+    const now = gameNow();
     if (now < cooldown.current) return;
     cooldown.current = now + 3500;
     drain.flushingUntil = now + 1800;
@@ -56,11 +57,24 @@ export function Toilet() {
     useGame.getState().addParty(PARTY_POINTS.goal);
   };
 
-  useFrame((_, delta) => {
-    const now = performance.now();
+  useGameFrame((_, delta) => {
+    const now = gameNow();
     // Who is sitting on the seat, and did they just press the poop button?
     players.forEach((p) => {
       const onSeat = distXZ(p.position.x, p.position.z, cx, cz) < BOWL_R - 0.1 && p.position.y > TOP && p.position.y < TOP + 1.4 * p.size;
+      // Running up the ramp would fly you right over the seat: it catches you instead. Plop!
+      // (Only when arriving; walking off again is free.)
+      if (onSeat && !seated.current.has(p.slot) && !p.isLaunched() && p.ridingOn == null) {
+        const rb = p.getBody();
+        if (rb) {
+          const v = rb.linvel();
+          rb.setLinvel({ x: v.x * 0.1, y: Math.min(v.y, 0), z: v.z * 0.1 }, true);
+          playPlop([cx, TOP, cz], 1.2);
+          emit('drop', [cx, TOP + 0.2, cz], { count: 10, color: ['#7fd3ff', '#ffffff'], speed: 2, up: 3, size: 0.12 });
+        }
+      }
+      if (onSeat) seated.current.add(p.slot);
+      else seated.current.delete(p.slot);
       const last = seen.current.get(p.slot) ?? p.poopAt;
       if (onSeat && p.poopAt > last) flush(p.slot);
       seen.current.set(p.slot, p.poopAt);

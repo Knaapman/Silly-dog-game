@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import { distXZ, type LaunchPadDef, type Vec2, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { players, props, propPosition, shakeCamera } from '../runtime';
 import { useHint } from './common';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 let chevronCache: THREE.Shape | null = null;
 function chevronShape() {
@@ -33,10 +33,10 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
   const target = useMemo(() => new THREE.Vector3(...pad.target), [pad]);
   useHint([pad.position[0], 0.5, pad.position[2]], 'walk', 5);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     chevrons.current?.children.forEach((c, i) => {
       const m = (c as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      const phase = (clock.elapsedTime * 2.5 - i * 0.35) % 1;
+      const phase = (gameClock.time * 2.5 - i * 0.35) % 1;
       m.color.setHSL(0.13, 1, 0.5 + Math.max(0, Math.sin(phase * Math.PI)) * 0.4);
     });
     sparkle.current -= delta;
@@ -52,7 +52,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
         life: 1
       });
     }
-    const now = performance.now();
+    const now = gameNow();
     players.forEach((p) => {
       if ((cooldown.current.get(p.slot) ?? 0) > now || p.isLaunched() || p.flopped) return;
       if (distXZ(p.position.x, p.position.z, pad.position[0], pad.position[2]) > 1.3 || p.position.y > 1.6) return;
@@ -91,8 +91,8 @@ export function Geyser({ at, target, apex, period = 5, offset = 0 }: { at: Vec2;
   const tmp = useMemo(() => new THREE.Vector3(), []);
   useHint([at[0], 0.5, at[1]], 'walk', 4);
 
-  useFrame(({ clock }) => {
-    const t = (clock.elapsedTime + offset) % period;
+  useGameFrame(() => {
+    const t = (gameClock.time + offset) % period;
     const erupting = t < 1.4;
     const warming = !erupting && t > period - 0.8;
     const c = column.current;
@@ -161,9 +161,9 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
   const tgt = useMemo(() => new THREE.Vector3(...target), [target]);
   useHint([loadSpot.x, loadSpot.y + 0.5, loadSpot.z], 'walk', 4);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const s = state.current;
-    const now = performance.now();
+    const now = gameNow();
     s.recoil = Math.max(0, s.recoil - delta * 3);
     if (s.slot == null) {
       players.forEach((p) => {

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playCollect } from '../audio';
@@ -6,6 +5,7 @@ import { burstConfetti, emit, ring } from '../fx';
 import { GOLDEN_STARS } from '../layout';
 import { players, shakeCamera } from '../runtime';
 import { useGame } from '../store';
+import { gameClock, useGameFrame } from '../clock';
 
 let starGeometry: THREE.ExtrudeGeometry | null = null;
 function getStarGeometry() {
@@ -61,10 +61,10 @@ export function GoldenStar({ index, position, getPosition }: { index: number; po
   const pos = useMemo(() => new THREE.Vector3(), []);
   const sparkle = useRef(Math.random() * 0.3);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const g = group.current;
     if (!g || collected) return;
-    const t = clock.elapsedTime;
+    const t = gameClock.time;
     if (getPosition) getPosition(pos);
     else if (position) pos.copy(position);
     pos.y += Math.sin(t * 2 + index) * 0.18;

@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CapsuleCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -13,6 +12,7 @@ import { Ramp, useHint } from './common';
 import { BabyDinos } from './Critters';
 import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
+import { after, gameClock, gameNow, useGameFrame } from '../clock';
 
 // ---------------------------------------------------------------------------
 // Volcano: climb in (or take the launch pad) and it erupts you into the sky.
@@ -53,7 +53,7 @@ function Volcano() {
     emit('puff', [cx, RIM + 1, cz], { count: 20, color: ['#9e9e9e', '#e0e0e0', '#ffffff'], speed: 2, up: 4, size: 0.7, gravity: -2, life: 1.6 });
   };
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const s = state.current;
     s.smoke -= delta;
     if (s.smoke <= 0) {
@@ -64,9 +64,9 @@ function Volcano() {
     if (s.nextAmbient <= 0) {
       s.nextAmbient = 18 + Math.random() * 6;
       playRumble([cx, RIM, cz]);
-      window.setTimeout(() => spit(3), 900);
+      after(0.9, () => spit(3));
     }
-    const now = performance.now();
+    const now = gameNow();
     players.forEach((p) => {
       const inCrater = distXZ(p.position.x, p.position.z, cx, cz) < VOLCANO.craterRadius + 0.3 && p.position.y < RIM + 0.8 && p.position.y > CRATER_FLOOR - 0.5;
       const rec = s.perPlayer.get(p.slot) ?? { since: 0, count: 0 };
@@ -224,11 +224,11 @@ function TRex() {
     [x, z, tmp]
   );
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     roar.current = Math.max(0, roar.current - delta);
     const r = roar.current;
     if (jaw.current) jaw.current.rotation.z = r > 0 ? -0.6 : -0.05;
-    if (head.current) head.current.rotation.z = r > 0 ? 0.25 + Math.sin(clock.elapsedTime * 40) * 0.05 : Math.sin(clock.elapsedTime * 0.8) * 0.05;
+    if (head.current) head.current.rotation.z = r > 0 ? 0.25 + Math.sin(gameClock.time * 40) * 0.05 : Math.sin(gameClock.time * 0.8) * 0.05;
   });
 
   const skin = '#4caf50';
@@ -317,12 +317,12 @@ function Egg({ index }: { index: number }) {
           emit('heart', [pos.x, pos.y + 0.8, pos.z], { count: 5, color: ['#ff8fb5', '#ff4d8d'], speed: 1, up: 2 });
           spawners.babyDino(slot, pos);
           useGame.getState().addParty(PARTY_POINTS.splat);
-          window.setTimeout(() => {
+          after(20, () => {
             hatchedRef.current = false;
             setHatched(false);
             poof(pos, colors[index], 8);
             playPoof(pos);
-          }, 20000);
+          });
         }
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -330,7 +330,7 @@ function Egg({ index }: { index: number }) {
   );
 
   // Walking into an egg hatches it too (headbutting is not required).
-  useFrame(() => {
+  useGameFrame(() => {
     if (hatchedRef.current) return;
     players.forEach((p) => {
       if (hatchedRef.current) return;

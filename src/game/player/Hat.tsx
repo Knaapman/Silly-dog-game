@@ -1,14 +1,14 @@
-import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
 import type { HatId } from '../config';
 import { lambert } from '../materials';
+import { useGameFrame } from '../clock';
 
 // Hats sit on an anchor at the top of the head (y = 0 is the scalp).
 
 function Propeller() {
   const blades = useRef<THREE.Group>(null);
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     if (blades.current) blades.current.rotation.y += delta * 18;
   });
   return (

@@ -1,7 +1,7 @@
-import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { PARTICLE_KINDS, pools, rings, stepPool, type ParticleKind } from './fx';
+import { useGameFrame } from './clock';
 
 function starShape(points = 5, outer = 1, inner = 0.45) {
   const shape = new THREE.Shape();
@@ -88,7 +88,7 @@ function ParticleLayer({ kind }: { kind: ParticleKind }) {
     m.count = 0;
   }, []);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const m = mesh.current;
     if (!m) return;
     const dt = Math.min(delta, 0.05);
@@ -117,7 +117,7 @@ function Rings() {
   const meshes = useRef<(THREE.Mesh | null)[]>([]);
   const geometry = useMemo(() => new THREE.RingGeometry(0.82, 1, 48), []);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     rings.forEach((r, i) => {
       const m = meshes.current[i];
       if (!m) return;

@@ -60,6 +60,7 @@ export default function App() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-sky-300">
       <Canvas
+        frameloop="never"
         shadows="percentage"
         dpr={[1, 1.75]}
         camera={{ position: [0, 44, 62], fov: 45, near: 0.5, far: 700 }}

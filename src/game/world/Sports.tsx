@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -10,6 +9,7 @@ import { lambert } from '../materials';
 import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { Prop } from './Prop';
+import { after, gameClock, gameNow, useGameFrame } from '../clock';
 
 function findProps(kind: PropEntry['kind']) {
   const out: PropEntry[] = [];
@@ -65,10 +65,10 @@ export function Soccer() {
     return m;
   }, [netMaterial]);
 
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     wobble.current = Math.max(0, wobble.current - delta * 1.5);
-    if (net.current) net.current.position.z = Math.sin(clock.elapsedTime * 30) * 0.12 * wobble.current;
-    const now = performance.now();
+    if (net.current) net.current.position.z = Math.sin(gameClock.time * 30) * 0.12 * wobble.current;
+    const now = gameNow();
     if (now < cooldown.current) return;
     for (const ball of findProps('soccer')) {
       const b = ball.getBody();
@@ -82,11 +82,11 @@ export function Soccer() {
         playCheer();
         shakeCamera(0.3);
         useGame.getState().addParty(PARTY_POINTS.goal);
-        window.setTimeout(() => {
+        after(1.8, () => {
           setBallKey((k) => k + 1);
           poof(SOCCER.kickoff, '#ffffff', 16);
           playPoof(SOCCER.kickoff);
-        }, 1800);
+        });
       }
     }
   });
@@ -155,9 +155,9 @@ export function Bowling() {
   const laneZ = (BOWLING.laneTo + BOWLING.laneFrom) / 2;
   const x = BOWLING.laneX;
 
-  useFrame(() => {
+  useGameFrame(() => {
     const s = state.current;
-    const now = performance.now();
+    const now = gameNow();
     const pins = findProps('pin');
     pins.forEach((pin) => {
       const b = pin.getBody();

@@ -4,6 +4,7 @@ import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
 import { padIdOf, rumbleAll, type SourceId } from './input';
+import { after, gameNow } from './clock';
 
 // Reactive state only for things the UI / scene graph needs to re-render on.
 // Per-frame data lives in runtime.ts.
@@ -59,7 +60,7 @@ function pickRandomHat(current: HatId): HatId {
 
 export const useGame = create<GameStore>((set, get) => {
   const startParty = (durationMs: number) => {
-    const now = Date.now();
+    const now = gameNow();
     set((state) => ({
       party: 0,
       partyUntil: now + durationMs,
@@ -68,7 +69,7 @@ export const useGame = create<GameStore>((set, get) => {
       players: state.players.map((p) => ({ ...p, hat: pickRandomHat(p.hat) }))
     }));
     playFanfare();
-    window.setTimeout(playCheer, 900);
+    after(0.9, playCheer);
     runtimePlayers.forEach((p) => p.hop(12));
     rumbleAll(get().players.map((p) => p.source), 0.7, 0.9, 600);
   };
@@ -144,7 +145,7 @@ export const useGame = create<GameStore>((set, get) => {
 
     addParty: (amount) => {
       const state = get();
-      if (state.phase !== 'play' || Date.now() < state.partyUntil) return;
+      if (state.phase !== 'play' || gameNow() < state.partyUntil) return;
       const next = state.party + amount;
       if (next >= 1) startParty(PARTY_DURATION_MS);
       else set({ party: next });
@@ -154,12 +155,12 @@ export const useGame = create<GameStore>((set, get) => {
       const state = get();
       if (state.stars[index]) return;
       const stars = state.stars.map((s, i) => (i === index ? true : s));
-      set({ stars, lastStarAt: Date.now() });
+      set({ stars, lastStarAt: gameNow() });
       rumbleAll(state.players.map((p) => p.source), 0.4, 0.8, 300);
       if (stars.every(Boolean)) {
         // Every golden star found: huge party, then hide them all again for another round.
         startParty(PARTY_DURATION_MS + 4000);
-        window.setTimeout(() => set({ stars: GOLDEN_STARS.map(() => false) }), PARTY_DURATION_MS + 4000);
+        after((PARTY_DURATION_MS + 4000) / 1000, () => set({ stars: GOLDEN_STARS.map(() => false) }));
       } else {
         get().addParty(PARTY_POINTS.star);
       }
@@ -174,5 +175,5 @@ export const useGame = create<GameStore>((set, get) => {
 });
 
 export function isPartyTime() {
-  return Date.now() < useGame.getState().partyUntil;
+  return gameNow() < useGame.getState().partyUntil;
 }

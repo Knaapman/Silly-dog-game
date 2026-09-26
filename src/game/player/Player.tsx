@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { BallCollider, RigidBody, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -55,6 +54,7 @@ import {
 } from '../runtime';
 import { useGame, type PlayerInfo } from '../store';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 const RADIUS = 0.5;
 /** Animals are drawn a bit bigger than their physics ball so small kids can read them. */
@@ -222,7 +222,7 @@ export function Player({ info }: { info: PlayerInfo }) {
   const sourceRef = useRef(source);
   sourceRef.current = source;
   const beam = useRef<THREE.Mesh>(null);
-  const bornAt = useRef(performance.now());
+  const bornAt = useRef(gameNow());
 
   const tmp = useMemo(
     () => ({
@@ -331,7 +331,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     s.squash = 0.25;
   }, [hat]);
 
-  useFrame((state, delta) => {
+  useGameFrame((state, delta) => {
     const rb = body.current;
     if (!rb) return;
     const dt = Math.min(delta, 1 / 20);
@@ -339,7 +339,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     const game = useGame.getState();
     const napping = asleepRef.current;
     const input = game.phase === 'play' && !game.menuOpen && !napping ? getInput(source) : NO_INPUT;
-    const time = state.clock.elapsedTime;
+    const time = gameClock.time;
     const species = speciesRef.current;
     const spec = SPECIES_SPECS[species];
     const rt = players.get(slot);
@@ -627,9 +627,9 @@ export function Player({ info }: { info: PlayerInfo }) {
     } else if (input.pressed.noise && !s.flopped) {
       playAnimalNoise(species, s.pos);
       s.noiseTime = 0.5;
-      s.noiseAt = performance.now();
+      s.noiseAt = gameNow();
       ring([t.x, t.y + 0.2, t.z], { color, radius: 3.5, duration: 0.6 });
-      const now = performance.now();
+      const now = gameNow();
       const partner = noises.find((n) => n.slot !== slot && now - n.time < 900 && n.position.distanceTo(s.pos) < 8);
       if (partner) {
         // Two friends calling together: hearts!
@@ -651,7 +651,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     s.chew -= dt;
     if (s.grounded || s.swimming) s.fartedInAir = false;
     if (input.pressed.poop && !s.flopped && !s.holdAt) {
-      s.poopAt = performance.now();
+      s.poopAt = gameNow();
       tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6);
       const waiting = s.poopPresses + (s.poopQueued ? 1 : 0);
       if (s.power === 'beans') {
@@ -1042,7 +1042,7 @@ export function Player({ info }: { info: PlayerInfo }) {
           s.coyote = 0;
           s.jumpBuffer = 0;
           s.squash = -0.3;
-          s.jumpedAt = performance.now();
+          s.jumpedAt = gameNow();
           playJump(s.pos);
           if (s.swimming) {
             playSplash(s.pos, false);
@@ -1052,7 +1052,7 @@ export function Player({ info }: { info: PlayerInfo }) {
           vy = MOVE.doubleJumpVelocity * (s.power === 'giant' ? 1.3 : 1);
           s.jumps = 2;
           s.jumpBuffer = 0;
-          s.jumpedAt = performance.now();
+          s.jumpedAt = gameNow();
           startFlip('x', 0.5);
           playJump(s.pos, true);
           ring([t.x, t.y - 0.4, t.z], { color: '#ffffff', radius: 1.4, duration: 0.35 });
@@ -1362,7 +1362,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       sr.visible = hit != null && !s.hidden;
     }
     if (beam.current) {
-      const age = (performance.now() - bornAt.current) / 1000;
+      const age = (gameNow() - bornAt.current) / 1000;
       const b = beam.current;
       b.visible = age < 2.5;
       if (b.visible) {

@@ -1,7 +1,7 @@
-import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { hints, players, type Hint } from '../runtime';
+import { gameClock, useGameFrame } from '../clock';
 
 // Floating "press this button" bubbles above interactive things when a player is near.
 // Colour + position match the controller face buttons, so no reading is needed.
@@ -67,8 +67,8 @@ export function Hints() {
     []
   );
 
-  useFrame(({ clock }, delta) => {
-    const t = clock.elapsedTime;
+  useGameFrame((_, delta) => {
+    const t = gameClock.time;
     // Which hints have a player nearby?
     hints.forEach((h) => {
       let near = false;

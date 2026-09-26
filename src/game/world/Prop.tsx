@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import {
   BallCollider,
   ConeCollider,
@@ -24,6 +23,7 @@ import {
 } from '../materials';
 import { allocPropId, players, registerProp, type PropEntry, type PropKind } from '../runtime';
 import { useGame } from '../store';
+import { after, useGameFrame } from '../clock';
 
 type PropDef = {
   radius: number;
@@ -264,11 +264,11 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
     emit('drop', [p.x, p.y, p.z], { count: 16, color: ['#ff4d6d', '#ffb3c1'], speed: 4, up: 5 });
     playSplat(p);
     useGame.getState().addParty(PARTY_POINTS.splat);
-    window.setTimeout(() => {
+    after(9, () => {
       reset();
       poof(position, '#b6f5a8', 12);
       playPoof(position);
-    }, 9000);
+    });
   };
 
   useEffect(() => {
@@ -282,7 +282,7 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
       grabbable: true,
       enabled: true,
       heldBy: null,
-      onBonk: splatty ? () => window.setTimeout(splat, 0) : kind === 'duck' ? () => playSqueak(body.current?.translation()) : undefined,
+      onBonk: splatty ? () => after(0, splat) : kind === 'duck' ? () => playSqueak(body.current?.translation()) : undefined,
       onGrab: edible
         ? (slot) => {
             const rb = body.current;
@@ -318,7 +318,7 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
   }, [resetToken, resetKey]);
 
   const tick = useRef(Math.floor(Math.random() * 30));
-  useFrame(() => {
+  useGameFrame(() => {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry || !entry.enabled) return;

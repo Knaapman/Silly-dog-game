@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { playChomp, playPoof } from '../audio';
@@ -9,6 +8,7 @@ import { lambert, tileTexture } from '../materials';
 import { players, registerFood, type PowerKind } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
+import { after, gameClock, useGameFrame } from '../clock';
 
 // Food that stays where it is: lick it to fill your tummy. It grows back after a while.
 
@@ -86,10 +86,10 @@ function MagicSnack({ kind, position }: { kind: MagicKind; position: Vec3 }) {
   const floater = useRef<THREE.Group>(null);
   const sparkle = useRef(Math.random());
   const colors = { beans: ['#b5e48c', '#ffffff'], mushroom: ['#ff4d5e', '#ffffff'], chili: ['#ff9100', '#ffd23f'] }[kind];
-  useFrame(({ clock }, delta) => {
+  useGameFrame((_, delta) => {
     const f = floater.current;
     if (!f) return;
-    f.position.y = MAGIC_LIFT + Math.sin(clock.elapsedTime * 2 + position[0]) * 0.08;
+    f.position.y = MAGIC_LIFT + Math.sin(gameClock.time * 2 + position[0]) * 0.08;
     f.rotation.y += delta * 1.6;
     sparkle.current -= delta;
     if (sparkle.current <= 0 && f.parent?.visible !== false) {
@@ -198,7 +198,7 @@ function Snack({ kind, position }: { kind: SnackKind; position: Vec3 }) {
   const pop = useRef(1);
   const scoop = useMemo(() => SCOOPS[Math.floor(Math.random() * SCOOPS.length)], []);
   const resetToken = useGame((s) => s.resetToken);
-  const regrowTimer = useRef<number | undefined>(undefined);
+  const regrowTimer = useRef<(() => void) | undefined>(undefined);
 
   const bitesRef = useRef(bites);
   bitesRef.current = bites;
@@ -224,20 +224,20 @@ function Snack({ kind, position }: { kind: SnackKind; position: Vec3 }) {
         if (isMagic(kind)) players.get(slot)?.powerUp(MAGIC_POWER[kind]);
         if (left > 0) return;
         entry.enabled = false;
-        regrowTimer.current = window.setTimeout(() => {
+        regrowTimer.current = after(def.regrow / 1000, () => {
           entry.enabled = true;
           bitesRef.current = def.bites;
           setBites(def.bites);
           pop.current = 0;
           poof([at.x, at.y + 0.1, at.z], '#b6f5a8', 8);
           playPoof(at);
-        }, def.regrow);
+        });
       }
     });
     entryRef.current = entry;
     return () => {
       unregister();
-      window.clearTimeout(regrowTimer.current);
+      regrowTimer.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -246,7 +246,7 @@ function Snack({ kind, position }: { kind: SnackKind; position: Vec3 }) {
   const firstReset = useRef(resetToken);
   useEffect(() => {
     if (resetToken === firstReset.current) return;
-    window.clearTimeout(regrowTimer.current);
+    regrowTimer.current?.();
     if (entryRef.current) entryRef.current.enabled = true;
     bitesRef.current = def.bites;
     setBites(def.bites);
@@ -254,7 +254,7 @@ function Snack({ kind, position }: { kind: SnackKind; position: Vec3 }) {
   }, [resetToken]);
 
   // Squish when bitten, pop back up when it regrows.
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     const g = group.current;
     if (!g || pop.current >= 1) return;
     pop.current = Math.min(1, pop.current + delta * 2.5);

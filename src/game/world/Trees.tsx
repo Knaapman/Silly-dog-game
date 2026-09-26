@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -8,6 +7,7 @@ import { TREES, type TreeKind, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { players, registerStatic, spawners } from '../runtime';
 import { Prop } from './Prop';
+import { gameClock, useGameFrame } from '../clock';
 
 // All trees are instanced (one draw call per tree part) but each one can still be
 // headbutted: it wobbles and drops apples or coconuts.
@@ -127,8 +127,8 @@ function TreeKindLayer({ kind, trees, wobble }: { kind: TreeKind; trees: { i: nu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trees, parts]);
 
-  useFrame(({ clock }, delta) => {
-    const t = clock.elapsedTime;
+  useGameFrame((_, delta) => {
+    const t = gameClock.time;
     trees.forEach((tree, k) => {
       const w = wobble[tree.i];
       // shrink canopies that stand in front of a player, grow them back afterwards
@@ -225,7 +225,7 @@ export function Trees() {
     };
   }, [wobble]);
 
-  useFrame((_, delta) => {
+  useGameFrame((_, delta) => {
     for (let i = 0; i < wobble.length; i += 1) if (wobble[i] > 0) wobble[i] = Math.max(0, wobble[i] - delta * 1.5);
   });
 

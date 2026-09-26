@@ -1,4 +1,3 @@
-import { useFrame } from '@react-three/fiber';
 import {
   CuboidCollider,
   CylinderCollider,
@@ -16,11 +15,12 @@ import { MOVE } from '../config';
 import { emit } from '../fx';
 import { BALL_PIT, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES } from '../layout';
 import { lambert } from '../materials';
-import { players, type Surface } from '../runtime';
+import { debugInfo, players, type Surface } from '../runtime';
 import { SlideTower, StaticBox, useHint } from './common';
 import { Prop } from './Prop';
 import { useSurface } from './surface';
 import { Trampoline } from './Toys';
+import { gameClock, gameNow, useGameFrame } from '../clock';
 
 const CASTLE_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e'];
 
@@ -32,17 +32,17 @@ function BouncyCastle() {
   const floorCol = useRef<RapierCollider>(null);
   const floorMesh = useRef<THREE.Mesh>(null);
   const lastBounce = useRef(-1e9);
-  const surface = useMemo<Surface>(() => ({ bounce: 12, onBounce: () => (lastBounce.current = performance.now()) }), []);
+  const surface = useMemo<Surface>(() => ({ bounce: 12, onBounce: () => (lastBounce.current = gameNow()) }), []);
   useSurface(floorCol, surface);
   useHint([cx, 1, cz + half], 'jump', 5);
 
-  useFrame(({ clock }) => {
+  useGameFrame(() => {
     const m = floorMesh.current;
     if (!m) return;
-    const since = (performance.now() - lastBounce.current) / 1000;
+    const since = (gameNow() - lastBounce.current) / 1000;
     const dip = since < 0.5 ? Math.sin(since * 20) * Math.exp(-since * 6) * 0.12 : 0;
     m.scale.y = 1 - Math.abs(dip) * 2;
-    m.position.y = 0.25 + Math.sin(clock.elapsedTime * 3) * 0.02;
+    m.position.y = 0.25 + Math.sin(gameClock.time * 3) * 0.02;
   });
 
   const wall = (x: number, z: number, w: number, d: number, color: string, key: string) => (
@@ -112,15 +112,17 @@ function SeeSaw({ index }: { index: number }) {
 
   // Real physics only lifts a friend on the other end by ~half a metre. Exaggerate it: when a
   // resting see-saw is slammed, whoever was already standing on the rising end gets flung.
-  // The slammer's own end bounces back up right after touching down; that rebound must not count.
-  const swing = useRef({ until: 0, dir: 0, valid: false });
+  // Who that is gets decided at the start of the swing, from how things were just before it
+  // (the jolt itself shakes everyone). The slammer's own end bounces back up right after it
+  // touches down; that rebound doesn't count, because that end hasn't been resting low.
+  const swing = useRef({ until: 0, dir: 0 });
   const low = useRef({ end: 0, since: 0 });
   const settled = useRef(new Map<number, { end: number; since: number }>());
   const flung = useRef(new Map<number, number>());
-  useFrame(() => {
+  useGameFrame(() => {
     const body = plank.current;
     if (!body) return;
-    const now = performance.now();
+    const now = gameNow();
     const w = body.angvel();
     const sin = Math.sin(angle);
     const cos = Math.cos(angle);
@@ -129,16 +131,29 @@ function SeeSaw({ index }: { index: number }) {
     const q = body.rotation();
     const tilt = seesawTmp.set(1, 0, 0).applyQuaternion(seesawQuat.set(q.x, q.y, q.z, q.w)).y; // > 0: +x end up
     const lowEnd = tilt < -0.08 ? 1 : tilt > 0.08 ? -1 : 0;
+
+    // 1. A new swing that lifts an end which was resting low: fling whoever was settled on it.
     if (Math.abs(omega) > 0.9) {
       const dir = Math.sign(omega);
-      if (dir !== swing.current.dir || now > swing.current.until) {
-        swing.current.valid = low.current.end === dir && now - low.current.since > 400;
+      const fresh = dir !== swing.current.dir || now > swing.current.until;
+      if (fresh && low.current.end === dir && now - low.current.since > 400) {
+        players.forEach((p) => {
+          const was = settled.current.get(p.slot);
+          if (!was || was.end !== dir || now - was.since < 400 || now < (flung.current.get(p.slot) ?? 0)) return;
+          flung.current.set(p.slot, now + 900);
+          settled.current.delete(p.slot);
+          debugInfo.seesawFlings = ((debugInfo.seesawFlings as number | undefined) ?? 0) + 1;
+          p.hop(MOVE.trampolineVelocity * 0.85);
+          playBoing(p.position, 0.8);
+          emit('star', [p.position.x, p.position.y, p.position.z], { count: 8, color: ['#ffd23f', '#ffffff', colors[0]], speed: 4, up: 3 });
+        });
       }
       swing.current.until = now + 180;
       swing.current.dir = dir;
     }
     if (lowEnd !== low.current.end) low.current = { end: lowEnd, since: now };
-    const lifting = swing.current.valid && now <= swing.current.until;
+
+    // 2. Who is calmly standing on which end (for the next swing).
     for (const p of players.values()) {
       // read the body, not p.position: players may not have run their frame yet
       const rb = p.getBody();
@@ -153,20 +168,8 @@ function SeeSaw({ index }: { index: number }) {
       const steady = onPlank && Math.abs(rb.linvel().y - omega * lx) < 1.5 && !p.isLaunched() && !p.asleep;
       const end = Math.sign(lx);
       const was = settled.current.get(p.slot);
-      if (!steady) {
-        settled.current.delete(p.slot);
-        continue;
-      }
-      if (!was || was.end !== end) {
-        settled.current.set(p.slot, { end, since: now });
-        continue;
-      }
-      if (!lifting || end !== swing.current.dir || now - was.since < 400) continue;
-      if (now < (flung.current.get(p.slot) ?? 0)) continue;
-      flung.current.set(p.slot, now + 900);
-      p.hop(MOVE.trampolineVelocity * 0.85);
-      playBoing(p.position, 0.8);
-      emit('star', [t.x, t.y, t.z], { count: 8, color: ['#ffd23f', '#ffffff', colors[0]], speed: 4, up: 3 });
+      if (!steady) settled.current.delete(p.slot);
+      else if (!was || was.end !== end) settled.current.set(p.slot, { end, since: now });
     }
   });
   return (
