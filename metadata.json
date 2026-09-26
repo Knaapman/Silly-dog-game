@@ -1,5 +1,5 @@
 {
-  "name": "Silly Dog Sandbox",
-  "description": "A child-friendly, cartoonish sandbox game where you play as a dog, chase cats and birds, and play with balls. Supports local multiplayer and gamepads.",
+  "name": "Silly Park",
+  "description": "A text-free, Goat Simulator-style physics sandbox for young kids. Play as a dog, goat, pig or sheep: headbutt, lick-and-drag, flop and bounce your way around a silly park with up to 4 players in local co-op (controllers, keyboard or touch).",
   "requestFramePermissions": []
 }
