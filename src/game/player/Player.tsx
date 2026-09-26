@@ -23,7 +23,7 @@ import {
 import { GRAVITY, MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
 import { bonkStars, burstConfetti, emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
-import { distXZ, isInMud, isInPond, LAUNCH_PADS, SPAWN_POINTS, TRAMPOLINE_TOP, TRAMPOLINES } from '../layout';
+import { distXZ, isInMud, isInPond, isOnSnow, SPAWN_POINTS } from '../layout';
 import { lambert } from '../materials';
 import {
   noises,
@@ -34,7 +34,7 @@ import {
   pushNoise,
   shakeCamera,
   statics,
-  trampolineBounces,
+  surfaces,
   type PlayerRuntime,
   type PropEntry
 } from '../runtime';
@@ -86,6 +86,16 @@ function createState(spawn: THREE.Vector3) {
     stunned: 0,
     pendingBump: null as THREE.Vector3 | null,
     pendingHop: 0,
+    pendingLaunch: null as { target: THREE.Vector3; apex: number } | null,
+    holdAt: null as THREE.Vector3 | null,
+    hidden: false,
+    platformVel: new THREE.Vector3(),
+    sliding: false,
+    stepTimer: 0,
+    gravityOff: false,
+    grip: false,
+    jumpedAt: 0,
+    noiseAt: 0,
     flip: null as Flip | null,
     squash: 0,
     squashVel: 0,
@@ -127,6 +137,9 @@ function pickSpawn(slot: number) {
 
 const BONK_PITCH: Partial<Record<PropEntry['kind'], number>> = {
   chicken: 1.6,
+  dino: 1.9,
+  cow: 0.6,
+  snowball: 0.8,
   duck: 1.8,
   ball: 1.4,
   beachball: 1.2,
@@ -139,6 +152,7 @@ const BONK_PITCH: Partial<Record<PropEntry['kind'], number>> = {
 
 export function Player({ info }: { info: PlayerInfo }) {
   const { slot, source, species, hat, color } = info;
+  const asleep = !!info.asleep;
   const { world, rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null);
   const collider = useRef<RapierCollider>(null);
@@ -155,6 +169,12 @@ export function Player({ info }: { info: PlayerInfo }) {
   const st = useRef(createState(spawn));
   const speciesRef = useRef(species);
   speciesRef.current = species;
+  const asleepRef = useRef(asleep);
+  asleepRef.current = asleep;
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+  const beam = useRef<THREE.Mesh>(null);
+  const bornAt = useRef(performance.now());
 
   const tmp = useMemo(
     () => ({
@@ -176,21 +196,39 @@ export function Player({ info }: { info: PlayerInfo }) {
     const s = st.current;
     const rt: PlayerRuntime = {
       slot,
+      source,
       getBody: () => body.current,
       position: s.pos,
       velocity: s.vel,
       facing: 0,
       flopped: false,
+      asleep: false,
+      jumpedAt: 0,
+      noiseAt: 0,
       bump: (dir) => {
         s.pendingBump = dir.clone();
       },
       hop: (vy) => {
         s.pendingHop = vy;
-      }
+      },
+      launchTo: (target, apex) => {
+        s.pendingLaunch = { target: target.clone(), apex };
+      },
+      hold: (position, hidden = false) => {
+        s.holdAt = position ? position.clone() : null;
+        s.hidden = position ? hidden : false;
+      },
+      isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null
     };
     players.set(slot, rt);
+    // "I'm here!" - buzz the controller that just joined.
+    rumble(sourceRef.current, 0.6, 0.6, 250);
     return () => {
       players.delete(slot);
+      if (useGame.getState().phase === 'play') {
+        poof([s.pos.x, s.pos.y, s.pos.z], color, 16);
+        playPoof(s.pos);
+      }
       const held = s.held != null ? props.get(s.held) : null;
       if (held) {
         held.heldBy = null;
@@ -224,7 +262,8 @@ export function Player({ info }: { info: PlayerInfo }) {
     const dt = Math.min(delta, 1 / 20);
     const s = st.current;
     const game = useGame.getState();
-    const input = game.phase === 'play' && !game.menuOpen ? getInput(source) : NO_INPUT;
+    const napping = asleepRef.current;
+    const input = game.phase === 'play' && !game.menuOpen && !napping ? getInput(source) : NO_INPUT;
     const time = state.clock.elapsedTime;
     const species = speciesRef.current;
     const spec = SPECIES_SPECS[species];
@@ -242,8 +281,15 @@ export function Player({ info }: { info: PlayerInfo }) {
     const groundDist = hit ? hit.timeOfImpact : 99;
     s.groundY = t.y - groundDist;
     const wasGrounded = s.grounded;
-    // Generous so slopes (roof, hill, island) still count as ground for jumping.
-    s.grounded = !s.flopped && groundDist < RADIUS + 0.25 && lv.y < 4;
+    const surface = hit && groundDist < RADIUS + 0.4 ? surfaces.get(hit.collider.handle) : undefined;
+    const groundBody = hit ? hit.collider.parent() : null;
+    const onStatic = !groundBody || groundBody.isFixed();
+    // Generous so slopes (roof, hill, island) still count as ground for jumping. Moving
+    // platforms can rise faster than a normal "falling" check allows.
+    const riseLimit = surface?.velocityAt ? 12 : 4;
+    s.grounded = !s.flopped && groundDist < RADIUS + 0.25 && lv.y < riseLimit;
+    if (s.grounded && surface?.velocityAt) surface.velocityAt(s.pos, s.platformVel);
+    else s.platformVel.set(0, 0, 0);
 
     // ----- timers
     s.jumpBuffer -= dt;
@@ -427,6 +473,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     if (input.pressed.noise && !s.flopped) {
       playAnimalNoise(species, s.pos);
       s.noiseTime = 0.5;
+      s.noiseAt = performance.now();
       ring([t.x, t.y + 0.2, t.z], { color, radius: 3.5, duration: 0.6 });
       const now = performance.now();
       const partner = noises.find((n) => n.slot !== slot && now - n.time < 900 && n.position.distanceTo(s.pos) < 8);
@@ -478,7 +525,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         prop.onBonk?.(slot, tmp.d);
         bonkStars([tmp.p.x, tmp.p.y + 0.3, tmp.p.z]);
         playBonk(tmp.p, BONK_PITCH[prop.kind] ?? 1);
-        useGame.getState().addParty(prop.kind === 'chicken' ? PARTY_POINTS.bonkCritter : PARTY_POINTS.bonk);
+        useGame.getState().addParty(prop.kind === 'chicken' || prop.kind === 'cow' || prop.kind === 'dino' ? PARTY_POINTS.bonkCritter : PARTY_POINTS.bonk);
         hits += 1;
       });
       players.forEach((other) => {
@@ -531,26 +578,80 @@ export function Player({ info }: { info: PlayerInfo }) {
       s.pendingHop = 0;
     }
 
+    // ----- held in place (inside a cannon...)
+    if (s.holdAt) {
+      if (s.flopped) endFlop();
+      releaseHeld(false);
+      rb.setTranslation(s.holdAt, true);
+      rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      vx = vy = vz = 0;
+    }
+
+    // ----- launched by a pad / cannon / geyser: fly in a big arc to a fun spot
+    if (s.pendingLaunch && !s.holdAt) {
+      if (s.flopped) endFlop();
+      const { target, apex } = s.pendingLaunch;
+      s.pendingLaunch = null;
+      tmp.c.set(target.x, target.y + RADIUS + 0.1, target.z);
+      const flight = ballistic(s.pos, tmp.c, apex, tmp.v);
+      vx = tmp.v.x;
+      vy = tmp.v.y;
+      vz = tmp.v.z;
+      s.launched = flight;
+      s.launchAirborne = false;
+      if (Math.hypot(tmp.v.x, tmp.v.z) > 0.5) s.targetFacing = s.facing = Math.atan2(tmp.v.x, tmp.v.z);
+      s.jumps = 1;
+      s.squash = 0.5;
+      startFlip('x', Math.min(1.2, flight * 0.8));
+      releaseHeld(false);
+      playSlideWhistle('up', s.pos);
+      poof([t.x, t.y - 0.3, t.z], '#fff3a8', 12);
+      rumble(source, 0.8, 0.8, 250);
+      useGame.getState().addParty(PARTY_POINTS.launch);
+      rb.setLinvel({ x: vx, y: vy, z: vz }, true);
+    }
+
     // ----- movement
-    if (!s.flopped) {
+    if (!s.flopped && !s.holdAt) {
       let speed: number = MOVE.speed;
       if (s.swimming) speed = MOVE.swimSpeed;
       else if (s.inMud) speed = MOVE.mudSpeed;
       if (heavyDrag) speed *= 0.72;
       const controlling = s.launched <= 0 && s.stunned <= 0;
       const mag = Math.hypot(input.x, input.z);
+      const pv = s.platformVel;
       if (controlling) {
-        const accel = s.grounded || s.swimming ? MOVE.groundAccel : MOVE.airAccel;
+        const accel = s.grounded || s.swimming ? (surface?.slippery ?? MOVE.groundAccel) : MOVE.airAccel;
         const k = 1 - Math.exp(-accel * dt);
-        vx += (input.x * speed - vx) * k;
-        vz += (input.z * speed - vz) * k;
+        vx += (input.x * speed + pv.x - vx) * k;
+        vz += (input.z * speed + pv.z - vz) * k;
         if (mag > 0.15 && s.bonkTime <= 0) s.targetFacing = Math.atan2(input.x, input.z);
       }
+      // Stick to rides going up and down.
+      if (s.grounded && surface?.velocityAt && s.jumpBuffer <= 0) vy = pv.y - 0.3;
       if (s.dashTime > 0) {
-        vx = tmp.fwd.x * MOVE.bonkDashSpeed;
-        vz = tmp.fwd.z * MOVE.bonkDashSpeed;
+        vx = tmp.fwd.x * MOVE.bonkDashSpeed + pv.x;
+        vz = tmp.fwd.z * MOVE.bonkDashSpeed + pv.z;
       }
       s.facing = lerpAngle(s.facing, s.targetFacing, 1 - Math.exp(-14 * dt));
+
+      // Slides: a happy "wheee" when you start going fast.
+      const sliding = s.grounded && !!surface?.slide && Math.hypot(lv.x, lv.z) > 3;
+      if (sliding && !s.sliding) {
+        playSlideWhistle('down', s.pos);
+        useGame.getState().addParty(PARTY_POINTS.bounce);
+      }
+      s.sliding = sliding;
+      if (sliding && Math.random() < 0.3) emit('star', [t.x, t.y - 0.3, t.z], { count: 1, color: ['#ffffff', '#fff3a8'], speed: 1, up: 1, size: 0.1 });
+
+      // Snow crunches under your feet.
+      if (s.grounded && (surface?.snow || isOnSnow(t.x, t.z)) && Math.hypot(lv.x, lv.z) > 2) {
+        s.stepTimer -= dt;
+        if (s.stepTimer <= 0) {
+          s.stepTimer = 0.18;
+          emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 2, color: '#ffffff', speed: 1, up: 0.8, size: 0.18 });
+        }
+      }
 
       // Soft leash: nobody wanders off-screen in co-op.
       if (players.size > 1 && s.launched <= 0) {
@@ -570,35 +671,33 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.jumps = 0;
       }
 
-      // Trampolines (flush with the ground: walking on is enough). Checked before jumping so
-      // mashing jump on landing gives an even bigger bounce instead of a normal hop.
-      TRAMPOLINES.forEach((tr, i) => {
-        // The mat's own restitution may already have bounced us a little this step; still boost.
-        if (s.bounceCooldown > 0 || lv.y > MOVE.trampolineVelocity - 3) return;
-        if (distXZ(t.x, t.z, tr.position[0], tr.position[2]) > tr.radius - 0.1) return;
-        if (t.y - RADIUS > TRAMPOLINE_TOP + 0.35) return;
-        vy = MOVE.trampolineVelocity + (input.held.jump || s.jumpBuffer > 0 ? 3.5 : 0);
+      // Bouncy things (trampolines, mushrooms, bouncy castle). Checked before jumping so
+      // mashing jump on landing gives an even bigger bounce instead of a normal hop. The
+      // collider's own restitution may already have bounced us a little: still boost.
+      if (surface?.bounce && s.bounceCooldown <= 0 && lv.y < surface.bounce - 3 && groundDist < RADIUS + 0.35) {
+        vy = surface.bounce + (input.held.jump || s.jumpBuffer > 0 ? 3.5 : 0);
         s.jumps = 1;
         s.jumpBuffer = 0;
         s.coyote = 0;
         s.bounceCooldown = 0.3;
         s.squash = 0.45;
-        trampolineBounces.set(i, performance.now());
         const axes: Flip['axis'][] = ['x', 'z', 'y'];
         startFlip(axes[Math.floor(Math.random() * axes.length)], 0.8, Math.random() < 0.5 ? 1 : -1);
         playBoing(s.pos, 0.9 + Math.random() * 0.4);
-        ring([tr.position[0], TRAMPOLINE_TOP + 0.05, tr.position[2]], { color: '#ffffff', radius: 2.4, duration: 0.4 });
+        ring([t.x, s.groundY + 0.05, t.z], { color: '#ffffff', radius: 2.2, duration: 0.4 });
         rumble(source, 0.3, 0.6, 120);
+        surface.onBounce?.(slot);
         useGame.getState().addParty(PARTY_POINTS.bounce);
-      });
+      }
 
       if (s.jumpBuffer > 0 && s.stunned <= 0) {
         if (s.coyote > 0) {
-          vy = s.swimming ? 8 : MOVE.jumpVelocity;
+          vy = (s.swimming ? 8 : MOVE.jumpVelocity) + Math.max(0, pv.y);
           s.jumps = 1;
           s.coyote = 0;
           s.jumpBuffer = 0;
           s.squash = -0.3;
+          s.jumpedAt = performance.now();
           playJump(s.pos);
           if (s.swimming) {
             playSplash(s.pos, false);
@@ -608,6 +707,7 @@ export function Player({ info }: { info: PlayerInfo }) {
           vy = MOVE.doubleJumpVelocity;
           s.jumps = 2;
           s.jumpBuffer = 0;
+          s.jumpedAt = performance.now();
           startFlip('x', 0.5);
           playJump(s.pos, true);
           ring([t.x, t.y - 0.4, t.z], { color: '#ffffff', radius: 1.4, duration: 0.35 });
@@ -615,32 +715,47 @@ export function Player({ info }: { info: PlayerInfo }) {
         }
       }
 
-      // Launch pads: fly in a big arc to a fun spot
-      LAUNCH_PADS.forEach((pad) => {
-        if (s.padCooldown > 0 || s.launched > 0) return;
-        if (distXZ(t.x, t.z, pad.position[0], pad.position[2]) > 1.3 || t.y > 1.6) return;
-        tmp.c.set(pad.target[0], pad.target[1] + RADIUS + 0.1, pad.target[2]);
-        const flight = ballistic(s.pos, tmp.c, pad.apex, tmp.v);
-        vx = tmp.v.x;
-        vy = tmp.v.y;
-        vz = tmp.v.z;
-        s.launched = flight;
-        s.launchAirborne = false;
-        s.padCooldown = flight + 0.6;
-        s.targetFacing = s.facing = Math.atan2(tmp.v.x, tmp.v.z);
-        s.jumps = 1;
-        s.squash = 0.5;
-        startFlip('x', Math.min(1.2, flight * 0.8));
-        releaseHeld(false);
-        playSlideWhistle('up', s.pos);
-        playWhoosh(s.pos);
-        poof([t.x, t.y - 0.3, t.z], '#fff3a8', 16);
-        rumble(source, 0.8, 0.8, 250);
-        shakeCamera(0.2);
-        useGame.getState().addParty(PARTY_POINTS.launch);
-      });
+      // Sticky feet: standing still on a slope (hill, roof, volcano) shouldn't creep downhill.
+      // Static ground: switch gravity off. Moving things (see-saw, crates) need your weight,
+      // so there you grip with friction instead.
+      const still =
+        s.grounded &&
+        mag < 0.1 &&
+        !surface?.slippery &&
+        !surface?.velocityAt &&
+        !surface?.bounce &&
+        s.launched <= 0 &&
+        s.jumpBuffer <= 0 &&
+        !s.swimming &&
+        s.dashTime <= 0 &&
+        s.stunned <= 0 &&
+        vy <= 1;
+      const idle = still && onStatic;
+      const grip = still && !onStatic;
+      if (grip !== s.grip) {
+        s.grip = grip;
+        col?.setFriction(grip ? 2 : 0);
+      }
+      if (idle !== s.gravityOff) {
+        s.gravityOff = idle;
+        rb.setGravityScale(idle ? 0 : 1, true);
+      }
+      if (idle) {
+        vy = Math.min(0, vy) * 0.5;
+        vx *= 0.6;
+        vz *= 0.6;
+      }
 
       rb.setLinvel({ x: vx, y: vy, z: vz }, true);
+    } else {
+      if (s.grip) {
+        s.grip = false;
+        if (!s.flopped) col?.setFriction(0); // flopping sets its own friction
+      }
+      if (s.gravityOff) {
+        s.gravityOff = false;
+        rb.setGravityScale(1, true);
+      }
     }
 
     // ----- landing
@@ -678,9 +793,16 @@ export function Player({ info }: { info: PlayerInfo }) {
       poof([p.x, p.y, p.z], color, 18);
     }
 
+    if (napping && Math.random() < dt * 1.5) {
+      emit('puff', [t.x + 0.3, t.y + 1.2, t.z], { count: 1, color: '#e3f2fd', size: 0.18, speed: 0.2, up: 1.2, gravity: -1, life: 1.5 });
+    }
     if (rt) {
+      rt.source = source;
+      rt.asleep = napping;
       rt.facing = s.facing;
       rt.flopped = s.flopped;
+      rt.jumpedAt = s.jumpedAt;
+      rt.noiseAt = s.noiseAt;
     }
 
     // =====================================================================
@@ -690,6 +812,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     const airborne = !s.grounded && !s.swimming && s.airTime > 0.08;
 
     if (yawGroup.current) {
+      yawGroup.current.visible = !s.hidden;
       yawGroup.current.rotation.y = s.flopped ? yawGroup.current.rotation.y : s.facing;
       const swimDip = s.swimming ? -0.32 + Math.sin(time * 3) * 0.04 : 0;
       yawGroup.current.position.y = THREE.MathUtils.lerp(yawGroup.current.position.y, -RADIUS + swimDip, 1 - Math.exp(-10 * dt));
@@ -740,7 +863,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       const bonking = s.bonkTime > 0;
       s.idleTime = hSpeed < 0.3 && s.grounded ? s.idleTime + dt : 0;
       const lookAround = s.idleTime > 2 ? Math.sin(time * 0.9) * 0.5 : 0;
-      const targetX = bonking ? 0.55 : s.noiseTime > 0 ? -0.5 + Math.sin(time * 40) * 0.05 : s.held != null ? 0.15 : 0;
+      const targetX = napping ? 0.7 : bonking ? 0.55 : s.noiseTime > 0 ? -0.5 + Math.sin(time * 40) * 0.05 : s.held != null ? 0.15 : 0;
       r.head.rotation.x = THREE.MathUtils.lerp(r.head.rotation.x, targetX, 1 - Math.exp(-18 * dt));
       r.head.rotation.y = THREE.MathUtils.lerp(r.head.rotation.y, lookAround, 1 - Math.exp(-4 * dt));
       r.head.rotation.z = s.flopped ? Math.sin(time * 9) * 0.3 : THREE.MathUtils.lerp(r.head.rotation.z, 0, 0.2);
@@ -828,11 +951,20 @@ export function Player({ info }: { info: PlayerInfo }) {
       const height = Math.max(0, t.y - RADIUS - s.groundY);
       sr.position.set(t.x, s.groundY + 0.04, t.z);
       sr.scale.setScalar(THREE.MathUtils.clamp(1 - height * 0.04, 0.55, 1));
-      sr.visible = hit != null;
+      sr.visible = hit != null && !s.hidden;
+    }
+    if (beam.current) {
+      const age = (performance.now() - bornAt.current) / 1000;
+      const b = beam.current;
+      b.visible = age < 2.5;
+      if (b.visible) {
+        b.position.set(t.x, t.y + 6, t.z);
+        (b.material as THREE.MeshBasicMaterial).opacity = 0.35 * (1 - age / 2.5);
+      }
     }
     if (marker.current) {
       const m = marker.current;
-      m.visible = players.size > 1;
+      m.visible = players.size > 1 && !s.hidden;
       m.position.set(t.x, t.y + spec.head[1] * MODEL_SCALE + 0.2 + Math.sin(time * 4) * 0.08 + (hat === 'none' ? 0 : 0.4), t.z);
       m.rotation.y += dt * 3;
     }
@@ -891,6 +1023,10 @@ export function Player({ info }: { info: PlayerInfo }) {
       <mesh ref={shadowRing} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <ringGeometry args={[0.55, 0.78, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.85} depthWrite={false} />
+      </mesh>
+      <mesh ref={beam}>
+        <cylinderGeometry args={[0.9, 1.2, 12, 20, 1, true]} />
+        <meshBasicMaterial color={color} transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
       <mesh ref={marker} rotation={[Math.PI, 0, 0]} material={lambert(color)}>
         <coneGeometry args={[0.18, 0.3, 4]} />

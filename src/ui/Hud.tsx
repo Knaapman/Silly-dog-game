@@ -69,8 +69,9 @@ function PlayerBadges() {
             style={{ borderColor: p.color, boxShadow: `0 4px 0 ${p.color}` }}
             title="Change animal"
           >
-            <span className="emoji text-3xl leading-none">{SPECIES_EMOJI[p.species]}</span>
+            <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
+            {p.asleep && <span className="emoji absolute -bottom-2 -right-2 animate-pulse text-xl">💤</span>}
           </button>
         );
       })}
@@ -109,9 +110,9 @@ function StarSlots() {
   const fresh = now - lastStarAt < 1200;
   const newest = stars.lastIndexOf(true);
   return (
-    <div className="flex gap-1 rounded-full bg-slate-900/25 px-2 py-1">
+    <div className="flex flex-wrap justify-center gap-0.5 rounded-full bg-slate-900/25 px-2 py-1 sm:gap-1">
       {stars.map((got, i) => (
-        <StarIcon key={i} size={26} filled={got} className={fresh && got && i === newest ? 'animate-pop' : ''} />
+        <StarIcon key={i} size={22} filled={got} className={fresh && got && i === newest ? 'animate-pop' : ''} />
       ))}
     </div>
   );
@@ -121,11 +122,11 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
   const audio = useAudioState();
   return (
     <>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-3 sm:flex-nowrap sm:p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-3 md:flex-nowrap sm:p-4">
         <div className="pointer-events-auto order-1">
           <PlayerBadges />
         </div>
-        <div className="order-3 flex w-full flex-col items-center gap-2 sm:order-2 sm:w-auto">
+        <div className="order-3 flex w-full flex-col items-center gap-2 md:order-2 md:w-auto">
           <PartyMeter />
           <StarSlots />
           {!audio.running && (
@@ -138,7 +139,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
             </button>
           )}
         </div>
-        <div className="pointer-events-auto order-2 flex gap-2 sm:order-3">
+        <div className="pointer-events-auto order-2 flex gap-2 md:order-3">
           <button
             className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-sky-500/80 text-white shadow-lg active:scale-90 sm:h-12 sm:w-12"
             onClick={() => {

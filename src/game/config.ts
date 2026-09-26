@@ -18,7 +18,7 @@ export type HatId = (typeof HATS)[number];
 export const GRAVITY = -22;
 
 /** Half size of the fenced play area (hedges sit on this line). */
-export const WORLD_HALF = 40;
+export const WORLD_HALF = 62;
 
 export const MOVE = {
   speed: 9,
@@ -33,7 +33,7 @@ export const MOVE = {
   bonkDuration: 0.28,
   bonkCooldown: 0.45,
   flopDuration: 2.6,
-  leashRadius: 26
+  leashRadius: 30
 } as const;
 
 /** How much each silly thing fills the shared party meter (full = 1). */

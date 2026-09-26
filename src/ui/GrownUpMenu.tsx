@@ -1,18 +1,37 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setMusicEnabled, setMuted, setVolume, unlockAudio } from '../game/audio';
-import { KEYMAPS, type ActionName } from '../game/input';
+import { KEYMAPS, onUiNav, type ActionName } from '../game/input';
 import { useGame } from '../game/store';
 import { ACTION_UI, ButtonDiamond } from './actions';
 import { useAudioState } from './Hud';
 import { CloseIcon, FullscreenIcon, HomeIcon, MusicIcon, ResetIcon, SpeakerIcon } from './Icons';
 
-function RoundButton({ onClick, children, title, active = true }: { onClick: () => void; children: ReactNode; title: string; active?: boolean }) {
+function RoundButton({
+  onClick,
+  children,
+  title,
+  active = true,
+  focused = false,
+  color,
+  buttonRef
+}: {
+  onClick: () => void;
+  children: ReactNode;
+  title: string;
+  active?: boolean;
+  focused?: boolean;
+  color?: string;
+  buttonRef?: (el: HTMLButtonElement | null) => void;
+}) {
   return (
     <button
+      ref={buttonRef}
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg transition-transform active:scale-90 ${active ? 'bg-sky-500 text-white' : 'bg-slate-500 text-white/80'}`}
+      className={`flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white shadow-lg transition-transform active:scale-90 ${
+        color ?? (active ? 'bg-sky-500 text-white' : 'bg-slate-500 text-white/80')
+      } ${focused ? 'scale-110 ring-4 ring-amber-300' : ''}`}
     >
       {children}
     </button>
@@ -83,30 +102,56 @@ export function GrownUpMenu() {
     else void document.documentElement.requestFullscreen?.().catch(() => {});
   };
 
+  // Controller navigation: D-pad / stick moves, A presses, B or Start closes.
+  const BUTTONS = 6;
+  const SLIDER = BUTTONS;
+  const [focus, setFocus] = useState(BUTTONS - 1);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const volumeRef = useRef(audio.volume);
+  volumeRef.current = audio.volume;
+  useEffect(
+    () =>
+      onUiNav((nav) => {
+        const f = focusRef.current;
+        if (nav === 'back') setMenuOpen(false);
+        else if (nav === 'confirm') buttons.current[f]?.click();
+        else if (nav === 'down') setFocus(SLIDER);
+        else if (nav === 'up') setFocus(Math.min(f, BUTTONS - 1));
+        else if (f === SLIDER) setVolume(volumeRef.current + (nav === 'right' ? 0.1 : -0.1));
+        else setFocus((f + (nav === 'right' ? 1 : -1) + BUTTONS) % BUTTONS);
+      }),
+    [setMenuOpen, SLIDER]
+  );
+  const btnRef = (i: number) => (el: HTMLButtonElement | null) => {
+    buttons.current[i] = el;
+  };
+
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setMenuOpen(false)}>
       <div className="max-h-full w-full max-w-3xl overflow-auto rounded-[2rem] border-4 border-white bg-slate-800/95 p-5 text-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <RoundButton onClick={() => { unlockAudio(); setMuted(!audio.muted); }} title={audio.muted ? 'Sound on' : 'Sound off'} active={!audio.muted}>
+          <RoundButton buttonRef={btnRef(0)} focused={focus === 0} onClick={() => { unlockAudio(); setMuted(!audio.muted); }} title={audio.muted ? 'Sound on' : 'Sound off'} active={!audio.muted}>
             <SpeakerIcon muted={audio.muted} size={30} />
           </RoundButton>
-          <RoundButton onClick={() => setMusicEnabled(!audio.music)} title={audio.music ? 'Music off' : 'Music on'} active={audio.music}>
+          <RoundButton buttonRef={btnRef(1)} focused={focus === 1} onClick={() => setMusicEnabled(!audio.music)} title={audio.music ? 'Music off' : 'Music on'} active={audio.music}>
             <MusicIcon off={!audio.music} size={30} />
           </RoundButton>
-          <RoundButton onClick={() => { resetPark(); setMenuOpen(false); }} title="Tidy up the park">
+          <RoundButton buttonRef={btnRef(2)} focused={focus === 2} onClick={() => { resetPark(); setMenuOpen(false); }} title="Tidy up the park">
             <ResetIcon size={30} />
           </RoundButton>
-          <RoundButton onClick={toggleFullscreen} title="Full screen">
+          <RoundButton buttonRef={btnRef(3)} focused={focus === 3} onClick={toggleFullscreen} title="Full screen">
             <FullscreenIcon size={30} />
           </RoundButton>
-          <RoundButton onClick={backToTitle} title="Back to start (everyone leaves)">
+          <RoundButton buttonRef={btnRef(4)} focused={focus === 4} onClick={backToTitle} title="Back to start (everyone leaves)">
             <HomeIcon size={30} />
           </RoundButton>
-          <button onClick={() => setMenuOpen(false)} title="Close" aria-label="Close" className="flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white bg-emerald-500 shadow-lg active:scale-90">
+          <RoundButton buttonRef={btnRef(5)} focused={focus === 5} onClick={() => setMenuOpen(false)} title="Close" color="bg-emerald-500 text-white">
             <CloseIcon size={30} />
-          </button>
+          </RoundButton>
         </div>
-        <label className="mx-auto mt-4 flex max-w-sm items-center gap-3">
+        <label className={`mx-auto mt-4 flex max-w-sm items-center gap-3 rounded-full px-3 py-1 ${focus === SLIDER ? 'ring-4 ring-amber-300' : ''}`}>
           <SpeakerIcon size={22} />
           <input
             type="range"
@@ -126,15 +171,15 @@ export function GrownUpMenu() {
               <span className="rounded-md bg-white/20 px-2 py-1" title="Shoulder buttons / triggers">LB RB LT RT = {ACTION_UI.flop.icon}</span>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="rounded-md bg-white/20 px-2 py-1" title="Back / Select / View">⧉ = {ACTION_UI.species.icon}</span>
-              <span className="rounded-md bg-white/20 px-2 py-1" title="Start / Menu / Options">☰ = {ACTION_UI.hat.icon}</span>
+              <span className="rounded-md bg-white/20 px-2 py-1" title="Back / Select / View (hold: leave)">⧉ = {ACTION_UI.species.icon}</span>
+              <span className="rounded-md bg-white/20 px-2 py-1" title="Start / Menu / Options (hold: this menu)">☰ = {ACTION_UI.hat.icon}</span>
             </div>
           </div>
           <KeyboardLegend source="kb1" color="#ff4d5e" />
           <KeyboardLegend source="kb2" color="#3b82f6" />
         </div>
         <p className="mt-4 text-center text-sm text-white/75">
-          Up to 4 players: every controller joins by pressing any button. Keyboard can host two players. Tap an animal badge to switch animals. <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
+          Up to 4 players: every controller joins by pressing any button. Tap Select to change animal, tap Start to change hat. Hold Start to open this menu (D-pad to move, A to press, B to close); hold Select to leave. If a controller disconnects, its animal naps until it comes back. Keyboard can host two players; <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
         </p>
       </div>
     </div>

@@ -197,3 +197,85 @@ export const pathTexture = () =>
       1
     )
   );
+
+export const tileTexture = (key: string, colors: string[], grout: string, repeat: number) =>
+  memo(`tile-${key}`, () =>
+    canvasTexture(
+      128,
+      (ctx, size) => {
+        const n = 4;
+        const cell = size / n;
+        for (let y = 0; y < n; y += 1) {
+          for (let x = 0; x < n; x += 1) {
+            ctx.fillStyle = colors[(x + y) % colors.length];
+            ctx.fillRect(x * cell, y * cell, cell, cell);
+          }
+        }
+        ctx.strokeStyle = grout;
+        ctx.lineWidth = 3;
+        for (let i = 0; i <= n; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(i * cell, 0);
+          ctx.lineTo(i * cell, size);
+          ctx.moveTo(0, i * cell);
+          ctx.lineTo(size, i * cell);
+          ctx.stroke();
+        }
+      },
+      repeat
+    )
+  );
+
+export const speckleTexture = (key: string, base: string, dots: string[], repeat: number) =>
+  memo(`speckle-${key}`, () =>
+    canvasTexture(
+      128,
+      (ctx, size) => {
+        ctx.fillStyle = base;
+        ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 260; i += 1) {
+          ctx.fillStyle = dots[i % dots.length];
+          ctx.beginPath();
+          ctx.arc(Math.random() * size, Math.random() * size, 0.8 + Math.random() * 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      },
+      repeat
+    )
+  );
+
+export const stripeTexture = (key: string, colors: string[], vertical = true) =>
+  memo(`stripe-${key}`, () =>
+    canvasTexture(128, (ctx, size) => {
+      colors.forEach((c, i) => {
+        ctx.fillStyle = c;
+        if (vertical) ctx.fillRect((i * size) / colors.length, 0, size / colors.length + 1, size);
+        else ctx.fillRect(0, (i * size) / colors.length, size, size / colors.length + 1);
+      });
+    })
+  );
+
+const emojiTextures = new Map<string, THREE.Texture>();
+/** A round sign face with a big emoji on it (for text-free signposts). */
+export function emojiSignTexture(emoji: string, background = '#fff8e1') {
+  const key = emoji + background;
+  let t = emojiTextures.get(key);
+  if (!t) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = background;
+    ctx.beginPath();
+    ctx.arc(64, 64, 62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '76px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 64, 70);
+    t = new THREE.CanvasTexture(canvas);
+    t.colorSpace = THREE.SRGBColorSpace;
+    emojiTextures.set(key, t);
+  }
+  return t;
+}

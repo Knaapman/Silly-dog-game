@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { playCheer, playClack, playPoof, playStrike } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, poof, ring } from '../fx';
-import { BOWLING, CRATE_TOWER, MELON_PATCH, SOCCER, type Vec3 } from '../layout';
+import { BOWLING, CRATE_TOWER, SOCCER, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
@@ -42,7 +42,7 @@ function Line({ from, to, width = 0.18 }: { from: [number, number]; to: [number,
   );
 }
 
-function Soccer() {
+export function Soccer() {
   const [ballKey, setBallKey] = useState(0);
   const cooldown = useRef(0);
   const net = useRef<THREE.Group>(null);
@@ -148,7 +148,7 @@ function Soccer() {
   );
 }
 
-function Bowling() {
+export function Bowling() {
   const [rackKey, setRackKey] = useState(0);
   const state = useRef({ fallen: new Set<number>(), resetAt: 0, strike: false });
   const laneLen = BOWLING.laneTo - BOWLING.laneFrom;
@@ -219,7 +219,7 @@ function Bowling() {
   );
 }
 
-function CrateTower() {
+export function CrateTower() {
   const crates = useMemo(() => {
     const [bx, , bz] = CRATE_TOWER.base;
     const s = CRATE_TOWER.size;
@@ -239,61 +239,26 @@ function CrateTower() {
   );
 }
 
-function MelonPatch() {
-  return (
-    <group>
-      {MELON_PATCH.map(([x, z], i) => (
-        <group key={i}>
-          <Prop kind="melon" position={[x, 0.5, z]} rotation={[0, i * 0.7, 0]} splatty />
-          {[0, 1, 2].map((j) => {
-            const a = i * 1.3 + j * 2.1;
-            return (
-              <mesh key={j} position={[x + Math.cos(a) * 0.9, 0.06, z + Math.sin(a) * 0.9]} rotation={[-Math.PI / 2, 0, a]} scale={[1, 0.6, 1]} material={lambert('#3f9b3a')}>
-                <circleGeometry args={[0.4, 8]} />
-              </mesh>
-            );
-          })}
-        </group>
-      ))}
-    </group>
-  );
-}
-
-const SCATTER: { kind: 'beachball' | 'ball' | 'cone' | 'barrel' | 'hay' | 'duck'; position: Vec3; rotation?: Vec3; color?: string }[] = [
-  { kind: 'beachball', position: [-6, 1, 0] },
-  { kind: 'beachball', position: [-9, 1, 21] },
-  { kind: 'beachball', position: [22, 1, -2] },
-  { kind: 'ball', position: [4, 0.5, 14], color: '#c6f432' },
-  { kind: 'ball', position: [-3, 0.5, 16], color: '#ff4d5e' },
-  { kind: 'ball', position: [12, 0.5, 4], color: '#3b82f6' },
-  { kind: 'ball', position: [-12, 0.5, -4], color: '#ffd23f' },
-  { kind: 'ball', position: [24, 0.5, 16], color: '#a855f7' },
-  { kind: 'cone', position: [11, 0.4, -20] },
-  { kind: 'cone', position: [25, 0.4, -20] },
-  { kind: 'cone', position: [6, 0.4, 9] },
-  { kind: 'cone', position: [-6, 0.4, -2] },
-  { kind: 'cone', position: [7, 0.4, 10.5] },
-  { kind: 'barrel', position: [-21, 0.5, -21.5] },
-  { kind: 'barrel', position: [-19.8, 0.5, -22.4], color: '#3b82f6' },
-  { kind: 'barrel', position: [-30, 0.5, -20], color: '#22c55e' },
-  { kind: 'hay', position: [-23, 0.62, -20], rotation: [0, 0, Math.PI / 2] },
-  { kind: 'hay', position: [-25.4, 0.62, -20.3], rotation: [0, 0.3, Math.PI / 2] },
-  { kind: 'hay', position: [-19, 0.55, -26] },
-  { kind: 'duck', position: [-12, 0.35, 5] },
-  { kind: 'duck', position: [-20, 0.35, 12], color: '#ff8fd8' },
-  { kind: 'duck', position: [-21, 0.35, 3] }
+const CONES: Vec3[] = [
+  [29, 0.4, -31],
+  [47, 0.4, -31],
+  [29, 0.4, -48],
+  [47, 0.4, -48],
+  [20, 0.4, -20],
+  [23, 0.4, -18]
 ];
 
-export function Games() {
+export function Sports() {
   return (
     <>
       <Soccer />
       <Bowling />
       <CrateTower />
-      <MelonPatch />
-      {SCATTER.map((s, i) => (
-        <Prop key={i} kind={s.kind} position={s.position} rotation={s.rotation} color={s.color} />
+      {CONES.map((p, i) => (
+        <Prop key={i} kind="cone" position={p} />
       ))}
+      <Prop kind="ball" position={[33, 0.5, -30]} color="#ff4d5e" />
+      <Prop kind="beachball" position={[26, 1, -30]} />
     </>
   );
 }

@@ -36,7 +36,9 @@ type PropDef = {
   angularDamping: number;
 };
 
-const DEFS: Record<Exclude<PropKind, 'chicken'>, PropDef> = {
+type SimpleKind = Exclude<PropKind, 'chicken' | 'cow' | 'dino' | 'snowball'>;
+
+const DEFS: Record<SimpleKind, PropDef> = {
   ball: { radius: 0.3, launch: 16, heavy: false, density: 0.5, restitution: 0.8, friction: 0.6, linearDamping: 0.2, angularDamping: 0.3 },
   beachball: { radius: 0.75, launch: 13, heavy: false, density: 0.06, restitution: 0.85, friction: 0.5, linearDamping: 0.5, angularDamping: 0.4 },
   soccer: { radius: 0.55, launch: 15, heavy: false, density: 0.3, restitution: 0.7, friction: 0.6, linearDamping: 0.25, angularDamping: 0.5 },
@@ -51,7 +53,7 @@ const DEFS: Record<Exclude<PropKind, 'chicken'>, PropDef> = {
   duck: { radius: 0.32, launch: 15, heavy: false, density: 0.25, restitution: 0.6, friction: 0.5, linearDamping: 0.3, angularDamping: 0.5 }
 };
 
-export type PropKindNoChicken = Exclude<PropKind, 'chicken'>;
+export type PropKindNoChicken = SimpleKind;
 
 function Collider({ kind }: { kind: PropKindNoChicken }) {
   const d = DEFS[kind];
@@ -222,10 +224,12 @@ export type PropProps = {
   onEaten?: () => void;
   /** When set, the prop resets itself whenever this number changes (in addition to the park reset). */
   resetKey?: number;
+  /** Initial velocity (e.g. balls spat out by the volcano). */
+  velocity?: Vec3;
   children?: ReactNode;
 };
 
-export function Prop({ kind, position, rotation, color, splatty, edible, onEaten, resetKey }: PropProps) {
+export function Prop({ kind, position, rotation, color, splatty, edible, onEaten, resetKey, velocity }: PropProps) {
   const def = DEFS[kind];
   const body = useRef<RapierRigidBody>(null);
   const visual = useRef<THREE.Group>(null);
@@ -352,6 +356,7 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
       linearDamping={def.linearDamping}
       angularDamping={def.angularDamping}
       onCollisionEnter={onCollisionEnter}
+      {...(velocity ? { linearVelocity: velocity } : {})}
       ccd={kind === 'ball' || kind === 'soccer' || kind === 'apple'}
     >
       <Collider kind={kind} />

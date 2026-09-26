@@ -1,8 +1,28 @@
-import { SPECIES, SPECIES_EMOJI } from '../game/config';
+import { useEffect, useState } from 'react';
+import { PLAYER_COLORS, SPECIES, SPECIES_EMOJI } from '../game/config';
+import { getConnectedPads } from '../game/input';
 import { ButtonDiamond } from './actions';
 import { GamepadIcon, HandIcon, KeyboardIcon, PlayIcon } from './Icons';
 
+function usePadCount() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const update = () => setCount(getConnectedPads().length);
+    update();
+    const id = window.setInterval(update, 400);
+    window.addEventListener('gamepadconnected', update);
+    window.addEventListener('gamepaddisconnected', update);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('gamepadconnected', update);
+      window.removeEventListener('gamepaddisconnected', update);
+    };
+  }, []);
+  return count;
+}
+
 export function TitleScreen({ onPlay }: { onPlay: () => void }) {
+  const pads = usePadCount();
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-gradient-to-b from-sky-400/30 via-transparent to-emerald-500/30 px-4 text-white">
       <div className="flex gap-3 sm:gap-6">
@@ -22,7 +42,15 @@ export function TitleScreen({ onPlay }: { onPlay: () => void }) {
       </button>
       <div className="flex items-center gap-6 rounded-full bg-slate-900/35 px-6 py-3 text-white/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <GamepadIcon size={46} />
+          {pads === 0 ? (
+            <GamepadIcon size={46} className="opacity-70" />
+          ) : (
+            Array.from({ length: Math.min(4, pads) }, (_, i) => (
+              <span key={i} style={{ color: PLAYER_COLORS[i] }} className="animate-bounce" title="Controller connected">
+                <GamepadIcon size={46} />
+              </span>
+            ))
+          )}
           <span className="flex h-8 w-8 animate-pulse items-center justify-center rounded-full border-2 border-white bg-green-500 text-sm font-black">A</span>
         </div>
         <KeyboardIcon size={46} />

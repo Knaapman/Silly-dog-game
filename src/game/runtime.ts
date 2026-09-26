@@ -17,7 +17,10 @@ export type PropKind =
   | 'pin'
   | 'apple'
   | 'duck'
-  | 'chicken';
+  | 'chicken'
+  | 'cow'
+  | 'dino'
+  | 'snowball';
 
 export type PropEntry = {
   id: number;
@@ -76,14 +79,25 @@ export function registerStatic(entry: StaticBonkable) {
 
 export type PlayerRuntime = {
   slot: number;
+  source: string;
   getBody: () => RapierRigidBody | null;
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   facing: number;
   flopped: boolean;
+  /** Controller unplugged: napping, ignored by the camera and the leash. */
+  asleep: boolean;
+  /** Timestamps (performance.now) of the last jump / noise, so followers can copy them. */
+  jumpedAt: number;
+  noiseAt: number;
   /** Called when another player headbutts this one. */
   bump: (dir: THREE.Vector3) => void;
   hop: (vy: number) => void;
+  /** Fly in an arc that lands on `target`, peaking at absolute height `apex`. */
+  launchTo: (target: THREE.Vector3, apex: number) => void;
+  /** Pin the player at a point (e.g. inside a cannon), hidden or not. null releases. */
+  hold: (position: THREE.Vector3 | null, hidden?: boolean) => void;
+  isLaunched: () => boolean;
 };
 
 export const players = new Map<number, PlayerRuntime>();
@@ -113,17 +127,60 @@ export function shakeCamera(amount: number) {
 
 /** Spawns an apple from a tree; set by the orchard component. */
 export const spawners = {
-  apple: (_position: THREE.Vector3) => {}
+  apple: (_position: THREE.Vector3, _color?: string) => {},
+  babyDino: (_ownerSlot: number, _position: THREE.Vector3) => {}
 };
 
 export function playersCentroid(out: THREE.Vector3, excludeSlot?: number) {
   let count = 0;
   out.set(0, 0, 0);
   players.forEach((p) => {
-    if (p.slot === excludeSlot) return;
+    if (p.slot === excludeSlot || p.asleep) return;
     out.add(p.position);
     count += 1;
   });
   if (count > 0) out.divideScalar(count);
   return count;
 }
+
+// ---------------------------------------------------------------------------
+// Special ground surfaces, keyed by collider handle. The player looks up whatever it is
+// standing on: trampolines & mushrooms bounce, slides & ice are slippery, and rides
+// (carousel, ferris wheel, train) carry you along.
+
+export type Surface = {
+  /** Upward speed given on landing. */
+  bounce?: number;
+  /** Ground acceleration while standing on it (low = slidey). */
+  slippery?: number;
+  /** A slide: plays a "wheee" when you start sliding. */
+  slide?: boolean;
+  /** Snow: white footstep puffs. */
+  snow?: boolean;
+  /** Moving platform: velocity of the surface at a world point. */
+  velocityAt?: (point: THREE.Vector3, out: THREE.Vector3) => THREE.Vector3;
+  onBounce?: (slot: number) => void;
+};
+
+export const surfaces = new Map<number, Surface>();
+
+export function registerSurface(handle: number, surface: Surface) {
+  surfaces.set(handle, surface);
+  return () => {
+    if (surfaces.get(handle) === surface) surfaces.delete(handle);
+  };
+}
+
+/** Things that react when a player walks close (used for floating button hints). */
+export type Hint = { id: number; position: THREE.Vector3; radius: number; action: 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'walk' };
+export const hints = new Map<number, Hint>();
+
+export function registerHint(hint: Hint) {
+  hints.set(hint.id, hint);
+  return () => {
+    hints.delete(hint.id);
+  };
+}
+
+/** Live numbers some rides publish (read by automated checks / the dev console). */
+export const debugInfo: Record<string, unknown> = {};

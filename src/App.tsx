@@ -62,7 +62,7 @@ export default function App() {
       <Canvas
         shadows="percentage"
         dpr={[1, 1.75]}
-        camera={{ position: [0, 30, 42], fov: 45, near: 0.5, far: 700 }}
+        camera={{ position: [0, 44, 62], fov: 45, near: 0.5, far: 700 }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;

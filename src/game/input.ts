@@ -11,7 +11,14 @@ export type InputFrame = {
   held: Record<ActionName, boolean>;
   pressed: Record<ActionName, boolean>;
   anyPressed: boolean;
+  /** Controller only: Start held long enough to open the grown-ups menu. */
+  menu?: boolean;
+  /** Controller only: Select held long enough to leave the game. */
+  leave?: boolean;
 };
+
+/** Directional / confirm / back events for navigating menus with a controller. */
+export type UiNav = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
 
 type KeyMap = { up: string[]; down: string[]; left: string[]; right: string[]; actions: Record<ActionName, string[]> };
 
@@ -72,12 +79,30 @@ const touch = {
   pressed: new Set<ActionName>()
 };
 
-const prevPad = new Map<number, boolean[]>();
 // Buttons seen down since the last frame. Sampled faster than the frame rate so a quick
 // tap from a small hand is never lost, even when the game runs at a low frame rate.
-const latchedPad = new Map<number, boolean[]>();
+// Sampled faster than the frame rate: counts every press so quick taps (or several taps
+// between two slow frames on an old tablet) are never lost.
+const sampledPad = new Map<number, boolean[]>();
+const pressEdges = new Map<number, number[]>();
 const frames = new Map<SourceId, InputFrame>();
 export const NO_INPUT: InputFrame = { x: 0, z: 0, held: emptyActions(), pressed: emptyActions(), anyPressed: false };
+
+// Start / Select do two things: a tap changes hat / animal, a long hold opens the menu / leaves.
+const TAP_MS = 550;
+const MENU_HOLD_MS = 900;
+const LEAVE_HOLD_MS = 1500;
+const holdStart = new Map<string, number>();
+const holdFired = new Set<string>();
+const prevNav = new Map<number, { dir: string }>();
+const navListeners = new Set<(nav: UiNav) => void>();
+
+export function onUiNav(listener: (nav: UiNav) => void) {
+  navListeners.add(listener);
+  return () => {
+    navListeners.delete(listener);
+  };
+}
 
 function emptyActions(): Record<ActionName, boolean> {
   return { jump: false, bonk: false, lick: false, noise: false, flop: false, species: false, hat: false };
@@ -90,11 +115,14 @@ let anyKeyListener: ((code: string) => void) | null = null;
 
 function samplePads() {
   for (const gp of getConnectedPads()) {
-    const latched = latchedPad.get(gp.index) ?? [];
-    gp.buttons.forEach((b, i) => {
-      if (b.pressed || b.value > 0.5) latched[i] = true;
+    const last = sampledPad.get(gp.index) ?? [];
+    const downs = pressEdges.get(gp.index) ?? [];
+    const cur = gp.buttons.map((b) => b.pressed || b.value > 0.5);
+    cur.forEach((d, i) => {
+      if (d && !last[i]) downs[i] = (downs[i] ?? 0) + 1;
     });
-    latchedPad.set(gp.index, latched);
+    sampledPad.set(gp.index, cur);
+    pressEdges.set(gp.index, downs);
   }
 }
 
@@ -178,13 +206,34 @@ function readTouch(): InputFrame {
   return { x: touch.x, z: touch.z, held: { ...touch.held }, pressed, anyPressed };
 }
 
+/**
+ * D-pad for controllers without the "standard" mapping: many report it on axes 6/7, and
+ * DirectInput pads report a single hat axis (usually 9) that steps from -1 (up) clockwise.
+ */
+function hatDirection(gp: Gamepad): [number, number] {
+  if (gp.mapping === 'standard') return [0, 0];
+  const hat = gp.axes.length > 9 ? gp.axes[9] : undefined;
+  if (hat != null && hat >= -1.05 && hat <= 1.05) {
+    const step = Math.round(((hat + 1) / 2) * 7);
+    const dirs: [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
+    return dirs[Math.max(0, Math.min(7, step))];
+  }
+  if (gp.axes.length >= 8) {
+    const hx = gp.axes[6];
+    const hz = gp.axes[7];
+    return [Math.abs(hx) > 0.5 ? Math.sign(hx) : 0, Math.abs(hz) > 0.5 ? Math.sign(hz) : 0];
+  }
+  return [0, 0];
+}
+
 function readPad(gp: Gamepad): InputFrame {
   const now = gp.buttons.map((b) => b.pressed || b.value > 0.5);
-  const latched = latchedPad.get(gp.index) ?? [];
-  const buttons = now.map((down, i) => down || !!latched[i]);
-  latchedPad.set(gp.index, []);
-  const prev = prevPad.get(gp.index) ?? [];
-  prevPad.set(gp.index, now);
+  const downs = pressEdges.get(gp.index) ?? [];
+  pressEdges.set(gp.index, []);
+  const tapped = (i: number) => (downs[i] ?? 0) > 0;
+  // Held this frame, or pressed-and-released since the last one.
+  const buttons = now.map((down, i) => down || tapped(i));
+  const clock = performance.now();
 
   let x = gp.axes[0] ?? 0;
   let z = gp.axes[1] ?? 0;
@@ -198,8 +247,9 @@ function readPad(gp: Gamepad): InputFrame {
     z = (z / mag) * scaled;
   }
   // D-pad also moves: many small kids find it easier than the stick.
-  const dx = (buttons[15] ? 1 : 0) - (buttons[14] ? 1 : 0);
-  const dz = (buttons[13] ? 1 : 0) - (buttons[12] ? 1 : 0);
+  const [hx, hz] = hatDirection(gp);
+  const dx = (buttons[15] ? 1 : 0) - (buttons[14] ? 1 : 0) + hx;
+  const dz = (buttons[13] ? 1 : 0) - (buttons[12] ? 1 : 0) + hz;
   if (dx !== 0 || dz !== 0) {
     const l = Math.hypot(dx, dz);
     x = dx / l;
@@ -210,11 +260,74 @@ function readPad(gp: Gamepad): InputFrame {
   const pressed = emptyActions();
   let anyPressed = false;
   for (const action of ACTIONS) {
-    held[action] = PAD_BUTTONS[action].some((i) => buttons[i]);
-    pressed[action] = PAD_BUTTONS[action].some((i) => buttons[i] && !prev[i]);
+    if (action === 'species' || action === 'hat') continue;
+    held[action] = PAD_BUTTONS[action].some((i) => now[i]);
+    pressed[action] = PAD_BUTTONS[action].some((i) => tapped(i));
     anyPressed ||= pressed[action];
   }
-  return { x, z, held, pressed, anyPressed };
+  if ([12, 13, 14, 15].some(tapped)) anyPressed = true;
+
+  // Select (8) / Start (9): tap on release, or a long hold.
+  let menu = false;
+  let leave = false;
+  for (const [button, action, holdMs] of [
+    [8, 'species', LEAVE_HOLD_MS],
+    [9, 'hat', MENU_HOLD_MS]
+  ] as const) {
+    const key = `${gp.index}:${button}`;
+    if (tapped(button)) {
+      if (!holdStart.has(key)) holdFired.delete(key);
+      holdStart.set(key, clock);
+      anyPressed = true;
+    }
+    const since = holdStart.has(key) ? clock - holdStart.get(key)! : 0;
+    if (now[button] && since >= holdMs && !holdFired.has(key)) {
+      holdFired.add(key);
+      if (button === 9) menu = true;
+      else leave = true;
+    }
+    if (!now[button] && holdStart.has(key)) {
+      if (since < TAP_MS && !holdFired.has(key)) pressed[action] = true;
+      holdStart.delete(key);
+      holdFired.delete(key);
+    }
+    held[action] = now[button];
+  }
+  navEdges.set(gp.index, downs);
+  return { x, z, held, pressed, anyPressed, menu, leave };
+}
+
+const navEdges = new Map<number, number[]>();
+
+/** Menu navigation from every controller: edges on D-pad/stick, A = confirm, B/Start = back. */
+function readPadNav(gp: Gamepad) {
+  const edges = navEdges.get(gp.index) ?? [];
+  const count = (i: number) => edges[i] ?? 0;
+  const prev = prevNav.get(gp.index) ?? { dir: '' };
+  // Analog stick: one step per push.
+  const sx = gp.axes[0] ?? 0;
+  const sz = gp.axes[1] ?? 0;
+  let dir = '';
+  if (Math.abs(sx) > 0.6 || Math.abs(sz) > 0.6) {
+    dir = Math.abs(sx) > Math.abs(sz) ? (sx > 0 ? 'right' : 'left') : sz > 0 ? 'down' : 'up';
+  }
+  prevNav.set(gp.index, { dir });
+  if (navListeners.size === 0) return;
+  const emit = (nav: UiNav, times = 1) => {
+    for (let k = 0; k < times; k += 1) navListeners.forEach((l) => l(nav));
+  };
+  if (dir && dir !== prev.dir) emit(dir as UiNav);
+  // D-pad: every press counts, even several between two slow frames.
+  emit('up', count(12));
+  emit('down', count(13));
+  emit('left', count(14));
+  emit('right', count(15));
+  if (count(0) > 0) emit('confirm');
+  if (count(1) > 0 || count(9) > 0) {
+    // Closing the menu with Start must not also count as a "change hat" tap.
+    if (count(9) > 0) holdFired.add(`${gp.index}:9`);
+    emit('back');
+  }
 }
 
 export function getConnectedPads(): Gamepad[] {
@@ -238,13 +351,25 @@ export function pollInputs(): SourceId[] {
   frames.set('touch', t);
   if (t.anyPressed) pressedSources.push('touch');
 
+  samplePads();
   for (const gp of getConnectedPads()) {
     const source: SourceId = `pad${gp.index}`;
     const frame = readPad(gp);
     frames.set(source, frame);
     if (frame.anyPressed) pressedSources.push(source);
+    readPadNav(gp);
   }
   return pressedSources;
+}
+
+export function padIdOf(source: SourceId) {
+  if (!source.startsWith('pad')) return undefined;
+  const index = Number(source.slice(3));
+  return getConnectedPads().find((g) => g.index === index)?.id;
+}
+
+export function rumbleAll(sources: SourceId[], strong: number, weak: number, durationMs: number) {
+  sources.forEach((s) => rumble(s, strong, weak, durationMs));
 }
 
 export function getInput(source: SourceId): InputFrame {

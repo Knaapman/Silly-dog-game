@@ -6,15 +6,28 @@ import { getAudioState, updateListener } from './audio';
 import { GRAVITY } from './config';
 import { emit } from './fx';
 import { FxRenderer } from './FxRenderer';
-import { isSourceConnected, pollInputs } from './input';
+import { getInput, isSourceConnected, padIdOf, pollInputs } from './input';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, players } from './runtime';
 import { isPartyTime, useGame } from './store';
-import { Chickens } from './world/Chickens';
-import { Games } from './world/Games';
-import { Clouds, Park } from './world/Park';
-import { Playthings } from './world/Playthings';
+import { Beach } from './world/Beach';
+import { Carnival } from './world/Carnival';
+import { DinoPark } from './world/DinoPark';
+import { Farm } from './world/Farm';
+import { Forest } from './world/Forest';
+import { Hints } from './world/Hints';
+import { Hub } from './world/Hub';
+import { LaunchPad } from './world/Launchers';
+import { Playground } from './world/Playground';
+import { Sports } from './world/Sports';
+import { GoldenStars } from './world/Stars';
+import { Sky, Terrain } from './world/Terrain';
+import { Balloons } from './world/Toys';
+import { Train } from './world/Train';
+import { Trees } from './world/Trees';
+import { Winter } from './world/Winter';
+import { LAUNCH_PADS } from './layout';
 
 function SkyDome() {
   const material = useMemo(
@@ -102,22 +115,29 @@ function CameraRig() {
     const dt = Math.min(delta, 0.05);
     const game = useGame.getState();
     if (game.phase === 'title' || players.size === 0) {
-      orbit.current += dt * 0.05;
+      orbit.current += dt * 0.04;
       desiredFocus.set(0, 0, 0);
       focus.lerp(desiredFocus, 1 - Math.exp(-1.5 * dt));
-      desiredPos.set(Math.sin(orbit.current) * 42, 30, Math.cos(orbit.current) * 42);
+      desiredPos.set(Math.sin(orbit.current) * 62, 44, Math.cos(orbit.current) * 62);
     } else {
       desiredFocus.set(0, 0, 0);
-      players.forEach((p) => desiredFocus.add(p.position));
-      desiredFocus.divideScalar(players.size);
+      const anyAwake = [...players.values()].some((p) => !p.asleep);
+      let framed = 0;
+      players.forEach((p) => {
+        if (anyAwake && p.asleep) return;
+        desiredFocus.add(p.position);
+        framed += 1;
+      });
+      desiredFocus.divideScalar(Math.max(1, framed));
       let spread = 0;
       players.forEach((p) => {
+        if (anyAwake && p.asleep) return;
         spread = Math.max(spread, Math.abs(p.position.x - desiredFocus.x) * 0.85, Math.abs(p.position.z - desiredFocus.z) * 1.35);
       });
       desiredFocus.y = Math.min(4, Math.max(0, desiredFocus.y - 0.5) * 0.5);
       const aspect = size.width / Math.max(1, size.height);
       const portraitBoost = aspect < 1.3 ? Math.min(1.7, 1.3 / aspect) : 1;
-      const dist = THREE.MathUtils.clamp(11.5 + spread * 1.4, 11.5, 46) * portraitBoost + (isPartyTime() ? 2.5 : 0);
+      const dist = THREE.MathUtils.clamp(13 + spread * 1.4, 13, 50) * portraitBoost + (isPartyTime() ? 2.5 : 0);
       focus.lerp(desiredFocus, 1 - Math.exp(-5 * dt));
       desiredPos.set(focus.x, focus.y + dist * 0.8, focus.z + dist * 0.78);
     }
@@ -149,18 +169,31 @@ function InputSystem() {
       return;
     }
     for (const source of pressed) {
-      if (!game.players.some((p) => p.source === source)) game.join(source);
+      if (game.players.some((p) => p.source === source)) continue;
+      // A controller that dropped out and came back (maybe on a new index) wakes its own animal.
+      const padId = padIdOf(source);
+      const napper = padId ? game.players.find((p) => p.asleep && p.padId === padId && !isSourceConnected(p.source)) : undefined;
+      if (napper) game.reattach(napper.slot, source);
+      else game.join(source);
     }
-    // Controllers that disappear for a few seconds leave the game.
+    // Hold Start = grown-ups menu, hold Select = leave the game.
+    for (const p of game.players) {
+      const frame = getInput(p.source);
+      if (frame.menu) game.setMenuOpen(true);
+      if (frame.leave) game.leave(p.slot);
+    }
+    // Unplugged controllers: the animal naps (and leaves after a long while).
     const now = performance.now();
     game.players.forEach((p) => {
       if (isSourceConnected(p.source)) {
         missingSince.current.delete(p.slot);
+        if (p.asleep) game.setAsleep(p.slot, false);
         return;
       }
       const since = missingSince.current.get(p.slot) ?? now;
       missingSince.current.set(p.slot, since);
-      if (now - since > 3000) {
+      if (now - since > 1500 && !p.asleep) game.setAsleep(p.slot, true);
+      if (now - since > 120000) {
         missingSince.current.delete(p.slot);
         game.leave(p.slot);
       }
@@ -225,7 +258,7 @@ function Players() {
   return (
     <>
       {list.map((p) => (
-        <Player key={`${p.slot}-${p.source}-${p.joinedAt}`} info={p} />
+        <Player key={`${p.slot}-${p.joinedAt}`} info={p} />
       ))}
     </>
   );
@@ -237,20 +270,34 @@ export function Scene() {
     <>
       <DevHook />
       <SkyDome />
-      <fog attach="fog" args={['#d6f1ff', 70, 170]} />
+      <fog attach="fog" args={['#d6f1ff', 90, 230]} />
       <Lighting />
       <CameraRig />
       <InputSystem />
       <AudioDirector />
       <PartyDirector />
       <Physics gravity={[0, GRAVITY, 0]} paused={menuOpen}>
-        <Park />
-        <Playthings />
-        <Games />
-        <Chickens />
+        <Terrain />
+        <Trees />
+        <Hub />
+        <Carnival />
+        <Sports />
+        <DinoPark />
+        <Playground />
+        <Beach />
+        <Winter />
+        <Farm />
+        <Forest />
+        <Train />
+        {LAUNCH_PADS.slice(1).map((pad, i) => (
+          <LaunchPad key={i} pad={pad} />
+        ))}
+        <Balloons />
+        <GoldenStars />
         <Players />
       </Physics>
-      <Clouds />
+      <Sky />
+      <Hints />
       <FxRenderer />
     </>
   );

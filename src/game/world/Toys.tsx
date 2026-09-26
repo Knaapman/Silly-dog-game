@@ -1,43 +1,53 @@
 import { CoefficientCombineRule } from '@dimforge/rapier3d-compat';
 import { useFrame } from '@react-three/fiber';
-import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
+import { CuboidCollider, CylinderCollider, RigidBody, type RapierCollider } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { playButton, playCollect, playPop, playPoof } from '../audio';
-import { PARTY_POINTS } from '../config';
+import { playButton, playPop, playPoof } from '../audio';
+import { MOVE, PARTY_POINTS } from '../config';
 import { burstConfetti, emit, ring } from '../fx';
-import { BALLOONS, distXZ, GOLDEN_STARS, HAT_BOX, LAUNCH_PADS, RED_BUTTON, TRAMPOLINE_TOP, TRAMPOLINES } from '../layout';
+import { BALLOONS, distXZ, HAT_BOX, RED_BUTTON, TRAMPOLINE_TOP, type Vec3 } from '../layout';
 import { basic, lambert } from '../materials';
-import { players, registerStatic, shakeCamera, trampolineBounces } from '../runtime';
+import { players, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
+import { useHint } from './common';
+import { useSurface } from './surface';
 
-const TRAMP_COLORS = ['#3b82f6', '#ff4d5e', '#22c55e'];
+// Small interactive toys used around the park.
 
-function Trampoline({ index }: { index: number }) {
-  const { position, radius } = TRAMPOLINES[index];
+const TRAMP_COLORS = ['#3b82f6', '#ff4d5e', '#22c55e', '#a855f7'];
+
+/** In-ground trampoline: walk on to bounce, hold jump for an extra-big bounce. */
+export function Trampoline({ position, radius, color = 0 }: { position: Vec3; radius: number; color?: number }) {
   const mat = useRef<THREE.Group>(null);
+  const col = useRef<RapierCollider>(null);
+  const lastBounce = useRef(-1e9);
+  const surface = useMemo<Surface>(() => ({ bounce: MOVE.trampolineVelocity, onBounce: () => (lastBounce.current = performance.now()) }), []);
+  useSurface(col, surface);
   useFrame(() => {
     if (!mat.current) return;
-    const since = (performance.now() - (trampolineBounces.get(index) ?? -1e9)) / 1000;
+    const since = (performance.now() - lastBounce.current) / 1000;
     const dip = since < 0.6 ? Math.sin(since * 22) * Math.exp(-since * 6) * 0.25 : 0;
     mat.current.position.y = TRAMPOLINE_TOP - 0.04 - Math.max(0, dip);
     mat.current.scale.setScalar(1 + Math.abs(dip) * 0.15);
   });
+  const c = TRAMP_COLORS[color % TRAMP_COLORS.length];
   return (
     <group position={position}>
       <RigidBody type="fixed" colliders={false}>
         {/* Bouncy top so balls and crates boing too */}
         <CylinderCollider
+          ref={col}
           args={[TRAMPOLINE_TOP / 2, radius]}
           position={[0, TRAMPOLINE_TOP / 2, 0]}
           restitution={1.05}
           restitutionCombineRule={CoefficientCombineRule.Max}
         />
       </RigidBody>
-      <mesh castShadow position={[0, TRAMPOLINE_TOP / 2, 0]} material={lambert(TRAMP_COLORS[index % 3])}>
+      <mesh castShadow position={[0, TRAMPOLINE_TOP / 2, 0]} material={lambert(c)}>
         <cylinderGeometry args={[radius + 0.25, radius + 0.35, TRAMPOLINE_TOP, 28, 1, true]} />
       </mesh>
-      <mesh position={[0, TRAMPOLINE_TOP, 0]} rotation={[Math.PI / 2, 0, 0]} material={lambert(TRAMP_COLORS[index % 3])}>
+      <mesh position={[0, TRAMPOLINE_TOP, 0]} rotation={[Math.PI / 2, 0, 0]} material={lambert(c)}>
         <torusGeometry args={[radius + 0.1, 0.22, 8, 32]} />
       </mesh>
       <group ref={mat}>
@@ -55,69 +65,9 @@ function Trampoline({ index }: { index: number }) {
   );
 }
 
-function LaunchPad({ index }: { index: number }) {
-  const pad = LAUNCH_PADS[index];
-  const chevrons = useRef<THREE.Group>(null);
-  const angle = Math.atan2(pad.target[0] - pad.position[0], pad.target[2] - pad.position[2]);
-  const sparkle = useRef(Math.random());
-  useFrame(({ clock }, delta) => {
-    chevrons.current?.children.forEach((c, i) => {
-      const m = (c as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      const phase = (clock.elapsedTime * 2.5 - i * 0.35) % 1;
-      m.color.setHSL(0.13, 1, 0.5 + Math.max(0, Math.sin(phase * Math.PI)) * 0.4);
-    });
-    sparkle.current -= delta;
-    if (sparkle.current <= 0) {
-      sparkle.current = 0.25;
-      emit('star', [pad.position[0] + (Math.random() - 0.5) * 1.6, 0.2, pad.position[2] + (Math.random() - 0.5) * 1.6], {
-        count: 1,
-        color: ['#fff3a8', '#ffffff'],
-        speed: 0.3,
-        up: 3,
-        gravity: -1,
-        size: 0.12,
-        life: 1
-      });
-    }
-  });
-  return (
-    <group position={[pad.position[0], 0.03, pad.position[2]]} rotation={[0, angle, 0]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} material={lambert('#ff8a1f')}>
-        <circleGeometry args={[1.35, 32]} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]} material={lambert('#ffd23f')}>
-        <ringGeometry args={[1.05, 1.35, 32]} />
-      </mesh>
-      <group ref={chevrons}>
-        {[-0.55, 0, 0.55].map((z, i) => (
-          <mesh key={i} position={[0, 0.01, z]} rotation={[-Math.PI / 2, 0, 0]}>
-            <shapeGeometry args={[chevronShape()]} />
-            <meshBasicMaterial color="#fff3a8" />
-          </mesh>
-        ))}
-      </group>
-    </group>
-  );
-}
-
-let chevronCache: THREE.Shape | null = null;
-function chevronShape() {
-  if (chevronCache) return chevronCache;
-  const s = new THREE.Shape();
-  s.moveTo(-0.6, 0.1);
-  s.lineTo(0, -0.35);
-  s.lineTo(0.6, 0.1);
-  s.lineTo(0.6, 0.35);
-  s.lineTo(0, -0.1);
-  s.lineTo(-0.6, 0.35);
-  s.lineTo(-0.6, 0.1);
-  chevronCache = s;
-  return s;
-}
-
 const BALLOON_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e', '#a855f7', '#ff8fd8'];
 
-function Balloons() {
+export function Balloons() {
   const groups = useRef<(THREE.Group | null)[]>([]);
   const state = useMemo(() => BALLOONS.map(() => ({ popped: false, respawnAt: 0, grow: 1, pos: new THREE.Vector3() })), []);
   const probe = useMemo(() => new THREE.Vector3(), []);
@@ -204,90 +154,13 @@ function Balloons() {
   );
 }
 
-let starGeometry: THREE.ExtrudeGeometry | null = null;
-function getStarGeometry() {
-  if (starGeometry) return starGeometry;
-  const shape = new THREE.Shape();
-  for (let i = 0; i <= 10; i += 1) {
-    const r = i % 2 === 0 ? 0.62 : 0.28;
-    const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
-    if (i === 0) shape.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-    else shape.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-  }
-  starGeometry = new THREE.ExtrudeGeometry(shape, { depth: 0.18, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 2 });
-  starGeometry.center();
-  return starGeometry;
-}
-
-function GoldenStars() {
-  const collected = useGame((s) => s.stars);
-  const groups = useRef<(THREE.Group | null)[]>([]);
-  const probe = useMemo(() => new THREE.Vector3(), []);
-  const pos = useMemo(() => new THREE.Vector3(), []);
-  const sparkle = useRef(0);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#ffd23f', emissive: '#ffb300', emissiveIntensity: 0.6, metalness: 0.3, roughness: 0.3 }),
-    []
-  );
-
-  useFrame(({ clock }, delta) => {
-    const t = clock.elapsedTime;
-    const state = useGame.getState();
-    sparkle.current -= delta;
-    const doSparkle = sparkle.current <= 0;
-    if (doSparkle) sparkle.current = 0.3;
-    GOLDEN_STARS.forEach(([x, y, z], i) => {
-      const g = groups.current[i];
-      if (!g || state.stars[i]) return;
-      pos.set(x, y + Math.sin(t * 2 + i) * 0.18, z);
-      g.position.copy(pos);
-      g.rotation.y = t * 2 + i;
-      if (doSparkle) emit('star', pos, { count: 1, color: ['#fff3a8', '#ffffff'], speed: 1.2, up: 1, gravity: 0.5, size: 0.1, life: 0.8, spread: 0.6 });
-      if (state.phase !== 'play') return;
-      players.forEach((p) => {
-        probe.copy(p.position);
-        probe.y += 0.3;
-        if (probe.distanceTo(pos) < 1.6) {
-          useGame.getState().collectStar(i);
-          emit('star', pos, { count: 26, color: ['#ffd23f', '#fff3a8', '#ffffff'], speed: 7, up: 6 });
-          burstConfetti(pos, 50);
-          ring(pos, { color: '#ffd23f', radius: 3, duration: 0.5 });
-          playCollect(pos);
-          shakeCamera(0.3);
-        }
-      });
-    });
-  });
-
-  return (
-    <group>
-      {GOLDEN_STARS.map((_, i) =>
-        collected[i] ? null : (
-          <group
-            key={i}
-            ref={(g) => {
-              groups.current[i] = g;
-            }}
-          >
-            <mesh castShadow geometry={getStarGeometry()} material={material} />
-            {/* light beam so kids can spot stars from far away */}
-            <mesh position={[0, 7, 0]}>
-              <cylinderGeometry args={[0.35, 0.6, 14, 12, 1, true]} />
-              <meshBasicMaterial color="#fff3a8" transparent opacity={0.22} depthWrite={false} side={THREE.DoubleSide} />
-            </mesh>
-          </group>
-        )
-      )}
-    </group>
-  );
-}
-
-function HatBox() {
+export function HatBox() {
   const lid = useRef<THREE.Group>(null);
   const lidState = useRef({ y: 0, v: 0 });
   const cooldowns = useRef(new Map<number, number>());
   const [x, , z] = HAT_BOX.position;
   const size = HAT_BOX.size;
+  useHint([x, size, z], 'walk', 5);
 
   const giveHat = (slot: number) => {
     const now = performance.now();
@@ -359,10 +232,11 @@ function HatBox() {
   );
 }
 
-function RedButton() {
+export function RedButton() {
   const cap = useRef<THREE.Mesh>(null);
   const pressedUntil = useRef(0);
   const [x, , z] = RED_BUTTON.position;
+  useHint([x, 0.6, z], 'walk', 5);
   useFrame(() => {
     const now = performance.now();
     let someoneOn = false;
@@ -395,22 +269,5 @@ function RedButton() {
         <sphereGeometry args={[RED_BUTTON.radius * 0.85, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
       </mesh>
     </group>
-  );
-}
-
-export function Playthings() {
-  return (
-    <>
-      {TRAMPOLINES.map((_, i) => (
-        <Trampoline key={i} index={i} />
-      ))}
-      {LAUNCH_PADS.map((_, i) => (
-        <LaunchPad key={i} index={i} />
-      ))}
-      <Balloons />
-      <GoldenStars />
-      <HatBox />
-      <RedButton />
-    </>
   );
 }

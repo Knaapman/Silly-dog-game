@@ -3,7 +3,7 @@ import { HATS, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, SPEC
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
-import type { SourceId } from './input';
+import { padIdOf, rumbleAll, type SourceId } from './input';
 
 // Reactive state only for things the UI / scene graph needs to re-render on.
 // Per-frame data lives in runtime.ts.
@@ -15,6 +15,10 @@ export type PlayerInfo = {
   hat: HatId;
   color: string;
   joinedAt: number;
+  /** Gamepad id string, so a controller that reconnects (even on a new index) gets its animal back. */
+  padId?: string;
+  /** Controller disconnected: the animal naps until it comes back. */
+  asleep?: boolean;
 };
 
 type Phase = 'title' | 'play';
@@ -35,6 +39,8 @@ interface GameStore {
   start: (source: SourceId) => void;
   join: (source: SourceId) => number | null;
   leave: (slot: number) => void;
+  setAsleep: (slot: number, asleep: boolean) => void;
+  reattach: (slot: number, source: SourceId) => void;
   backToTitle: () => void;
   cycleSpecies: (slot: number, dir?: number) => void;
   nextHat: (slot: number) => void;
@@ -64,6 +70,7 @@ export const useGame = create<GameStore>((set, get) => {
     playFanfare();
     window.setTimeout(playCheer, 900);
     runtimePlayers.forEach((p) => p.hop(12));
+    rumbleAll(get().players.map((p) => p.source), 0.7, 0.9, 600);
   };
 
   return {
@@ -97,13 +104,20 @@ export const useGame = create<GameStore>((set, get) => {
         species: SPECIES[slot % SPECIES.length],
         hat: 'none',
         color: PLAYER_COLORS[slot],
-        joinedAt: Date.now()
+        joinedAt: Date.now(),
+        padId: padIdOf(source)
       };
       set({ players: [...state.players, player].sort((a, b) => a.slot - b.slot) });
       return slot;
     },
 
     leave: (slot) => set((state) => ({ players: state.players.filter((p) => p.slot !== slot) })),
+
+    setAsleep: (slot, asleep) =>
+      set((state) => ({ players: state.players.map((p) => (p.slot === slot && !!p.asleep !== asleep ? { ...p, asleep } : p)) })),
+
+    reattach: (slot, source) =>
+      set((state) => ({ players: state.players.map((p) => (p.slot === slot ? { ...p, source, asleep: false, padId: padIdOf(source) ?? p.padId } : p)) })),
 
     backToTitle: () => set({ phase: 'title', players: [], menuOpen: false }),
 
@@ -141,6 +155,7 @@ export const useGame = create<GameStore>((set, get) => {
       if (state.stars[index]) return;
       const stars = state.stars.map((s, i) => (i === index ? true : s));
       set({ stars, lastStarAt: Date.now() });
+      rumbleAll(state.players.map((p) => p.source), 0.4, 0.8, 300);
       if (stars.every(Boolean)) {
         // Every golden star found: huge party, then hide them all again for another round.
         startParty(PARTY_DURATION_MS + 4000);

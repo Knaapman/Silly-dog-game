@@ -581,3 +581,107 @@ export function playStrike() {
   v.finish();
   playCheer();
 }
+
+// ---------------------------------------------------------------------------
+// Map toys
+
+export function playRoar(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.2 });
+  if (!v) return;
+  v.tone({ type: 'sawtooth', from: 150, to: 70, dur: 1.1, gain: 0.2, attack: 0.08, vibrato: [9, 18], filter: { type: 'lowpass', freq: 700, q: 2 } });
+  v.tone({ type: 'square', from: 95, to: 55, dur: 1.0, gain: 0.1, attack: 0.08, tremolo: [14, 0.6], filter: { type: 'lowpass', freq: 400 } });
+  v.noise({ dur: 1, gain: 0.12, attack: 0.1, filter: { type: 'bandpass', freq: 500, to: 250, q: 1.2 }, wobble: [12, 200] });
+  v.finish();
+}
+
+export function playMoo(position?: AudioPosition) {
+  if (throttled('moo', 400)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  const p = rand(0.9, 1.1);
+  v.tone({ type: 'sawtooth', from: 130 * p, to: 110 * p, dur: 1.1, gain: 0.16, attack: 0.15, vibrato: [4, 5], filter: { type: 'lowpass', freq: 500, q: 3 } });
+  v.tone({ type: 'sawtooth', from: 260 * p, to: 215 * p, dur: 1.0, gain: 0.05, attack: 0.2, filter: { type: 'bandpass', freq: 700, q: 2 } });
+  v.finish();
+}
+
+export function playToot(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.1 });
+  if (!v) return;
+  [0, 0.45].forEach((at, i) => {
+    const dur = i === 0 ? 0.3 : 0.6;
+    [392, 494, 587].forEach((f) => v.tone({ type: 'sawtooth', from: f, at, dur, gain: 0.05, attack: 0.03, filter: { type: 'lowpass', freq: 1600 } }));
+    v.noise({ at, dur, gain: 0.05, attack: 0.02, filter: { type: 'bandpass', freq: 2400, q: 2 } });
+  });
+  v.finish();
+}
+
+export function playChuff(position?: AudioPosition) {
+  if (throttled('chuff', 200)) return;
+  const v = voice('world', { position, gain: 0.7 });
+  if (!v) return;
+  v.noise({ dur: 0.18, gain: 0.08, filter: { type: 'bandpass', freq: 900, q: 0.8 } });
+  v.finish();
+}
+
+export function playBell(position?: AudioPosition) {
+  const v = voice('reward', { position });
+  if (!v) return;
+  [1318, 1760, 2637].forEach((f, i) => v.tone({ type: 'sine', from: f, dur: 1.6 - i * 0.3, gain: 0.12 - i * 0.03, attack: 0.003 }));
+  v.finish();
+}
+
+export function playBoom(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.2 });
+  if (!v) return;
+  v.tone({ type: 'triangle', from: 120, to: 35, dur: 0.6, gain: 0.3 });
+  v.noise({ dur: 0.5, gain: 0.25, filter: { type: 'lowpass', freq: 1200, to: 200, q: 0.7 } });
+  v.finish();
+}
+
+export function playCrack(position?: AudioPosition) {
+  const v = voice('world', { position });
+  if (!v) return;
+  for (let i = 0; i < 3; i += 1) v.noise({ at: i * 0.06, dur: 0.04, gain: 0.14, filter: { type: 'highpass', freq: 2500 } });
+  v.tone({ from: 700, to: 1400, at: 0.2, dur: 0.12, gain: 0.06 });
+  v.finish();
+}
+
+export function playCheep(position?: AudioPosition) {
+  if (throttled('cheep', 70)) return;
+  const v = voice('world', { position, gain: 0.8 });
+  if (!v) return;
+  const f = rand(1500, 2100);
+  v.tone({ from: f, to: f * 1.35, dur: 0.08, gain: 0.07 });
+  v.tone({ from: f * 1.1, to: f * 0.8, at: 0.1, dur: 0.1, gain: 0.06 });
+  v.finish();
+}
+
+export function playGeyser(position?: AudioPosition) {
+  const v = voice('world', { position });
+  if (!v) return;
+  v.noise({ dur: 1.1, gain: 0.14, attack: 0.1, filter: { type: 'bandpass', freq: 500, to: 2200, q: 0.6 } });
+  v.finish();
+}
+
+export function playCrumble(position?: AudioPosition) {
+  const v = voice('world', { position });
+  if (!v) return;
+  for (let i = 0; i < 6; i += 1) v.noise({ at: rand(0, 0.3), dur: 0.08, gain: 0.1, filter: { type: 'lowpass', freq: rand(500, 1200) } });
+  v.tone({ type: 'triangle', from: 160, to: 60, dur: 0.3, gain: 0.12 });
+  v.finish();
+}
+
+export function playRumble(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.2 });
+  if (!v) return;
+  v.noise({ dur: 1.2, gain: 0.2, attack: 0.4, filter: { type: 'lowpass', freq: 180, q: 1 }, wobble: [7, 60] });
+  v.tone({ type: 'triangle', from: 45, to: 38, dur: 1.2, gain: 0.15, attack: 0.4, tremolo: [7, 0.5] });
+  v.finish();
+}
+
+export function playSpin(position?: AudioPosition) {
+  const v = voice('world', { position });
+  if (!v) return;
+  v.tone({ type: 'triangle', from: 300, to: 900, dur: 0.5, gain: 0.08, vibrato: [18, 60] });
+  v.finish();
+}

@@ -1,0 +1,264 @@
+import { useFrame } from '@react-three/fiber';
+import {
+  CuboidCollider,
+  CylinderCollider,
+  RigidBody,
+  type RapierCollider
+} from '@react-three/rapier';
+import { useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+import type { Vec2, Vec3 } from '../layout';
+import { lambert } from '../materials';
+import { registerHint, type Hint, type Surface } from '../runtime';
+import { useSurface } from './surface';
+
+let hintId = 1;
+
+/** Shows a floating controller-button hint here when a player comes close. */
+export function useHint(position: Vec3 | THREE.Vector3, action: Hint['action'], radius = 4) {
+  const id = useMemo(() => hintId++, []);
+  const pos = useMemo(
+    () => (position instanceof THREE.Vector3 ? position : new THREE.Vector3(position[0], position[1], position[2])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  useEffect(() => registerHint({ id, position: pos, radius, action }), [id, pos, radius, action]);
+  return pos;
+}
+
+type BoxProps = {
+  position: Vec3;
+  size: Vec3;
+  rotation?: Vec3;
+  color: string;
+  surface?: Surface;
+  shadow?: boolean;
+  material?: THREE.Material;
+  friction?: number;
+  restitution?: number;
+};
+
+/** A fixed box with matching collider. */
+export function StaticBox({ position, size, rotation, color, surface, shadow = true, material, friction, restitution }: BoxProps) {
+  const col = useRef<RapierCollider>(null);
+  useSurface(col, surface ?? EMPTY_SURFACE);
+  return (
+    <RigidBody type="fixed" colliders={false} position={position} rotation={rotation}>
+      <CuboidCollider ref={col} args={[size[0] / 2, size[1] / 2, size[2] / 2]} friction={friction} restitution={restitution} />
+      <mesh castShadow={shadow} receiveShadow material={material ?? lambert(color)}>
+        <boxGeometry args={size} />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+const EMPTY_SURFACE: Surface = {};
+
+export function StaticCylinder({
+  position,
+  radius,
+  height,
+  color,
+  radiusTop,
+  segments = 16,
+  surface
+}: {
+  position: Vec3;
+  radius: number;
+  height: number;
+  color: string;
+  radiusTop?: number;
+  segments?: number;
+  surface?: Surface;
+}) {
+  const col = useRef<RapierCollider>(null);
+  useSurface(col, surface ?? EMPTY_SURFACE);
+  return (
+    <RigidBody type="fixed" colliders={false} position={position}>
+      <CylinderCollider ref={col} args={[height / 2, Math.max(radius, radiusTop ?? radius)]} />
+      <mesh castShadow receiveShadow material={lambert(color)}>
+        <cylinderGeometry args={[radiusTop ?? radius, radius, height, segments]} />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+/**
+ * A plank whose top surface runs from `from` to `to` (both are points on the walking
+ * surface). Optional side rails. Used for ramps, slides, gangplanks and dino necks.
+ */
+export function Ramp({
+  from,
+  to,
+  width,
+  color,
+  railColor,
+  railHeight = 0.55,
+  thickness = 0.3,
+  surface
+}: {
+  from: Vec3;
+  to: Vec3;
+  width: number;
+  color: string;
+  railColor?: string;
+  railHeight?: number;
+  thickness?: number;
+  surface?: Surface;
+}) {
+  const col = useRef<RapierCollider>(null);
+  useSurface(col, surface ?? EMPTY_SURFACE);
+  const { center, quaternion, length } = useMemo(() => {
+    const a = new THREE.Vector3(...from);
+    const b = new THREE.Vector3(...to);
+    const dir = b.clone().sub(a);
+    const len = dir.length();
+    dir.normalize();
+    const yaw = Math.atan2(dir.x, dir.z);
+    const pitch = -Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+    const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+    const c = a.clone().add(b).multiplyScalar(0.5).addScaledVector(normal, -thickness / 2);
+    return { center: c, quaternion: q, length: len };
+  }, [from, to, thickness]);
+
+  return (
+    <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
+      <CuboidCollider ref={col} args={[width / 2, thickness / 2, length / 2]} />
+      <mesh castShadow receiveShadow material={lambert(color)}>
+        <boxGeometry args={[width, thickness, length]} />
+      </mesh>
+      {railColor &&
+        [-1, 1].map((side) => (
+          <group key={side} position={[(side * (width + 0.2)) / 2, railHeight / 2 + thickness / 2, 0]}>
+            <CuboidCollider args={[0.1, railHeight / 2, length / 2]} />
+            <mesh castShadow material={lambert(railColor)}>
+              <boxGeometry args={[0.2, railHeight, length]} />
+            </mesh>
+          </group>
+        ))}
+    </RigidBody>
+  );
+}
+
+export function HedgeSegment({ from, to, height = 1.8, thickness = 1.3 }: { from: Vec2; to: Vec2; height?: number; thickness?: number }) {
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1]) + thickness;
+  const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
+  const cx = (from[0] + to[0]) / 2;
+  const cz = (from[1] + to[1]) / 2;
+  return (
+    <RigidBody type="fixed" colliders={false} position={[cx, 0, cz]} rotation={[0, -angle, 0]}>
+      <CuboidCollider args={[len / 2, height / 2, thickness / 2]} position={[0, height / 2, 0]} />
+      <mesh castShadow receiveShadow position={[0, height / 2 - 0.1, 0]} material={lambert('#3f9a3f')}>
+        <boxGeometry args={[len, height - 0.2, thickness]} />
+      </mesh>
+      <mesh castShadow position={[0, height - 0.2, 0]} rotation={[0, 0, Math.PI / 2]} material={lambert('#4fae47')}>
+        <cylinderGeometry args={[thickness / 2, thickness / 2, len, 10]} />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+/** Flat decal-like ground patch (sand, snow, rubber...). */
+export function GroundPatch({
+  center,
+  radius,
+  color,
+  y = 0.008,
+  material,
+  segments = 48
+}: {
+  center: Vec2;
+  radius: number;
+  color: string;
+  y?: number;
+  material?: THREE.Material;
+  segments?: number;
+}) {
+  const mat = useMemo(() => {
+    if (material) return material;
+    const m = new THREE.MeshLambertMaterial({ color });
+    m.polygonOffset = true;
+    m.polygonOffsetFactor = -1;
+    m.polygonOffsetUnits = -1;
+    return m;
+  }, [color, material]);
+  return (
+    <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[center[0], y, center[1]]} material={mat}>
+      <circleGeometry args={[radius, segments]} />
+    </mesh>
+  );
+}
+
+export type SlideTowerProps = {
+  base: Vec3;
+  height: number;
+  /** Direction the ramp comes from (radians, 0 = +z). */
+  rampAngle: number;
+  rampLength: number;
+  slideAngle: number;
+  slideLength: number;
+  colors: { tower: string; ramp: string; slide: string; rail: string };
+  /** A little ski-jump lip at the bottom of the slide. */
+  kicker?: boolean;
+};
+
+/** Walk up the ramp, slide down the other side. Used for the playground slide and the ski jump. */
+export function SlideTower({ base, height, rampAngle, rampLength, slideAngle, slideLength, colors, kicker }: SlideTowerProps) {
+  const [bx, , bz] = base;
+  const half = 1.6;
+  const slideSurface = useMemo<Surface>(() => ({ slippery: 0.35, slide: true }), []);
+  const edge = (angle: number, dist: number, y: number): Vec3 => [bx + Math.sin(angle) * dist, y, bz + Math.cos(angle) * dist];
+  const rampTop = edge(rampAngle, half, height);
+  const rampBottom = edge(rampAngle, half + rampLength, 0);
+  const slideTop = edge(slideAngle, half, height);
+  const slideDrop = kicker ? 0.9 : 0.25;
+  const slideBottom = edge(slideAngle, half + slideLength, slideDrop);
+  const kickerEnd = edge(slideAngle, half + slideLength + 2.6, slideDrop + 0.9);
+  const posts: Vec2[] = [
+    [bx - half + 0.2, bz - half + 0.2],
+    [bx + half - 0.2, bz - half + 0.2],
+    [bx - half + 0.2, bz + half - 0.2],
+    [bx + half - 0.2, bz + half - 0.2]
+  ];
+  // Railings on the two sides without ramp or slide.
+  const railSides = [0, Math.PI / 2, Math.PI, -Math.PI / 2].filter(
+    (a) => Math.abs(Math.cos(a - rampAngle) - 1) > 0.01 && Math.abs(Math.cos(a - slideAngle) - 1) > 0.01
+  );
+  return (
+    <group>
+      <StaticBox position={[bx, height - 0.15, bz]} size={[half * 2, 0.3, half * 2]} color={colors.tower} />
+      {posts.map(([x, z], i) => (
+        <StaticCylinder key={i} position={[x, (height - 0.3) / 2, z]} radius={0.18} height={height - 0.3} color={colors.rail} segments={8} />
+      ))}
+      {railSides.map((a) => {
+        const [x, , z] = edge(a, half - 0.1, 0);
+        const along = Math.abs(Math.sin(a)) > 0.5;
+        return (
+          <StaticBox
+            key={a}
+            position={[x, height + 0.35, z]}
+            size={along ? [0.2, 0.7, half * 2] : [half * 2, 0.7, 0.2]}
+            color={colors.rail}
+          />
+        );
+      })}
+      <Ramp from={rampBottom} to={rampTop} width={2} color={colors.ramp} railColor={colors.rail} />
+      <Ramp from={slideTop} to={slideBottom} width={2} color={colors.slide} railColor={colors.slide} railHeight={0.6} surface={slideSurface} thickness={0.25} />
+      {kicker && <Ramp from={slideBottom} to={kickerEnd} width={2} color={colors.slide} surface={slideSurface} thickness={0.25} />}
+    </group>
+  );
+}
+
+/** Gently bobbing + spinning helper used by decorative bits. */
+export function Spinner({ speed = 1, axis = 'y', children, position }: { speed?: number; axis?: 'x' | 'y' | 'z'; children: React.ReactNode; position?: Vec3 }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame((_, dt) => {
+    if (g.current) g.current.rotation[axis] += dt * speed;
+  });
+  return (
+    <group ref={g} position={position}>
+      {children}
+    </group>
+  );
+}
