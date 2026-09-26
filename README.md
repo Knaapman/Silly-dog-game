@@ -3,7 +3,9 @@
 A Goat Simulator–style physics sandbox made for **young kids (around 5 years old)**, with local co-op for up to **4 players**.
 You play a dog, goat, pig or sheep in a big, busy theme park with eight themed areas. You can headbutt things, grab and
 drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
-ride the rides and get flung around by geysers, cannons, see-saws and volcanoes.
+ride the rides and get flung around by geysers, cannons, see-saws and volcanoes. Magic food turns you into a giant, a
+fire-breathing speedster or a fart-powered rocket, the giant toilet flushes you across the park, and friends can stack
+up into wobbly piggyback towers.
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -34,11 +36,17 @@ all controls. It works with a controller too: D-pad or stick to move, **A** to p
 
 - Any standard pad (Xbox, PlayStation, Switch Pro, most generic USB pads). Pads that report the D-pad as a hat axis
   instead of buttons work as well.
+- Buttons are by **position**, not by letter: the bottom face button always jumps. That matters for Switch-style pads
+  like the **HORI Pad Mini**: the bottom button is labelled B there, and it jumps. When the browser doesn't recognise a
+  pad (it then reports a "non-standard" layout, which Switch-style wired pads often do on Windows), the game reads the
+  buttons in DirectInput order and translates them, so the positions still match the pictures. Home and Capture do
+  nothing.
 - A controller can start the game from the title screen; every extra controller joins with any button.
 - Button presses are sampled every 8 ms, so quick taps are never lost, even on a slow tablet.
 - If a controller is unplugged or its battery dies, that animal falls asleep 💤 instead of disappearing. Plug the same
   controller back in (any port) and it wakes up with the same animal, hat and colour. After two minutes asleep it leaves.
-- Controllers rumble when you join, find a star and when the party starts.
+- Controllers that can rumble do so when you join, find a star and when the party starts (small pads like the
+  HORI Pad Mini usually have no rumble; nothing else depends on it).
 
 ## Things to discover
 
@@ -63,6 +71,17 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
   out for every bite, with a smiley face and flies buzzing around it. A full tummy sometimes makes a **golden poop**.
   With an empty tummy you toot instead: a green cloud and a little hop. Run over a poop and you slip and flip; lick
   one and it's *bleh*; headbutt one and it flies off and splats. After a while every poop grows into a flower.
+- **Magic food** floats on little pedestals (three on a table at the west side of the plaza, and one of each out in the
+  park). Each lasts a little while and shows on your animal, so nobody needs to read anything:
+  - 🫘 **Beans**: a rumbly green tummy. The poop button becomes a rocket toot: keep pressing to fly.
+  - 🍄 **Red spotty mushroom**: you grow into a giant. Stomp, stomp. Headbutts are huge and poops are enormous.
+  - 🌶️ **Chili**: red cheeks, steam out of your ears and super-fast feet. The animal-noise button breathes fire, which
+    makes friends jump up holding their bottoms and sends things flying.
+- **The giant toilet** 🚽 on the east side of the plaza: walk up the ramp, sit on it and press poop. FLUSH! Poops
+  nearby swirl away, confetti pops, and you get flushed into the sky and land in the lake, the ball pit, the bouncy
+  castle or on the ice.
+- **Piggyback towers**: jump and land on a friend's back to ride along. A third friend can land on top. Jump to hop off;
+  the one at the bottom can flop to throw everybody off, and a bean rocket blasts you off the top.
 - **12 golden stars**, each marked by a beam of light: on top of the fountain, at the top of the ferris wheel, in the
   soccer goal, above the volcano, on the slide tower, on the lighthouse balcony, on the snow hill, on the barn roof,
   above the tallest mushroom, in the middle of the maze, on the brontosaurus's head and on the train's roof. When all
@@ -109,6 +128,7 @@ src/
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
       Food.tsx          lickable food spots that grow back (bowls, picnic, carrots, ice cream)
       Poop.tsx          poops: flies, slipping, splats, and the flowers they turn into
+      Toilet.tsx        the flushing toilet on the plaza
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform

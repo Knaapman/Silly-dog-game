@@ -9,7 +9,7 @@ import { POOP_GROUPS } from '../collision';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { isInPond, type Vec3 } from '../layout';
-import { allocPropId, debugInfo, players, props, registerProp, spawners, type PropEntry } from '../runtime';
+import { allocPropId, debugInfo, drains, players, props, registerProp, spawners, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 
 // Poops! They plop out behind an animal that has eaten, get buzzed by flies, can be kicked
@@ -129,7 +129,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
   const stink = useRef(Math.random() * 1.5);
   const gone = useRef(false);
 
-  const finish = (how: 'splat' | 'sprout' | 'quiet') => {
+  const finish = (how: 'splat' | 'sprout' | 'flush' | 'quiet') => {
     if (gone.current) return;
     gone.current = true;
     const rb = body.current;
@@ -138,6 +138,8 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
       if (how === 'splat') {
         emit('chunk', [p.x, p.y, p.z], { count: 14, color: golden ? ['#ffd23f', '#fff3a8'] : ['#7a4a2b', '#5d3a22', '#8d5a36'], speed: 4, up: 4, size: 0.12 });
         playSplat(p);
+      } else if (how === 'flush') {
+        emit('drop', [p.x, p.y, p.z], { count: 10, color: ['#7fd3ff', '#ffffff'], speed: 2, up: 2, size: 0.12 });
       } else if (how === 'sprout') {
         const onGround = p.y < 1.2 && !isInPond(p.x, p.z) && Math.abs(p.x) < 60 && Math.abs(p.z) < 60;
         if (onGround) usePoops.getState().plant(p.x, p.z);
@@ -195,6 +197,18 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
     const p = rb.translation();
     if (p.y < -10) return finishRef.current('quiet');
     if (age > SPROUT_AFTER || sproutNow.has(id)) return finishRef.current('sprout');
+    // A flushing toilet sucks nearby poops over the rim, swirls them round and down the drain.
+    const now = performance.now();
+    for (const d of drains) {
+      if (now > d.flushingUntil) continue;
+      const dx = p.x - d.x;
+      const dz = p.z - d.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > d.radius + 1.2 || p.y < -0.5 || p.y > d.top + 1.6) continue;
+      const inside = dist < d.radius && p.y > d.top - 0.3;
+      rb.setLinvel({ x: -dz * 5 - dx * 4, y: inside ? -1 : 3, z: dx * 5 - dz * 4 }, true);
+      if (inside && d.flushingUntil - now < 1100) return finishRef.current('flush');
+    }
 
     // A hard landing (kicked high, dropped from the ferris wheel...) splats it.
     const v = rb.linvel();

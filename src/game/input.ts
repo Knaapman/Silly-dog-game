@@ -117,11 +117,25 @@ const PREVENT_DEFAULT = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', '
 let installed = false;
 let anyKeyListener: ((code: string) => void) | null = null;
 
+// Pads the browser doesn't recognise ("non-standard" mapping) report their buttons in
+// DirectInput order: HORIPAD / other Switch-style wired pads, generic USB pads and PlayStation
+// pads in D-mode all use left, bottom, right, top, L, R, ZL, ZR, -, +, LS, RS, Home, Capture,
+// with the D-pad on a hat axis. Translate that to standard positions so "bottom = jump" holds
+// whatever letters are printed on the buttons.
+const DINPUT_TO_STANDARD = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1, -1, -1, -1, 12];
+
+/** Button states in standard-gamepad order (0 bottom, 1 right, 2 left, 3 top, ...). */
+function padButtons(gp: Gamepad): boolean[] {
+  const raw = gp.buttons.map((b) => b.pressed || b.value > 0.5);
+  if (gp.mapping === 'standard') return raw;
+  return DINPUT_TO_STANDARD.map((i) => i >= 0 && !!raw[i]);
+}
+
 function samplePads() {
   for (const gp of getConnectedPads()) {
     const last = sampledPad.get(gp.index) ?? [];
     const downs = pressEdges.get(gp.index) ?? [];
-    const cur = gp.buttons.map((b) => b.pressed || b.value > 0.5);
+    const cur = padButtons(gp);
     cur.forEach((d, i) => {
       if (d && !last[i]) downs[i] = (downs[i] ?? 0) + 1;
     });
@@ -231,7 +245,7 @@ function hatDirection(gp: Gamepad): [number, number] {
 }
 
 function readPad(gp: Gamepad): InputFrame {
-  const now = gp.buttons.map((b) => b.pressed || b.value > 0.5);
+  const now = padButtons(gp);
   const downs = pressEdges.get(gp.index) ?? [];
   pressEdges.set(gp.index, []);
   const tapped = (i: number) => (downs[i] ?? 0) > 0;

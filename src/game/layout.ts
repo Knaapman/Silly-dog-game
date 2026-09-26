@@ -214,7 +214,9 @@ export const GOLDEN_STARS: (Vec3 | 'train')[] = [
 // ---------------------------------------------------------------------------
 // Food: lick it to fill your belly (and then... the poop button).
 
-export type SnackKind = 'kibble' | 'cake' | 'carrot' | 'icecream';
+export type SnackKind = 'kibble' | 'cake' | 'carrot' | 'icecream' | MagicKind;
+/** Magic food, floating on a little pedestal: beans (rocket toots), mushroom (giant), chili (fire). */
+export type MagicKind = 'beans' | 'mushroom' | 'chili';
 export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   // dog bowls right next to where everyone spawns
   { kind: 'kibble', position: [-5, 0, 7.5] },
@@ -229,8 +231,17 @@ export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   { kind: 'icecream', position: [-9.6, 1.2, -28.6] },
   { kind: 'icecream', position: [-8.4, 1.2, -28.6] },
   { kind: 'icecream', position: [21.4, 1.2, -30.6] },
-  { kind: 'icecream', position: [22.6, 1.2, -30.6] }
+  { kind: 'icecream', position: [22.6, 1.2, -30.6] },
+  // the magic snack table on the west side of the plaza...
+  { kind: 'beans', position: [-10.8, 0, -3.3] },
+  { kind: 'mushroom', position: [-10.8, 0, -2] },
+  { kind: 'chili', position: [-10.8, 0, -0.7] },
+  // ...and one of each out in the park, where it fits
+  { kind: 'beans', position: [-38, 0, -14] },
+  { kind: 'mushroom', position: [-29, 0, -28] },
+  { kind: 'chili', position: [32, 0, 10] }
 ];
+export const TOILET = { position: [10.8, 0, -2] as Vec3, seatHeight: 1.05 };
 export const PICNIC = { center: [7, 20.6] as Vec2, size: 2.8 };
 
 // ---------------------------------------------------------------------------

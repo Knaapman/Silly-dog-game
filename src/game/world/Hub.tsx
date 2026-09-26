@@ -6,6 +6,7 @@ import { emit } from '../fx';
 import { FOUNTAIN, GEYSERS, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { Geyser } from './Launchers';
+import { Toilet } from './Toilet';
 import { HatBox, RedButton } from './Toys';
 
 function Fountain() {
@@ -116,6 +117,7 @@ export function Hub() {
       ))}
       <HatBox />
       <RedButton />
+      <Toilet />
       {[
         [-11, 0, 3],
         [11, 0, 3],

@@ -12,6 +12,7 @@ const STYLE: Record<Hint['action'], { color: string; icon: string }> = {
   lick: { color: '#3b82f6', icon: '👅' },
   noise: { color: '#fbbf24', icon: '📣' },
   flop: { color: '#a855f7', icon: '🌀' },
+  poop: { color: '#8d5a36', icon: '💩' },
   walk: { color: '#ffffff', icon: '⬇️' }
 };
 

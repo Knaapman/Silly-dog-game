@@ -181,7 +181,7 @@ export function GrownUpMenu() {
           <KeyboardLegend source="kb2" color="#3b82f6" />
         </div>
         <p className="mt-4 text-center text-sm text-white/75">
-          Up to 4 players: every controller joins by pressing any button. Tap Select to change animal, tap Start to change hat. Hold Start to open this menu (D-pad to move, A to press, B to close); hold Select to leave. If a controller disconnects, its animal naps until it comes back. Keyboard can host two players; <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
+          Up to 4 players: every controller joins by pressing any button. Tap Select to change animal, tap Start to change hat. Hold Start to open this menu (D-pad to move, A to press, B to close); hold Select to leave. If a controller disconnects, its animal naps until it comes back. Magic food on the plaza table: beans (poop button = rocket), mushroom (giant), chili (noise button = fire). Sit on the big toilet and poop to get flushed. Land on a friend's back to ride piggyback. Keyboard can host two players; <kbd className="rounded bg-white/20 px-1">Esc</kbd> opens this menu.
         </p>
       </div>
     </div>

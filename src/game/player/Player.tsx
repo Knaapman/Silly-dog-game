@@ -7,19 +7,25 @@ import {
   playBonk,
   playBoing,
   playBounce,
+  playBigFart,
   playBurp,
+  playCheer,
   playChomp,
   playDuet,
   playFart,
+  playFireBreath,
   playFlop,
+  playGurgle,
   playHatTada,
   playJump,
   playPlop,
   playPoof,
+  playPower,
   playSlideWhistle,
   playSlurp,
   playSplash,
   playSquelch,
+  playStomp,
   playThrow,
   playThud,
   playWhoosh
@@ -44,6 +50,7 @@ import {
   surfaces,
   type FoodEntry,
   type PlayerRuntime,
+  type PowerKind,
   type PropEntry
 } from '../runtime';
 import { useGame, type PlayerInfo } from '../store';
@@ -53,6 +60,10 @@ const RADIUS = 0.5;
 /** Animals are drawn a bit bigger than their physics ball so small kids can read them. */
 const MODEL_SCALE = 1.15;
 const UP = new THREE.Vector3(0, 1, 0);
+/** Magic food: how long it lasts, how big the mushroom makes you, and its colour. */
+const POWER_TIME: Record<PowerKind, number> = { beans: 12, giant: 15, chili: 10 };
+const GIANT_SIZE = 2.2;
+const POWER_COLOR: Record<PowerKind, string> = { beans: '#8bc34a', giant: '#ff4d5e', chili: '#ff7a1a' };
 
 function lerpAngle(a: number, b: number, t: number) {
   let d = b - a;
@@ -115,8 +126,22 @@ function createState(spawn: THREE.Vector3) {
     fartedInAir: false,
     bellyScale: 0.8,
     bellyVel: 0,
+    // magic food
+    power: null as PowerKind | null,
+    powerTime: 0,
+    powerFx: 0,
+    rocketCooldown: 0,
+    pendingRocket: false,
+    size: 1,
+    sizeVel: 0,
+    colliderSize: 1,
+    stompTimer: 0,
+    // piggyback
+    ridingOn: null as number | null,
+    rideCooldown: 0,
     jumpedAt: 0,
     noiseAt: 0,
+    poopAt: 0,
     flip: null as Flip | null,
     squash: 0,
     squashVel: 0,
@@ -180,6 +205,7 @@ export function Player({ info }: { info: PlayerInfo }) {
   const collider = useRef<RapierCollider>(null);
   const yawGroup = useRef<THREE.Group>(null);
   const squashGroup = useRef<THREE.Group>(null);
+  const sizeGroup = useRef<THREE.Group>(null);
   const flipGroup = useRef<THREE.Group>(null);
   const shadowRing = useRef<THREE.Mesh>(null);
   const marker = useRef<THREE.Mesh>(null);
@@ -227,6 +253,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       asleep: false,
       jumpedAt: 0,
       noiseAt: 0,
+      poopAt: 0,
       bump: (dir) => {
         s.pendingBump = dir.clone();
       },
@@ -254,6 +281,18 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.squash = -0.3;
         ring([s.pos.x, s.pos.y + 0.6, s.pos.z], { color: '#c8f7c5', radius: 2.2, duration: 0.5 });
         emit('puff', [s.pos.x, s.pos.y + 0.7, s.pos.z], { count: 6, color: ['#e8ffe0', '#ffffff'], speed: 1.5, up: 1.5, size: 0.3 });
+      },
+      power: null,
+      size: 1,
+      ridingOn: null,
+      powerUp: (kind) => {
+        s.powerTime = POWER_TIME[kind];
+        if (s.power === kind) return;
+        s.power = kind;
+        playPower(s.pos, true);
+        ring([s.pos.x, s.pos.y - 0.4, s.pos.z], { color: POWER_COLOR[kind], radius: 3, duration: 0.6 });
+        emit('star', [s.pos.x, s.pos.y + 0.5, s.pos.z], { count: 18, color: [POWER_COLOR[kind], '#ffffff', '#ffd23f'], speed: 4, up: 4 });
+        useGame.getState().addParty(PARTY_POINTS.launch);
       }
     };
     players.set(slot, rt);
@@ -311,19 +350,40 @@ export function Player({ info }: { info: PlayerInfo }) {
     s.pos.set(t.x, t.y, t.z);
     s.vel.set(lv.x, lv.y, lv.z);
 
+    // ----- magic food: timers, and growing / shrinking (the mushroom)
+    if (s.power) {
+      s.powerTime -= dt;
+      if (s.powerTime <= 0) {
+        s.power = null;
+        playPower(s.pos, false);
+        poof([t.x, t.y, t.z], '#ffffff', 12);
+      }
+    }
+    const sizeTarget = s.power === 'giant' ? GIANT_SIZE : 1;
+    s.sizeVel += (-60 * (s.size - sizeTarget) - 9 * s.sizeVel) * dt;
+    s.size = Math.max(0.6, s.size + s.sizeVel * dt);
+    if (Math.abs(s.size - s.colliderSize) > 0.01) {
+      const grow = (s.size - s.colliderSize) * RADIUS;
+      collider.current?.setRadius(RADIUS * s.size);
+      // grow upwards, not into the ground
+      if (grow > 0) rb.setTranslation({ x: t.x, y: t.y + grow, z: t.z }, true);
+      s.colliderSize = s.size;
+    }
+    const rad = RADIUS * s.size;
+
     // ----- ground probe (also places the landing-shadow ring)
     ray.origin = { x: t.x, y: t.y, z: t.z };
     const hit = world.castRay(ray, 40, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS, ANIMAL_GROUPS, undefined, rb);
     const groundDist = hit ? hit.timeOfImpact : 99;
     s.groundY = t.y - groundDist;
     const wasGrounded = s.grounded;
-    const surface = hit && groundDist < RADIUS + 0.4 ? surfaces.get(hit.collider.handle) : undefined;
+    const surface = hit && groundDist < rad + 0.4 ? surfaces.get(hit.collider.handle) : undefined;
     const groundBody = hit ? hit.collider.parent() : null;
     const onStatic = !groundBody || groundBody.isFixed();
     // Generous so slopes (roof, hill, island) still count as ground for jumping. Moving
     // platforms can rise faster than a normal "falling" check allows.
     const riseLimit = surface?.velocityAt ? 12 : 4;
-    s.grounded = !s.flopped && groundDist < RADIUS + 0.25 && lv.y < riseLimit;
+    s.grounded = !s.flopped && groundDist < rad + 0.25 && lv.y < riseLimit;
     if (s.grounded && surface?.velocityAt) surface.velocityAt(s.pos, s.platformVel);
     else s.platformVel.set(0, 0, 0);
 
@@ -339,6 +399,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     s.padCooldown -= dt;
     s.bounceCooldown -= dt;
     s.stunned -= dt;
+    s.rideCooldown -= dt;
     s.airTime = s.grounded ? 0 : s.airTime + dt;
     // A launch ends as soon as we touch down again, so nobody slides off the landing spot.
     if (s.launched > 0) {
@@ -431,8 +492,8 @@ export function Player({ info }: { info: PlayerInfo }) {
       }
     }
 
-    const mouthOffsetY = (spec.head[1] - 0.1) * MODEL_SCALE - RADIUS;
-    const mouthOffsetZ = (spec.head[2] + 0.3) * MODEL_SCALE;
+    const mouthOffsetY = (spec.head[1] - 0.1) * MODEL_SCALE * s.size - rad;
+    const mouthOffsetZ = (spec.head[2] + 0.3) * MODEL_SCALE * s.size;
     tmp.mouth.copy(s.pos).addScaledVector(tmp.fwd, mouthOffsetZ);
     tmp.mouth.y += mouthOffsetY;
 
@@ -443,7 +504,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         const tongueScore = (position: THREE.Vector3, radius: number) => {
           tmp.d.copy(position).sub(tmp.mouth);
           const dist = tmp.d.length() - radius;
-          if (dist > 2.6) return -1;
+          if (dist > 2.6 * Math.max(1, s.size * 0.8)) return -1;
           const flat = Math.hypot(tmp.d.x, tmp.d.z) || 1;
           const facing = (tmp.d.x * tmp.fwd.x + tmp.d.z * tmp.fwd.z) / flat;
           if (facing < 0.15 && dist > 0.8) return -1;
@@ -531,7 +592,39 @@ export function Player({ info }: { info: PlayerInfo }) {
     }
 
     // ----- noise (bark / meh / oink / baa)
-    if (input.pressed.noise && !s.flopped) {
+    if (input.pressed.noise && !s.flopped && s.power === 'chili') {
+      // Hot hot hot! Dragon breath: a burst of flames that sends things flying.
+      playFireBreath(s.pos);
+      s.noiseTime = 0.5;
+      for (let i = 0; i < 3; i += 1) {
+        emit('puff', [tmp.mouth.x, tmp.mouth.y, tmp.mouth.z], { count: 8, color: ['#ff3d00', '#ff9100', '#ffd23f'], speed: 1.5, up: 0.6, size: 0.3 + i * 0.12, life: 0.55, dir: [tmp.fwd.x * (7 + i * 2.5), 0.4, tmp.fwd.z * (7 + i * 2.5)] });
+      }
+      const inFlames = (p: THREE.Vector3) => {
+        tmp.d.copy(p).sub(s.pos).setY(0);
+        const d = tmp.d.length();
+        return d < 5.5 && d > 0.01 && tmp.d.dot(tmp.fwd) / d > 0.55;
+      };
+      props.forEach((prop) => {
+        if (prop.heldBy != null || !prop.enabled || !propPosition(prop, tmp.p) || !inFlames(tmp.p)) return;
+        tmp.d.normalize();
+        prop.getBody()?.setLinvel({ x: tmp.d.x * 6, y: 7, z: tmp.d.z * 6 }, true);
+        prop.onBonk?.(slot, tmp.d);
+        emit('puff', [tmp.p.x, tmp.p.y + 0.3, tmp.p.z], { count: 3, color: ['#555555', '#888888'], speed: 1, up: 2, size: 0.3 });
+      });
+      players.forEach((other) => {
+        if (other.slot === slot || !inFlames(other.position)) return;
+        // hot bottom! the friend jumps up with a puff of smoke
+        other.hop(8);
+        emit('puff', [other.position.x, other.position.y, other.position.z], { count: 6, color: ['#555555', '#888888'], speed: 1.5, up: 3, size: 0.35 });
+      });
+      statics.forEach((st2) => {
+        if (inFlames(st2.position)) st2.onBonk(slot, tmp.fwd);
+      });
+      pushNoise(s.pos, slot);
+      shakeCamera(0.2);
+      rumble(source, 0.6, 0.6, 250);
+      useGame.getState().addParty(PARTY_POINTS.bonk * 2);
+    } else if (input.pressed.noise && !s.flopped) {
       playAnimalNoise(species, s.pos);
       s.noiseTime = 0.5;
       s.noiseAt = performance.now();
@@ -554,12 +647,27 @@ export function Player({ info }: { info: PlayerInfo }) {
 
     // ----- poop! (or, with an empty tummy, a toot)
     s.poopCooldown -= dt;
+    s.rocketCooldown -= dt;
     s.chew -= dt;
     if (s.grounded || s.swimming) s.fartedInAir = false;
     if (input.pressed.poop && !s.flopped && !s.holdAt) {
+      s.poopAt = performance.now();
       tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6);
       const waiting = s.poopPresses + (s.poopQueued ? 1 : 0);
-      if (s.belly > waiting && !s.swimming) {
+      if (s.power === 'beans') {
+        // Beans: every press is a rocket toot. Keep pressing to fly!
+        if (s.rocketCooldown <= 0) {
+          s.rocketCooldown = 0.28;
+          s.pendingRocket = true;
+          playBigFart(s.pos);
+          emit('puff', [tmp.c.x, s.pos.y - 0.3 * s.size, tmp.c.z], { count: 16, color: ['#b5e48c', '#99d98c', '#d9ed92', '#76c893'], speed: 2.5, up: -1, size: 0.55 * s.size, dir: [-tmp.fwd.x * 3, -3, -tmp.fwd.z * 3] });
+          ring([t.x, s.groundY + 0.08, t.z], { color: '#b5e48c', radius: 2.4, duration: 0.45 });
+          shakeCamera(0.2);
+          pushNoise(s.pos, slot);
+          rumble(source, 0.8, 0.4, 220);
+          useGame.getState().addParty(PARTY_POINTS.fart * 2);
+        }
+      } else if (s.belly > waiting && !s.swimming) {
         s.poopPresses += 1;
       } else if (waiting === 0 && s.poopCooldown <= 0) {
         s.poopCooldown = 0.25;
@@ -600,15 +708,15 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.poopQueued = null;
         s.belly = Math.max(0, s.belly - 1);
         s.bellyVel -= 2.5;
-        const back = 0.55 + 0.26 * size;
+        const back = (0.55 + 0.26 * size) * s.size;
         // a little to the left or right, so a row of poops spreads out instead of stacking
         const side = (Math.random() - 0.5) * 0.6;
         tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -back);
         tmp.c.x += tmp.fwd.z * side;
         tmp.c.z -= tmp.fwd.x * side;
-        tmp.c.y = s.pos.y - 0.12;
+        tmp.c.y = s.pos.y - 0.12 * s.size;
         tmp.v.set(-tmp.fwd.x * 2.2 + tmp.fwd.z * side * 2 + s.vel.x * 0.5, 0.6 + Math.max(0, s.vel.y) * 0.5, -tmp.fwd.z * 2.2 - tmp.fwd.x * side * 2 + s.vel.z * 0.5);
-        spawners.poop(tmp.c, tmp.v, size, golden);
+        spawners.poop(tmp.c, tmp.v, size * s.size, golden);
         playPlop(s.pos, size, golden);
         s.squash = -0.3;
         rumble(source, golden ? 0.6 : 0.3, 0.2, golden ? 300 : 120);
@@ -633,20 +741,21 @@ export function Player({ info }: { info: PlayerInfo }) {
       playWhoosh(s.pos);
     }
     if (s.bonkTime > 0) {
-      tmp.head.copy(s.pos).addScaledVector(tmp.fwd, 0.8);
-      tmp.head.y += 0.15;
+      tmp.head.copy(s.pos).addScaledVector(tmp.fwd, 0.8 * s.size);
+      tmp.head.y += 0.15 * s.size;
+      const giant = s.power === 'giant';
       let hits = 0;
       props.forEach((prop) => {
         if (!prop.enabled || prop.heldBy != null || s.bonkHits.has(prop.id)) return;
         if (!propPosition(prop, tmp.p)) return;
-        if (tmp.p.distanceTo(tmp.head) - prop.radius > 0.75) return;
+        if (tmp.p.distanceTo(tmp.head) - prop.radius > 0.75 * s.size) return;
         s.bonkHits.add(prop.id);
         tmp.d.set(tmp.p.x - s.pos.x, 0, tmp.p.z - s.pos.z);
         if (tmp.d.lengthSq() < 0.001) tmp.d.copy(tmp.fwd);
         tmp.d.normalize().add(tmp.fwd).normalize();
         const pb = prop.getBody();
         if (pb) {
-          const v = prop.launch;
+          const v = prop.launch * (giant ? 1.5 : 1);
           pb.wakeUp();
           pb.setLinvel({ x: tmp.d.x * v, y: v * 0.55 + 2, z: tmp.d.z * v }, true);
           pb.setAngvel({ x: (Math.random() - 0.5) * 12, y: (Math.random() - 0.5) * 12, z: (Math.random() - 0.5) * 12 }, true);
@@ -659,17 +768,17 @@ export function Player({ info }: { info: PlayerInfo }) {
       });
       players.forEach((other) => {
         if (other.slot === slot || s.bonkHits.has(-1 - other.slot)) return;
-        if (other.position.distanceTo(tmp.head) > 1.15) return;
+        if (other.position.distanceTo(tmp.head) > 1.15 * s.size) return;
         s.bonkHits.add(-1 - other.slot);
         tmp.d.copy(other.position).sub(s.pos).setY(0);
         if (tmp.d.lengthSq() < 0.001) tmp.d.copy(tmp.fwd);
-        other.bump(tmp.d.normalize());
+        other.bump(tmp.d.normalize().multiplyScalar(giant ? 1.8 : 1));
         bonkStars([other.position.x, other.position.y + 0.6, other.position.z]);
         hits += 1;
       });
       statics.forEach((st2) => {
         if (s.bonkHits.has(100000 + st2.id)) return;
-        if (distXZ(st2.position.x, st2.position.z, tmp.head.x, tmp.head.z) > st2.radius + 0.6) return;
+        if (distXZ(st2.position.x, st2.position.z, tmp.head.x, tmp.head.z) > st2.radius + 0.6 * s.size) return;
         if (Math.abs(tmp.head.y - st2.position.y) > 3) return;
         s.bonkHits.add(100000 + st2.id);
         st2.onBonk(slot, tmp.fwd);
@@ -701,6 +810,18 @@ export function Player({ info }: { info: PlayerInfo }) {
       rumble(source, 0.5, 0.5, 160);
       s.pendingBump = null;
     }
+    let rocketed = false;
+    if (s.pendingRocket) {
+      s.pendingRocket = false;
+      rocketed = true;
+      if (!s.flopped) {
+        // straight up (not above the treetops... well, a bit above), and a push forward
+        vy = Math.max(vy, t.y > 24 ? 0 : 10.5);
+        vx += tmp.fwd.x * 5;
+        vz += tmp.fwd.z * 5;
+        s.squash = 0.45;
+      }
+    }
     if (s.pendingNudge > 0) {
       if (!s.flopped) vy = Math.max(vy, s.pendingNudge);
       s.pendingNudge = 0;
@@ -720,12 +841,101 @@ export function Player({ info }: { info: PlayerInfo }) {
       vx = vy = vz = 0;
     }
 
+    // ----- piggyback: land on a friend's back and ride along. Towers welcome.
+    const self = players.get(slot);
+    const setRiding = (on: number | null) => {
+      s.ridingOn = on;
+      if (self) self.ridingOn = on;
+      // a rider is a ghost for the physics, or it would squash its friend into the ground
+      collider.current?.setSensor(on != null);
+    };
+    if (s.ridingOn == null && s.rideCooldown <= 0 && !s.flopped && !s.holdAt && s.launched <= 0 && !s.swimming && lv.y < 1) {
+      let best: PlayerRuntime | null = null;
+      players.forEach((c) => {
+        if (c.slot === slot || c.flopped || c.isLaunched()) return;
+        let taken = false;
+        players.forEach((o) => {
+          if (o.ridingOn === c.slot) taken = true;
+        });
+        if (taken) return; // one rider per back: land on the top of the tower instead
+        for (let k: number | null = c.ridingOn, n = 0; k != null && n < 6; n += 1) {
+          if (k === slot) return; // no riding someone who's riding you
+          k = players.get(k)?.ridingOn ?? null;
+        }
+        const dy = s.pos.y - c.position.y;
+        // riders are ghosts, so a falling friend can sink into one: that still counts as landing on it
+        if (dy < (c.ridingOn != null ? -0.3 : 0.55) * c.size || dy > 1.7 * c.size) return;
+        if (distXZ(s.pos.x, s.pos.z, c.position.x, c.position.z) > 0.6 * c.size) return;
+        if (!best || c.position.y > best.position.y) best = c;
+      });
+      const carrier = best as PlayerRuntime | null;
+      if (carrier) {
+        setRiding(carrier.slot);
+        s.squash = 0.4;
+        playBoing(s.pos, 1.3);
+        emit('heart', [t.x, t.y + 0.6, t.z], { count: 6, color: ['#ff4d8d', '#ff8fb5'], speed: 1.5, up: 2 });
+        rumble(source, 0.3, 0.3, 120);
+        useGame.getState().addParty(PARTY_POINTS.duet);
+        let height = 2;
+        for (let k: number | null = carrier.ridingOn; k != null && height < 6; k = players.get(k)?.ridingOn ?? null) height += 1;
+        if (height >= 3) {
+          // a tower of three (or four)!
+          burstConfetti([t.x, t.y + 1.5, t.z], 50, 6);
+          playCheer();
+          useGame.getState().addParty(PARTY_POINTS.star);
+        }
+      }
+    }
+    if (s.ridingOn != null) {
+      const c = players.get(s.ridingOn);
+      const thrown = !c || c.flopped || c.isLaunched();
+      const hopOff = input.pressed.jump && !thrown;
+      if (c) tmp.c.set(c.position.x, c.position.y + 0.45 * c.size + RADIUS * s.size, c.position.z);
+      // (a bean rocket blasts you off the top of the tower, keeping its speed)
+      if (thrown || hopOff || rocketed || s.flopped || s.holdAt || s.pendingLaunch || s.stunned > 0 || tmp.c.distanceTo(s.pos) > 3) {
+        setRiding(null);
+        s.rideCooldown = 0.6;
+        if (hopOff) {
+          vy = MOVE.jumpVelocity;
+          vx = input.x * 4 + (c?.velocity.x ?? 0);
+          vz = input.z * 4 + (c?.velocity.z ?? 0);
+          startFlip('x', 0.5);
+          playJump(s.pos);
+        } else if (thrown) {
+          // the carrier flopped (or got launched): everybody off!
+          const a = Math.random() * Math.PI * 2;
+          vx = Math.cos(a) * 5;
+          vz = Math.sin(a) * 5;
+          vy = 8;
+          startFlip('z', 0.7, Math.random() < 0.5 ? 1 : -1);
+          playBoing(s.pos, 0.9);
+        }
+        s.jumpBuffer = 0;
+        rb.setLinvel({ x: vx, y: vy, z: vz }, true);
+      } else if (c) {
+        rb.setTranslation(tmp.c, true);
+        rb.setLinvel({ x: c.velocity.x, y: c.velocity.y, z: c.velocity.z }, true);
+        vx = c.velocity.x;
+        vy = c.velocity.y;
+        vz = c.velocity.z;
+        s.grounded = true;
+        s.airTime = 0;
+        s.jumps = 0;
+        s.coyote = 0;
+        // the rider steers where it looks (for headbutts and licks), not where it goes
+        if (Math.hypot(input.x, input.z) > 0.15) s.targetFacing = Math.atan2(input.x, input.z);
+        else s.targetFacing = c.facing;
+        s.facing = lerpAngle(s.facing, s.targetFacing, 1 - Math.exp(-10 * dt));
+      }
+    }
+    const riding = s.ridingOn != null;
+
     // ----- launched by a pad / cannon / geyser: fly in a big arc to a fun spot
     if (s.pendingLaunch && !s.holdAt) {
       if (s.flopped) endFlop();
       const { target, apex } = s.pendingLaunch;
       s.pendingLaunch = null;
-      tmp.c.set(target.x, target.y + RADIUS + 0.1, target.z);
+      tmp.c.set(target.x, target.y + rad + 0.1, target.z);
       const flight = ballistic(s.pos, tmp.c, apex, tmp.v);
       vx = tmp.v.x;
       vy = tmp.v.y;
@@ -745,11 +955,13 @@ export function Player({ info }: { info: PlayerInfo }) {
     }
 
     // ----- movement
-    if (!s.flopped && !s.holdAt) {
+    if (!s.flopped && !s.holdAt && !riding) {
       let speed: number = MOVE.speed;
       if (s.swimming) speed = MOVE.swimSpeed;
       else if (s.inMud) speed = MOVE.mudSpeed;
       if (heavyDrag) speed *= 0.72;
+      if (s.power === 'giant') speed *= 1.2;
+      else if (s.power === 'chili') speed *= 1.5;
       const controlling = s.launched <= 0 && s.stunned <= 0;
       const mag = Math.hypot(input.x, input.z);
       const pv = s.platformVel;
@@ -807,7 +1019,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       // Bouncy things (trampolines, mushrooms, bouncy castle). Checked before jumping so
       // mashing jump on landing gives an even bigger bounce instead of a normal hop. The
       // collider's own restitution may already have bounced us a little: still boost.
-      if (surface?.bounce && s.bounceCooldown <= 0 && lv.y < surface.bounce - 3 && groundDist < RADIUS + 0.35) {
+      if (surface?.bounce && s.bounceCooldown <= 0 && lv.y < surface.bounce - 3 && groundDist < rad + 0.35) {
         vy = surface.bounce + (input.held.jump || s.jumpBuffer > 0 ? 3.5 : 0);
         s.jumps = 1;
         s.jumpBuffer = 0;
@@ -825,7 +1037,7 @@ export function Player({ info }: { info: PlayerInfo }) {
 
       if (s.jumpBuffer > 0 && s.stunned <= 0) {
         if (s.coyote > 0) {
-          vy = (s.swimming ? 8 : MOVE.jumpVelocity) + Math.max(0, pv.y);
+          vy = (s.swimming ? 8 : MOVE.jumpVelocity * (s.power === 'giant' ? 1.3 : 1)) + Math.max(0, pv.y);
           s.jumps = 1;
           s.coyote = 0;
           s.jumpBuffer = 0;
@@ -837,7 +1049,7 @@ export function Player({ info }: { info: PlayerInfo }) {
             emit('drop', [t.x, 0.3, t.z], { count: 12, color: ['#7fd3ff', '#ffffff'], speed: 3, up: 5 });
           } else emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 5, color: '#f5f0e6', speed: 2, up: 0.5, size: 0.25 });
         } else if (s.jumps < 2 && s.airTime > 0.05) {
-          vy = MOVE.doubleJumpVelocity;
+          vy = MOVE.doubleJumpVelocity * (s.power === 'giant' ? 1.3 : 1);
           s.jumps = 2;
           s.jumpBuffer = 0;
           s.jumpedAt = performance.now();
@@ -885,9 +1097,10 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.grip = false;
         if (!s.flopped) col?.setFriction(0); // flopping sets its own friction
       }
-      if (s.gravityOff) {
-        s.gravityOff = false;
-        rb.setGravityScale(1, true);
+      // riders float along with their friend (gravity would pull them through it)
+      if (s.gravityOff !== riding) {
+        s.gravityOff = riding;
+        rb.setGravityScale(riding ? 0 : 1, true);
       }
     }
 
@@ -936,7 +1149,11 @@ export function Player({ info }: { info: PlayerInfo }) {
       rt.flopped = s.flopped;
       rt.jumpedAt = s.jumpedAt;
       rt.noiseAt = s.noiseAt;
+      rt.poopAt = s.poopAt;
       rt.belly = s.belly;
+      rt.power = s.power;
+      rt.size = s.size;
+      rt.ridingOn = s.ridingOn;
     }
 
     // =====================================================================
@@ -949,7 +1166,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       yawGroup.current.visible = !s.hidden;
       yawGroup.current.rotation.y = s.flopped ? yawGroup.current.rotation.y : s.facing;
       const swimDip = s.swimming ? -0.32 + Math.sin(time * 3) * 0.04 : 0;
-      yawGroup.current.position.y = THREE.MathUtils.lerp(yawGroup.current.position.y, -RADIUS + swimDip, 1 - Math.exp(-10 * dt));
+      yawGroup.current.position.y = THREE.MathUtils.lerp(yawGroup.current.position.y, -rad + swimDip, 1 - Math.exp(-10 * dt));
     }
 
     // squash & stretch spring
@@ -1006,6 +1223,46 @@ export function Player({ info }: { info: PlayerInfo }) {
       r.belly.scale.setScalar(s.bellyScale);
       r.belly.visible = s.bellyScale > 0.82;
     }
+    sizeGroup.current?.scale.setScalar(s.size);
+
+    // Rosy cheeks: straining to poop, or a mouth full of chili.
+    if (r.cheeks) {
+      const cheekTarget = s.power === 'chili' ? 1.25 + Math.sin(time * 18) * 0.12 : s.poopTime > 0 ? 1 : 0.001;
+      const cs = THREE.MathUtils.lerp(r.cheeks.scale.x, cheekTarget, 1 - Math.exp(-14 * dt));
+      r.cheeks.scale.setScalar(cs);
+      r.cheeks.visible = cs > 0.05;
+    }
+
+    // What each magic food looks like while it lasts.
+    if (s.power && !s.hidden) {
+      s.powerFx -= dt;
+      const headY = t.y + (spec.head[1] * MODEL_SCALE + 0.1) * s.size - rad;
+      if (s.power === 'beans' && s.powerFx <= 0) {
+        // rumbly tummy: little green puffs from the bottom
+        s.powerFx = 0.3;
+        tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.55 * s.size);
+        emit('puff', [tmp.c.x, t.y - 0.1, tmp.c.z], { count: 1, color: ['#b5e48c', '#99d98c'], speed: 0.4, up: 0.6, size: 0.22 });
+        if (Math.random() < 0.15) playGurgle(s.pos);
+      } else if (s.power === 'chili' && s.powerFx <= 0) {
+        // steam out of the ears, sparks under fast feet
+        s.powerFx = 0.2;
+        const sx = Math.cos(s.facing) * 0.25 * s.size;
+        const sz = -Math.sin(s.facing) * 0.25 * s.size;
+        emit('puff', [t.x + sx, headY + 0.2, t.z + sz], { count: 1, color: '#ffffff', speed: 0.5, up: 2.5, size: 0.2 });
+        emit('puff', [t.x - sx, headY + 0.2, t.z - sz], { count: 1, color: '#ffffff', speed: 0.5, up: 2.5, size: 0.2 });
+        if (hSpeed > 4 && s.grounded) emit('star', [t.x, s.groundY + 0.1, t.z], { count: 2, color: ['#ff9100', '#ffd23f'], speed: 1.5, up: 1.5, size: 0.12 });
+      }
+    }
+    if (s.power === 'giant' && s.grounded && hSpeed > 1.5 && !s.swimming) {
+      // STOMP STOMP
+      s.stompTimer -= dt;
+      if (s.stompTimer <= 0) {
+        s.stompTimer = 0.36;
+        playStomp(s.pos);
+        shakeCamera(0.12);
+        emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 4, color: '#f5f0e6', speed: 2.5, up: 0.4, size: 0.4 });
+      }
+    }
 
     if (r.head) {
       const bonking = s.bonkTime > 0;
@@ -1024,7 +1281,8 @@ export function Player({ info }: { info: PlayerInfo }) {
       const front = i < 2;
       const phase = i === 0 || i === 3 ? 0 : Math.PI;
       let target: number;
-      if (s.flopped || s.stunned > 0) target = Math.sin(time * 26 + i * 1.7) * 1.1;
+      if (s.ridingOn != null) target = front ? -0.8 : -1.25; // sitting, legs forward
+      else if (s.flopped || s.stunned > 0) target = Math.sin(time * 26 + i * 1.7) * 1.1;
       else if (s.swimming) target = Math.sin(time * 14 + phase) * 0.8;
       else if (airborne) target = front ? -0.9 : 0.8;
       else if (hSpeed > 0.6) target = Math.sin(s.walkPhase + phase) * legAmp;
@@ -1098,9 +1356,9 @@ export function Player({ info }: { info: PlayerInfo }) {
     // ----- world-space helpers: landing shadow, player marker, tongue
     if (shadowRing.current) {
       const sr = shadowRing.current;
-      const height = Math.max(0, t.y - RADIUS - s.groundY);
+      const height = Math.max(0, t.y - rad - s.groundY);
       sr.position.set(t.x, s.groundY + 0.04, t.z);
-      sr.scale.setScalar(THREE.MathUtils.clamp(1 - height * 0.04, 0.55, 1));
+      sr.scale.setScalar(THREE.MathUtils.clamp(1 - height * 0.04, 0.55, 1) * s.size);
       sr.visible = hit != null && !s.hidden;
     }
     if (beam.current) {
@@ -1115,7 +1373,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     if (marker.current) {
       const m = marker.current;
       m.visible = players.size > 1 && !s.hidden;
-      m.position.set(t.x, t.y + spec.head[1] * MODEL_SCALE + 0.2 + Math.sin(time * 4) * 0.08 + (hat === 'none' ? 0 : 0.4), t.z);
+      m.position.set(t.x, t.y + (spec.head[1] * MODEL_SCALE + (hat === 'none' ? 0 : 0.4)) * s.size + 0.2 + Math.sin(time * 4) * 0.08, t.z);
       m.rotation.y += dt * 3;
     }
     if (tongue.current && tongueTip.current) {
@@ -1160,12 +1418,14 @@ export function Player({ info }: { info: PlayerInfo }) {
       >
         <BallCollider ref={collider} args={[RADIUS]} friction={0} restitution={0} density={4} collisionGroups={ANIMAL_GROUPS} />
         <group ref={yawGroup} position={[0, -RADIUS, 0]}>
+          <group ref={sizeGroup}>
           <group ref={squashGroup}>
             <group ref={flipGroup} position={[0, 0.6, 0]}>
               <group position={[0, -0.6, 0]} scale={MODEL_SCALE}>
                 <AnimalModel key={species} species={species} hat={hat} color={color} rig={rig} />
               </group>
             </group>
+          </group>
           </group>
         </group>
       </RigidBody>

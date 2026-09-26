@@ -91,6 +91,8 @@ export type PlayerRuntime = {
   /** Timestamps (performance.now) of the last jump / noise, so followers can copy them. */
   jumpedAt: number;
   noiseAt: number;
+  /** Last time the poop button did something (poop, toot or rocket). */
+  poopAt: number;
   /** Called when another player headbutts this one. */
   bump: (dir: THREE.Vector3) => void;
   hop: (vy: number) => void;
@@ -103,7 +105,17 @@ export type PlayerRuntime = {
   belly: number;
   /** Eat something: the belly grows (or, when already full, a big burp). */
   feed: () => void;
+  /** Magic food effect currently running, if any. */
+  power: PowerKind | null;
+  powerUp: (kind: PowerKind) => void;
+  /** 1 = normal, bigger while giant. */
+  size: number;
+  /** Slot of the friend this one is riding piggyback on. */
+  ridingOn: number | null;
 };
+
+/** Magic foods: beans = fart rocket, mushroom = giant, chili = fire breath + fast feet. */
+export type PowerKind = 'beans' | 'giant' | 'chili';
 
 export const players = new Map<number, PlayerRuntime>();
 
@@ -203,7 +215,7 @@ export function registerSurface(handle: number, surface: Surface) {
 }
 
 /** Things that react when a player walks close (used for floating button hints). */
-export type Hint = { id: number; position: THREE.Vector3; radius: number; action: 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'walk' };
+export type Hint = { id: number; position: THREE.Vector3; radius: number; action: 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'walk' };
 export const hints = new Map<number, Hint>();
 
 export function registerHint(hint: Hint) {
@@ -212,6 +224,10 @@ export function registerHint(hint: Hint) {
     hints.delete(hint.id);
   };
 }
+
+/** Toilet bowls: while flushing, poops inside swirl away. */
+export type Drain = { x: number; z: number; radius: number; top: number; flushingUntil: number };
+export const drains = new Set<Drain>();
 
 /** Live numbers some rides publish (read by automated checks / the dev console). */
 export const debugInfo: Record<string, unknown> = {};

@@ -414,6 +414,65 @@ export function playFart(position?: AudioPosition) {
   v.finish();
 }
 
+/** A huge rocket toot (beans). */
+export function playBigFart(position?: AudioPosition) {
+  const v = voice('action', { position });
+  if (!v) return;
+  const base = rand(48, 70);
+  v.tone({ type: 'sawtooth', from: base * 1.4, to: base * 0.7, dur: 0.75, gain: 0.2, attack: 0.02, vibrato: [rand(24, 32), base * 0.45], filter: { type: 'lowpass', freq: 650, q: 6 } });
+  v.noise({ dur: 0.8, gain: 0.12, filter: { type: 'lowpass', freq: 500, to: 180, q: 5 }, wobble: [26, 180] });
+  v.noise({ at: 0.05, dur: 0.5, gain: 0.06, filter: { type: 'highpass', freq: 1800 } });
+  v.finish();
+}
+
+/** Tummy rumble while full of beans. */
+export function playGurgle(position?: AudioPosition) {
+  if (throttled('gurgle', 900)) return;
+  const v = voice('world', { position, gain: 0.7 });
+  if (!v) return;
+  for (let i = 0; i < 3; i += 1) v.tone({ type: 'sine', from: rand(90, 140), to: rand(160, 260), at: i * 0.09, dur: 0.1, gain: 0.08, glide: 'lin' });
+  v.finish();
+}
+
+/** Magic food kicks in (up) or wears off (down). */
+export function playPower(position: AudioPosition | undefined, up: boolean) {
+  const v = voice('reward', { position });
+  if (!v) return;
+  const notes = up ? [523, 659, 784, 1047, 1319] : [784, 659, 523, 392];
+  notes.forEach((f, i) => v.tone({ type: 'square', from: f, at: i * 0.07, dur: 0.12, gain: 0.05, filter: { type: 'lowpass', freq: 3000 } }));
+  if (up) v.tone({ from: 300, to: 1200, dur: 0.4, gain: 0.05, glide: 'exp' });
+  v.finish();
+}
+
+/** Chili dragon breath. */
+export function playFireBreath(position?: AudioPosition) {
+  const v = voice('action', { position });
+  if (!v) return;
+  v.noise({ dur: 0.7, gain: 0.2, filter: { type: 'bandpass', freq: 500, to: 1800, q: 0.8 }, wobble: [9, 300] });
+  v.tone({ type: 'sawtooth', from: 110, to: 70, dur: 0.6, gain: 0.08, filter: { type: 'lowpass', freq: 400 } });
+  v.finish();
+}
+
+/** FLUUUSH: a falling whoosh with gurgles, then a happy jingle. */
+export function playFlush(position?: AudioPosition) {
+  const v = voice('world', { position });
+  if (!v) return;
+  v.noise({ dur: 1.3, gain: 0.22, attack: 0.05, filter: { type: 'lowpass', freq: 2600, to: 180, q: 3 }, wobble: [7, 500] });
+  for (let i = 0; i < 6; i += 1) v.tone({ type: 'sine', from: rand(200, 420), to: rand(90, 160), at: 0.3 + i * 0.13, dur: 0.12, gain: 0.07 });
+  [784, 988, 1175, 1568].forEach((f, i) => v.tone({ type: 'triangle', from: f, at: 1.2 + i * 0.09, dur: 0.18, gain: 0.07 }));
+  v.finish();
+}
+
+/** Giant footstep. */
+export function playStomp(position?: AudioPosition) {
+  if (throttled('stomp', 120)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  v.tone({ type: 'sine', from: 90, to: 38, dur: 0.22, gain: 0.25 });
+  v.noise({ dur: 0.12, gain: 0.06, filter: { type: 'lowpass', freq: 300 } });
+  v.finish();
+}
+
 /** Squeeze... plop! Bigger poops plop lower; golden ones sparkle. */
 export function playPlop(position?: AudioPosition, size = 1, golden = false) {
   const v = voice('action', { position });

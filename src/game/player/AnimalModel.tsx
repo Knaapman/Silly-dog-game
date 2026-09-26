@@ -18,11 +18,13 @@ export type Rig = {
   mud: THREE.Group | null;
   /** Round tummy that grows with every bite (scaled by the controller). */
   belly: THREE.Group | null;
+  /** Rosy cheeks, hidden until the animal strains (pooping) or eats a chili. */
+  cheeks: THREE.Group | null;
   eyeRadius: number;
 };
 
 export function createRig(): Rig {
-  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, belly: null, eyeRadius: 0.09 };
+  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, belly: null, cheeks: null, eyeRadius: 0.09 };
 }
 
 type SpeciesSpec = {
@@ -225,6 +227,18 @@ function HeadExtras({ spec, hat, rig, children }: { spec: SpeciesSpec; hat: HatI
       {children}
       <Eye spec={spec} side={0} rig={rig} />
       <Eye spec={spec} side={1} rig={rig} />
+      <group
+        scale={0.001}
+        ref={(g) => {
+          rig.current.cheeks = g;
+        }}
+      >
+        {[-1, 1].map((side) => (
+          <Mesh key={side} color="#ff4f79" position={[side * (spec.eyes.x + 0.07), spec.eyes.y - 0.12, spec.eyes.z - 0.04]} scale={[1, 0.7, 0.5]}>
+            <sphereGeometry args={[0.075, 10, 8]} />
+          </Mesh>
+        ))}
+      </group>
       <group position={spec.hatAnchor}>
         <Hat hat={hat} />
       </group>

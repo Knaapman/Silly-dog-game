@@ -51,7 +51,17 @@ export function TitleScreen({ onPlay }: { onPlay: () => void }) {
               </span>
             ))
           )}
-          <span className="flex h-8 w-8 animate-pulse items-center justify-center rounded-full border-2 border-white bg-green-500 text-sm font-black">A</span>
+          {/* any face button starts: all four pulse (no letters, they differ between pad brands) */}
+          <span className="relative h-10 w-10 animate-pulse" aria-hidden>
+            {[
+              ['#fbbf24', 'left-[14px] top-0'],
+              ['#3b82f6', 'left-0 top-[14px]'],
+              ['#ff4d5e', 'left-[28px] top-[14px]'],
+              ['#22c55e', 'left-[14px] top-[28px]']
+            ].map(([c, pos]) => (
+              <span key={pos} className={`absolute h-3 w-3 rounded-full border border-white ${pos}`} style={{ background: c }} />
+            ))}
+          </span>
         </div>
         <KeyboardIcon size={46} />
         <HandIcon size={38} />
