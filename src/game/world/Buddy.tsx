@@ -8,6 +8,7 @@ import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } fr
 import { distXZ, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, players, seesawLow, type PlayerRuntime } from '../runtime';
+import { parkCats } from '../chase';
 import { settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
@@ -282,6 +283,18 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
             press.jump = true;
           }
         }
+        break;
+      }
+    }
+    if (!busy) {
+      // the child is chasing a cat: run round ahead of it, so it turns back towards the child
+      for (const cat of parkCats) {
+        if (!cat || (cat.mode !== 'flee' && cat.mode !== 'alert')) continue;
+        const cd = distXZ(cat.position.x, cat.position.z, kid.position.x, kid.position.z);
+        if (cd > 14 || cd < 0.5) continue;
+        target.set(cat.position.x + ((cat.position.x - kid.position.x) / cd) * 3, 0, cat.position.z + ((cat.position.z - kid.position.z) / cd) * 3);
+        stopAt = 0.5;
+        busy = true;
         break;
       }
     }

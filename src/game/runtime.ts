@@ -19,6 +19,8 @@ export type PropKind =
   | 'apple'
   | 'duck'
   | 'chicken'
+  | 'cat'
+  | 'bird'
   | 'cow'
   | 'dino'
   | 'snowball'

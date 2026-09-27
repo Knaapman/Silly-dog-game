@@ -1,3 +1,5 @@
+import { Birds } from './world/Birds';
+import { Cats } from './world/Cats';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
@@ -344,6 +346,8 @@ export function Scene() {
         <Beach />
         <Winter />
         <Farm />
+        <Cats />
+        <Birds />
         <Forest />
         <Train />
         <Food />

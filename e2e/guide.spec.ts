@@ -61,7 +61,8 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   await page.evaluate(() => (window as any).__addPad(0, 'standard', 'Pad'));
   await game.pad(0, 10);
   await expect(album).toBeVisible();
-  // (it opens on the first sticker still to find: the first poop)
+  // (it opens on the first sticker still to find: tag a cat; one row down is the first poop)
+  await game.pad(0, 13);
   await game.pad(0, 15);
   await game.pad(0, 15);
   await game.pad(0, 0);

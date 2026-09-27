@@ -9,7 +9,9 @@ test('stickers: earned by playing, shown big, collected in an album that pauses 
   await game.start();
   expect(await got(game)).toEqual([]);
 
-  // an empty tummy: the poop button toots
+  // an empty tummy: the poop button toots (away from the birds, or the toot would scare them)
+  await game.teleport(0, 20, 1, -10);
+  await game.seconds(0.5);
   await game.tap('KeyG');
   expect(await got(game)).toEqual(['toot']);
   await game.seconds(0.3, true);

@@ -373,7 +373,7 @@ export function headbutt(f: FrameCtx) {
     prop.onBonk?.(slot, tmp.d);
     bonkStars([tmp.p.x, tmp.p.y + 0.3, tmp.p.z]);
     playBonk(tmp.p, BONK_PITCH[prop.kind] ?? 1);
-    useGame.getState().addParty(prop.kind === 'chicken' || prop.kind === 'cow' || prop.kind === 'dino' ? PARTY_POINTS.bonkCritter : PARTY_POINTS.bonk);
+    useGame.getState().addParty(prop.kind === 'chicken' || prop.kind === 'cat' || prop.kind === 'cow' || prop.kind === 'dino' ? PARTY_POINTS.bonkCritter : PARTY_POINTS.bonk);
     hits += 1;
   });
   players.forEach((other) => {

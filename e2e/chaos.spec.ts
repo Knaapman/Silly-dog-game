@@ -40,6 +40,18 @@ const check = (game: Game) =>
     return bad;
   });
 
+/** Every park cat and bird flock somewhere sensible (inside the hedge, not fallen through). */
+async function critterProblems(game: Game) {
+  return game.page.evaluate(() => {
+    const out: string[] = [];
+    const { parkCats, flocks } = (window as any).__silly.chase;
+    const bad = (x: number, y: number, z: number) => !Number.isFinite(x + y + z) || Math.abs(x) > 62 || Math.abs(z) > 62 || y < -2 || y > 40;
+    parkCats.forEach((c: any, i: number) => bad(c.position.x, c.position.y, c.position.z) && out.push(`cat ${i} at ${c.position.toArray()} (${c.mode})`));
+    flocks.forEach((f: any, i: number) => bad(f.center.x, f.center.y, f.center.z) && out.push(`flock ${i} at ${f.center.toArray()}`));
+    return out;
+  });
+}
+
 const SEEDS = (process.env.CHAOS_SEEDS ?? '42').split(',').map(Number);
 
 for (const seed of SEEDS)
@@ -132,6 +144,7 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   await game.seconds(1, true);
   await page.screenshot({ path: 'test-results/chaos-end.png' });
   expect(problems, problems.join('\n')).toEqual([]);
+  expect(await critterProblems(game)).toEqual([]);
   game.expectNoErrors();
 });
 
@@ -187,5 +200,6 @@ test('chaos: one child mashing everything, with the buddy along', async ({ page 
   expect(problems, problems.join('\n')).toEqual([]);
   // it never wanders off (it pops back when more than 24 m away)
   expect(farthest).toBeLessThan(30);
+  expect(await critterProblems(game)).toEqual([]);
   game.expectNoErrors();
 });

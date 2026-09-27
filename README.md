@@ -9,6 +9,16 @@ up into wobbly piggyback towers (or lick each other and throw each other around)
 sticker album fills up with every silly thing you do, surprises pop up (a runaway golden chicken, a present on a
 balloon, a rain shower with puddles), and a camera button takes a photo of the whole silly bunch.
 
+**The chase** is at the heart of it. Four park cats (ginger, black, grey and calico) nap, groom and stalk the birds
+around the park. Run at one (or bark) and it bolts. It runs a little slower than you and tires, so a child who keeps
+going always catches it, and a napping cat can be sneaked up on. Tag it and it yowls, poofs, and races up the nearest
+tree onto a branch, hissing down at you. Bark under the tree (or headbutt the trunk, or jump at it) and it tumbles
+out, dizzy, and the chase starts again. The four cat faces under the stars light up as you tag each one; tag all four
+for a cheer and a new round. Flocks of pigeons, sparrows, bluebirds and canaries peck about on the grass (and on the
+fountain and the ship). Run at them or bark and they burst into the air, circle round and land somewhere else, so you
+can chase them all over the park. Jump into a flock as it takes off to bonk a bird, and leave a poop lying about and
+they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
+
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
 
@@ -217,6 +227,7 @@ src/
     progress.ts         stars found ever and the hats they unlock
     photo.ts            the camera: countdown, photos kept on this device
     stickers.ts         the sticker album, and which animals it has unlocked
+    chase.ts            the chase: park cats and bird flocks register here; the cat tally
     storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
     install.ts          offline play and installing as an app
@@ -241,6 +252,8 @@ src/
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Events.tsx        surprises: golden chicken, present balloon, rain and puddles
+      Cats.tsx          the park cats: nap, flee, get tagged, up a tree, barked down
+      Birds.tsx         bird flocks: peck, scatter, fly to a new spot, peck at poops
       Buddy.tsx         the computer buddy for a child playing alone (its "brain" makes controller input)
       Guide.tsx         the sticker guide's arrows and beams
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop

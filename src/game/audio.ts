@@ -582,6 +582,49 @@ export function playSquawk(position?: AudioPosition) {
   v.finish();
 }
 
+/** A park cat: a little meow, a big startled yowl, or a hiss from up a tree. */
+export function playCatSound(kind: 'meow' | 'yowl' | 'hiss', position?: AudioPosition) {
+  if (throttled(`cat-${kind}`, 150)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  const p = rand(0.95, 1.15);
+  if (kind === 'meow') {
+    v.tone({ type: 'sawtooth', from: 700 * p, to: 1050 * p, dur: 0.16, gain: 0.07, attack: 0.02, filter: { type: 'bandpass', freq: 1600, q: 2 } });
+    v.tone({ type: 'sawtooth', from: 1050 * p, to: 620 * p, at: 0.15, dur: 0.3, gain: 0.08, vibrato: [8, 25], filter: { type: 'bandpass', freq: 1400, q: 2 } });
+  } else if (kind === 'yowl') {
+    // "MRRROWWW!": up, wobbling, and down
+    v.tone({ type: 'sawtooth', from: 480 * p, to: 1300 * p, dur: 0.3, gain: 0.1, attack: 0.02, vibrato: [14, 60], filter: { type: 'bandpass', freq: 1500, q: 1.5 } });
+    v.tone({ type: 'sawtooth', from: 1300 * p, to: 380 * p, at: 0.28, dur: 0.55, gain: 0.11, vibrato: [11, 80], filter: { type: 'bandpass', freq: 1200, q: 1.5 } });
+    v.noise({ dur: 0.25, gain: 0.05, filter: { type: 'highpass', freq: 3000 } });
+  } else {
+    v.noise({ dur: 0.5, gain: 0.12, attack: 0.03, filter: { type: 'highpass', freq: 3500 } });
+    v.tone({ type: 'sawtooth', from: 900 * p, to: 700 * p, dur: 0.12, gain: 0.03, filter: { type: 'bandpass', freq: 2000, q: 3 } });
+  }
+  v.finish();
+}
+
+/** A flock taking off: a rush of wings (and a few startled tweets). */
+export function playFlutter(position?: AudioPosition) {
+  if (throttled('flutter', 200)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  for (let i = 0; i < 9; i += 1) v.noise({ at: i * 0.045 + random() * 0.02, dur: 0.07, gain: 0.1, filter: { type: 'bandpass', freq: rand(900, 1600), q: 1.2 } });
+  for (let i = 0; i < 3; i += 1) v.tone({ type: 'sine', from: rand(2600, 3400), to: rand(3600, 4200), at: 0.05 + i * 0.12, dur: 0.07, gain: 0.04 });
+  v.finish();
+}
+
+/** A little bird: "tweet-tweet" (or a surprised squeak when bonked). */
+export function playTweet(position?: AudioPosition, surprised = false) {
+  if (throttled('tweet', surprised ? 60 : 500)) return;
+  const v = voice('world', { position, gain: surprised ? 1 : 0.6 });
+  if (!v) return;
+  const n = surprised ? 1 : 2;
+  for (let i = 0; i < n; i += 1) {
+    v.tone({ type: 'sine', from: rand(2800, 3300), to: surprised ? 1400 : rand(3800, 4400), at: i * 0.13, dur: surprised ? 0.25 : 0.08, gain: 0.05 });
+  }
+  v.finish();
+}
+
 export function playCluck(position?: AudioPosition) {
   if (throttled('cluck', 350)) return;
   const v = voice('world', { position, gain: 0.8 });

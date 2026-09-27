@@ -6,6 +6,7 @@ import { emit } from '../fx';
 import { TREES, type TreeKind, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { players, registerStatic, spawners } from '../runtime';
+import { treeShakeListeners } from '../chase';
 import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
 
@@ -203,6 +204,7 @@ export function Trees() {
         radius: 0.6,
         onBonk: () => {
           wobble[i] = 1;
+          treeShakeListeners.forEach((listener) => listener(i));
           const fall = FALLS[tree.kind];
           playRustle([tree.at[0], 2, tree.at[1]]);
           emit('confetti', [tree.at[0], 3.2, tree.at[1]], { count: 14, color: fall.leaves, speed: 3, up: 1, size: 1.4 });

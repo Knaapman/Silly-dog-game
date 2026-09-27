@@ -26,6 +26,7 @@ export const ZONES = {
 
 export const PLAZA = { center: [0, 2] as Vec2, radius: 13 };
 export const FOUNTAIN = { center: [0, -2] as Vec2, basinRadius: 5.5, topHeight: 3.4 };
+const FOUNTAIN_TOP = 3.4;
 export const GEYSERS: Vec2[] = [
   [-8.5, 5],
   [8.5, 5],
@@ -287,6 +288,34 @@ export const BALLOONS: Vec3[] = [
   [-26, 2.6, -28],
   [-21, 4.5, -33]
 ];
+
+// ---------------------------------------------------------------------------
+// The chase: park cats (each has a home patch near some trees) and bird flocks (they land on
+// open grass, and on a few high spots you need a launcher for)
+
+export const CAT_HOMES: Vec2[] = [
+  [13, -10],
+  [-21, -10],
+  [11, 27],
+  [33, 19]
+];
+
+/** Where bird flocks land: [x, ground height, z, spread radius]. */
+export const BIRD_SPOTS: [number, number, number, number][] = [
+  [-8, 0, 13, 2.2],
+  [7, 0, -13, 2.2],
+  [38, 0, -40, 2.6],
+  [-41, 0, 8, 2.6],
+  [-9, 0, 25, 2],
+  [-44, 0, 20, 2.2],
+  [7, 0, -28, 2.2],
+  [21, 0, 3, 2],
+  [36, 0, 29, 2.2],
+  [-28, 0, -40, 2],
+  [0, FOUNTAIN_TOP, -2, 0.9],
+  [-7, 1.8, 35, 1.3]
+];
+export const BIRD_FLOCKS = 4;
 
 export type TreeKind = 'round' | 'blossom' | 'pine' | 'palm' | 'snowpine';
 export const TREES: { at: Vec2; kind: TreeKind }[] = [

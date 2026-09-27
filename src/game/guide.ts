@@ -28,6 +28,7 @@ import {
   BRONTO,
   distXZ
 } from './layout';
+import { flocks, parkCats } from './chase';
 import { players } from './runtime';
 import { useStickers, type StickerId } from './stickers';
 import { useGame } from './store';
@@ -59,6 +60,7 @@ const STAR_APPROACH: (P | null)[] = [
 
 /** Fixed places for each sticker (the nearest one is used). */
 const PLACES: Partial<Record<StickerId, P[]>> = {
+  poopbirds: snack('kibble'),
   poop: snack('kibble'),
   golden: snack('kibble'),
   toot: snack('kibble'),
@@ -85,11 +87,15 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]]
 };
 
+/** Stickers found by chasing: the guide leads to the nearest cat or flock of birds. */
+const CAT_STICKERS: StickerId[] = ['cattag', 'cattree', 'allcats'];
+const BIRD_STICKERS: StickerId[] = ['birds', 'birdbonk'];
+
 /** Is there somewhere to go for this sticker (right now)? */
 export function hasGuide(id: StickerId) {
   // friends: lead to the nearest friend (the see-saw has a place of its own)
   const toFriend = FRIEND_STICKERS.includes(id) && id !== 'seesaw';
-  return toFriend || id === 'star' || id === 'allstars' || !!PLACES[id];
+  return toFriend || id === 'star' || id === 'allstars' || CAT_STICKERS.includes(id) || BIRD_STICKERS.includes(id) || !!PLACES[id];
 }
 
 const nearest = (from: THREE.Vector3, places: P[], out: THREE.Vector3) => {
@@ -120,6 +126,16 @@ export function guideTarget(id: StickerId, from: THREE.Vector3, fromSlot: number
       }
     });
     return best < Infinity;
+  }
+  if (CAT_STICKERS.includes(id)) {
+    // a cat up a tree for that one, if there is one; any cat will do otherwise
+    const inTree = parkCats.filter((c) => c.mode === 'tree');
+    const list = id === 'cattree' && inTree.length ? inTree : parkCats.filter((c) => c.mode !== 'tree');
+    return nearest(from, (list.length ? list : parkCats).map((c) => [c.position.x, c.position.z] as P), out);
+  }
+  if (BIRD_STICKERS.includes(id)) {
+    const landed = flocks.filter((f) => f.landed);
+    return nearest(from, (landed.length ? landed : flocks).map((f) => [f.center.x, f.center.z] as P), out);
   }
   if (id === 'star' || id === 'allstars') {
     const stars = useGame.getState().stars;

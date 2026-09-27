@@ -1,3 +1,5 @@
+import { useChase } from '../game/chase';
+import { CAT_COLORS } from '../game/world/Cats';
 import { useEffect, useState } from 'react';
 import { getAudioState, playTap, setMuted, subscribeAudio, unlockAudio } from '../game/audio';
 import { MAX_PLAYERS, PLAYER_COLORS, PLAYER_SHAPES, SPECIES_EMOJI, type HatId } from '../game/config';
@@ -130,6 +132,30 @@ function StarSlots() {
   );
 }
 
+/** The park cats: each one lights up once you've tagged it. All four: a cheer, and round again. */
+function CatSlots() {
+  const tagged = useChase((s) => s.tagged);
+  const lastTagAt = useChase((s) => s.lastTagAt);
+  const roundDoneAt = useChase((s) => s.roundDoneAt);
+  const now = useNow(300);
+  const fresh = now - lastTagAt < 1200;
+  const cheering = now - roundDoneAt < 3500;
+  return (
+    <div className="flex gap-1 rounded-full bg-slate-900/25 px-2 py-1" data-testid="cat-slots">
+      {tagged.map((got, i) => (
+        <span
+          key={i}
+          className={`emoji flex h-7 w-7 items-center justify-center rounded-full border-2 text-lg leading-none ${got ? 'border-white' : 'border-white/30'} ${cheering ? 'animate-wiggle' : fresh && got ? 'animate-pop' : ''}`}
+          style={{ background: got ? CAT_COLORS[i] : 'rgba(255,255,255,0.12)', filter: got ? undefined : 'grayscale(1)', opacity: got ? 1 : 0.55 }}
+          data-got={got}
+        >
+          🐈
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
   const audio = useAudioState();
   return (
@@ -141,6 +167,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         <div className="order-3 flex w-full flex-col items-center gap-2 md:order-2 md:w-auto">
           <PartyMeter />
           <StarSlots />
+          <CatSlots />
           <div className="flex items-center gap-3">
             <EventBadge />
             <GuideBadge />

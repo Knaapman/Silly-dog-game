@@ -15,8 +15,16 @@ const MAGIC = '#a855f7';
 const PARK = '#f59e0b';
 const MORE = '#14b8a6';
 const SURPRISE = '#ec4899';
+const CHASE = '#ef4444';
 
 export const STICKERS = [
+  // the chase
+  { id: 'cattag', icon: '🐈', color: CHASE },
+  { id: 'cattree', icon: '🌳', badge: '🐈', color: CHASE },
+  { id: 'allcats', icon: '🐈', badge: '⭐', color: CHASE },
+  { id: 'birds', icon: '🐦', color: CHASE },
+  { id: 'birdbonk', icon: '🐦', badge: '💫', color: CHASE },
+  { id: 'poopbirds', icon: '💩', badge: '🐦', color: CHASE },
   // tummy
   { id: 'poop', icon: '💩', color: TUMMY },
   { id: 'golden', icon: '💩', badge: '✨', color: '#eab308' },

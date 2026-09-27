@@ -36,7 +36,7 @@ type PropDef = {
   angularDamping: number;
 };
 
-type SimpleKind = Exclude<PropKind, 'chicken' | 'cow' | 'dino' | 'snowball' | 'poop'>;
+type SimpleKind = Exclude<PropKind, 'chicken' | 'cat' | 'bird' | 'cow' | 'dino' | 'snowball' | 'poop'>;
 
 const DEFS: Record<SimpleKind, PropDef> = {
   ball: { radius: 0.3, launch: 16, heavy: false, density: 0.5, restitution: 0.8, friction: 0.6, linearDamping: 0.2, angularDamping: 0.3 },
