@@ -64,11 +64,18 @@ test('chase a cat: it runs, you catch it, it flees up a tree, and a bark brings 
   await game.open();
   await game.start();
 
-  // run at the cat with the arrow keys, like a child would
+  // run at the cat with the arrow keys, like a child would (out on the open soccer field, so the
+  // chase is the same every time and nothing gets in the way)
+  await game.page.evaluate(() => {
+    const b = (window as any).__silly.chase.parkCats[0].getBody();
+    b.setTranslation({ x: 32, y: 1, z: -38 }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  });
+  await game.seconds(0.3);
   let c = await cat(game, 0);
-  expect(c.mode).toBe('idle');
-  await game.teleport(0, c.x - 8, 1, c.z);
-  await game.seconds(0.5);
+  expect(['idle', 'stalk']).toContain(c.mode);
+  await game.teleport(0, c.x - 6, 1, c.z);
+  await game.seconds(0.3);
   // a bark wakes it (napping cats only notice you when you're right next to them)
   await game.tap('KeyR');
   await game.seconds(0.2);
@@ -175,8 +182,15 @@ test('catching the cats: easy, tricky, and auto that learns from each chase', as
   expect(tricky / easy).toBeGreaterThan(1.2);
 
   // auto: every child starts in the middle; a quick catch nudges it up, a cat that gets away nudges it down
+  // (the quick one out on the open field, where nothing gets in the way of the chase)
   await setChase(game, 'auto');
   expect((await skill(game))[0]).toBe(0.5);
+  await game.page.evaluate(() => {
+    const b = (window as any).__silly.chase.parkCats[2].getBody();
+    b.setTranslation({ x: 32, y: 1, z: -38 }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  });
+  await game.seconds(0.3);
   const quick = await chase(game, 2, 4, 30);
   expect(['tagged', 'toTree', 'tree']).toContain(quick.cat.mode);
   expect(quick.seconds).toBeLessThan(5);

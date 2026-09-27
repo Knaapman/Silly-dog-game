@@ -6,7 +6,7 @@ test.describe('magic food', () => {
     const game = new Game(page);
     await game.open();
     await game.start();
-    await game.hopTo(0, [-6.5, -2], [-9.5, -2]); // facing the magic table
+    await game.hopTo(0, [-6.5, -3.3], [-9.5, -3.3]); // facing the mushroom on the magic table
     await game.tap('KeyQ');
     await game.seconds(2);
     const p = await game.player();

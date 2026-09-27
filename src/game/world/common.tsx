@@ -44,7 +44,9 @@ export function StaticBox({ position, size, rotation, color, surface, shadow = t
   useSurface(col, surface ?? EMPTY_SURFACE);
   return (
     <RigidBody type="fixed" colliders={false} position={position} rotation={rotation}>
-      <CuboidCollider ref={col} args={[size[0] / 2, size[1] / 2, size[2] / 2]} friction={friction} restitution={restitution} />
+      {/* only pass what was given: an undefined friction or restitution becomes NaN in the
+          physics, and a NaN contact lets a running animal sink straight through the box */}
+      <CuboidCollider ref={col} args={[size[0] / 2, size[1] / 2, size[2] / 2]} {...(friction != null ? { friction } : {})} {...(restitution != null ? { restitution } : {})} />
       <mesh castShadow={shadow} receiveShadow material={material ?? lambert(color)}>
         <boxGeometry args={size} />
       </mesh>

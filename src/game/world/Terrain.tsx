@@ -2,7 +2,7 @@ import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { WORLD_HALF } from '../config';
-import { distXZ, FLOOR_PATCHES, LAKE, MAZE, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
+import { distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, LAKE, MAZE, MESA, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
 import { GroundPatch, HedgeSegment } from './common';
 import { gameClock, useGameFrame } from '../clock';
@@ -111,7 +111,10 @@ const BLOCKERS: { c: Vec2; r: number }[] = [
   { c: SNOW.center, r: SNOW.radius + 1 },
   { c: LAKE.center, r: LAKE.radius + 3.5 },
   { c: [38, -40], r: 12 },
-  { c: [51, -23], r: 10 }
+  { c: [51, -23], r: 10 },
+  ...HILLS.map((h) => ({ c: h.center, r: h.radius + 1.2 })),
+  { c: MESA.center, r: 12 },
+  { c: [FOOTBRIDGE.x, -52] as Vec2, r: 5 }
 ];
 
 function onTrack(x: number, z: number) {

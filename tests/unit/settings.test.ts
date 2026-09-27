@@ -40,7 +40,11 @@ describe('settings', () => {
     expect(s.rumble).toBe(true);
     expect(s.quality).toBe('auto');
     expect(s.chase).toBe('auto');
+    expect(s.zoom).toBe(1);
     expect((await loadSettings('{"chase":2}')).settings().chase).toBe(2);
+    expect((await loadSettings('{"zoom":4}')).settings().zoom).toBe(1.6);
+    expect((await loadSettings('{"zoom":"big"}')).settings().zoom).toBe(1);
+    expect((await loadSettings('{"zoom":0.8}')).settings().zoom).toBe(0.8);
   });
 
   it('survives unreadable storage', async () => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setMusicEnabled, setMuted, setVolume, unlockAudio } from '../game/audio';
 import { KEYMAPS, onUiNav, type ActionName } from '../game/input';
-import { effectiveQuality, useSettings, type Level, type Quality, type Settings } from '../game/settings';
+import { effectiveQuality, useSettings, type Level, type Quality, type Settings, ZOOM_MAX, ZOOM_MIN } from '../game/settings';
 import { installApp, useInstall } from '../game/install';
 import { perf } from '../game/perf';
 import { MAX_PHOTOS, usePhotos } from '../game/photo';
@@ -308,6 +308,7 @@ export function GrownUpMenu() {
   const autoLevel = useSettings((s) => s.autoLevel);
   const gpu = useSettings((s) => s.gpu);
   const quality = useSettings(effectiveQuality);
+  const zoom = useSettings((s) => s.zoom);
   const rows = settingRows(autoLevel);
 
   const toggleFullscreen = () => {
@@ -320,7 +321,8 @@ export function GrownUpMenu() {
   // B or Start closes.
   const BUTTONS = 8;
   const SLIDER_ROW = 1;
-  const FIRST_SETTING = 2;
+  const ZOOM_ROW = 2;
+  const FIRST_SETTING = 3;
   const ROWS = FIRST_SETTING + rows.length;
   const [focus, setFocus] = useState({ row: 0, col: BUTTONS - 1 });
   const focusRef = useRef(focus);
@@ -345,6 +347,7 @@ export function GrownUpMenu() {
           const dir = nav === 'right' ? 1 : -1;
           if (row === 0) setFocus({ row, col: (col + dir + BUTTONS) % BUTTONS });
           else if (row === SLIDER_ROW) setVolume(volumeRef.current + dir * 0.1);
+          else if (row === ZOOM_ROW) useSettings.getState().set({ zoom: useSettings.getState().zoom + dir * 0.1 });
           else if (setting) stepSetting(setting, dir);
         }
       }),
@@ -406,6 +409,21 @@ export function GrownUpMenu() {
             onChange={(e) => setVolume(Number(e.target.value) / 100)}
             className="w-full accent-amber-400"
             aria-label="Volume"
+          />
+        </label>
+        <label className={`mx-auto mt-2 flex max-w-sm items-center gap-3 rounded-full px-3 py-1 ${focus.row === ZOOM_ROW ? 'ring-4 ring-amber-300' : ''}`} data-menu-row={ZOOM_ROW} data-setting="zoom">
+          <span className="emoji text-xl" title="Camera: close up or far away">
+            🔍
+          </span>
+          <input
+            type="range"
+            min={ZOOM_MIN * 100}
+            max={ZOOM_MAX * 100}
+            step={5}
+            value={Math.round(zoom * 100)}
+            onChange={(e) => useSettings.getState().set({ zoom: Number(e.target.value) / 100 })}
+            className="w-full accent-amber-400"
+            aria-label="Zoom"
           />
         </label>
 

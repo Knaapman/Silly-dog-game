@@ -22,6 +22,11 @@ fountain and the ship). Run at them or bark and they burst into the air, circle 
 can chase them all over the park. Jump into a flock as it takes off to bonk a bird, and leave a poop lying about and
 they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
 
+Between the zones the grass isn't flat any more: three grassy hills to run up and jump off, a mesa on the east side
+with the train tunnel running right through it (walk up the ramp on its north side or take the launch pad by the
+brontosaurus, then watch the train come out underneath you and wave the flag), and a wooden footbridge over the north
+track to look down on the train from.
+
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
 
@@ -60,7 +65,7 @@ tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
   before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
-  rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just
@@ -181,7 +186,7 @@ npm install
 npm run play       # build and open the fast, installable version at http://localhost:4321
 npm run dev        # development server at http://localhost:3000
 npm run lint       # type-check (also flags unused code)
-npm test           # unit tests (vitest): input, clock, settings, progress, adaptive graphics, layout
+npm test           # unit tests (vitest): input, clock, settings, progress, adaptive graphics, the park layout
 npm run test:e2e   # browser tests (Playwright, starts its own servers)
 npm run check      # lint + unit tests + build
 npm run ci         # everything GitHub Actions runs: check + browser tests
@@ -247,6 +252,7 @@ src/
       AnimalModel.tsx, Hat.tsx
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
+      Landmarks.tsx     the grassy hills, the mesa with the train tunnel, the footbridge
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

@@ -173,7 +173,11 @@ export const trampolineBounces = new Map<number, number>();
 
 export const camera = {
   focus: new THREE.Vector3(0, 0, 4),
-  shake: 0
+  shake: 0,
+  /** How far back the camera wants to be right now (after the zoom setting). */
+  dist: 0,
+  /** Test mode only: park the camera somewhere fixed (overhead map shots). */
+  override: null as { position: [number, number, number]; lookAt: [number, number, number] } | null
 };
 
 const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

@@ -165,21 +165,56 @@ export const MUSHROOMS: { center: Vec2; height: number; radius: number; color: s
 ];
 
 export const MAZE = {
-  center: [-47, -45] as Vec2,
-  // [x1, z1, x2, z2] hedge segments (axis aligned)
+  center: [-44, -42] as Vec2,
+  // [x1, z1, x2, z2] hedge segments (axis aligned); clear of the train's corner
   walls: [
-    [-53, -51, -41, -51],
-    [-53, -51, -53, -39],
-    [-53, -39, -49, -39],
-    [-45, -39, -41, -39],
-    [-41, -51, -41, -39],
-    [-50, -48, -44, -48],
-    [-50, -48, -50, -42],
-    [-50, -42, -48, -42],
-    [-44, -48, -44, -42],
-    [-46, -42, -44, -42]
+    [-50, -48, -38, -48],
+    [-50, -48, -50, -36],
+    [-50, -36, -46, -36],
+    [-42, -36, -38, -36],
+    [-38, -48, -38, -36],
+    [-47, -45, -41, -45],
+    [-47, -45, -47, -39],
+    [-47, -39, -45, -39],
+    [-41, -45, -41, -39],
+    [-43, -39, -41, -39]
   ] as [number, number, number, number][]
 };
+
+// ---------------------------------------------------------------------------
+// Landmarks in the open grass: hills to run up and jump off, a mesa with the train tunnel
+// through it (a ramp and a launch pad get you on top), and a footbridge over the track
+
+export const HILLS: { center: Vec2; radius: number; height: number }[] = [
+  { center: [-26, -14], radius: 6.5, height: 2.6 },
+  { center: [27, -14], radius: 5, height: 2.2 },
+  { center: [23, -45], radius: 5.5, height: 2.4 }
+];
+
+/** The mesa straddles the east straight of the track: x 50..62, z -9..9, tunnel along z. */
+export const MESA = {
+  center: [56, 0] as Vec2,
+  halfWidth: 6,
+  halfLength: 9,
+  /** The tunnel: this wide, this tall (the train is 2.4 m wide, 3.6 m tall with its chimney). */
+  opening: 4.4,
+  clearance: 4.2,
+  roof: 1,
+  /**
+   * A ramp up to the top, square on to the north face (a ramp that comes in at an angle lets an
+   * animal hugging its rail run into the corner). Its end rests a little above the top: a ramp
+   * that only meets a ledge level with it leaves a step that stops a rolling animal.
+   */
+  rampFrom: [51.3, 0, 20] as Vec3,
+  rampTo: [51.3, 5.6, 9.2] as Vec3
+};
+
+/**
+ * A footbridge over the north straight: walk up from the park, look down on the train. The deck
+ * is a chunky box: a thin slab lets a fast animal sink through (the physics flips the contact to
+ * the underside once the ball's middle passes the slab's middle).
+ */
+export const FOOTBRIDGE = { x: -18, height: 4.6, deckThickness: 1, rampFrom: -43, deckFrom: -51.5, deckTo: -60.5, width: 2.6 };
 
 // ---------------------------------------------------------------------------
 // Train (rounded rectangle around the whole park)
@@ -193,7 +228,8 @@ export type LaunchPadDef = { position: Vec3; target: Vec3; apex: number };
 export const LAUNCH_PADS: LaunchPadDef[] = [
   { position: [-36, 0, -16], target: [BARN.center[0], BARN.ridgeHeight, BARN.center[1]], apex: 11.5 },
   { position: [-20, 0, 18], target: [SNOW_HILL.center[0], SNOW_HILL.height, SNOW_HILL.center[1]], apex: 12 },
-  { position: [18, 0, -14], target: [CRATE_TOWER.base[0], 5, CRATE_TOWER.base[2]], apex: 9 }
+  { position: [18, 0, -14], target: [CRATE_TOWER.base[0], 5, CRATE_TOWER.base[2]], apex: 9 },
+  { position: [42, 0, -19], target: [56, 5.2, 0], apex: 12 }
 ];
 
 // ---------------------------------------------------------------------------
@@ -236,9 +272,9 @@ export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   { kind: 'icecream', position: [21.4, 1.2, -30.6] },
   { kind: 'icecream', position: [22.6, 1.2, -30.6] },
   // the magic snack table on the west side of the plaza...
-  { kind: 'beans', position: [-10.8, 0, -3.3] },
-  { kind: 'mushroom', position: [-10.8, 0, -2] },
-  { kind: 'chili', position: [-10.8, 0, -0.7] },
+  { kind: 'beans', position: [-10.8, 0, -4.6] },
+  { kind: 'mushroom', position: [-10.8, 0, -3.3] },
+  { kind: 'chili', position: [-10.8, 0, -2] },
   // ...and one of each out in the park, where it fits
   { kind: 'beans', position: [-38, 0, -14] },
   { kind: 'mushroom', position: [-29, 0, -28] },
@@ -295,7 +331,7 @@ export const BALLOONS: Vec3[] = [
 
 export const CAT_HOMES: Vec2[] = [
   [13, -10],
-  [-21, -10],
+  [-18, -7],
   [11, 27],
   [33, 19]
 ];
@@ -311,7 +347,7 @@ export const BIRD_SPOTS: [number, number, number, number][] = [
   [7, 0, -28, 2.2],
   [21, 0, 3, 2],
   [36, 0, 29, 2.2],
-  [-28, 0, -40, 2],
+  [-26, 0, -39, 2],
   [0, FOUNTAIN_TOP, -2, 0.9],
   [-7, 1.8, 35, 1.3]
 ];
@@ -322,26 +358,26 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
   // forest (dense)
   ...(
     [
-      [-59, -32], [-52, -26], [-44, -30], [-38, -27], [-35, -50], [-28, -53], [-20, -50], [-15, -45],
-      [-10, -26], [-38, -52], [-56, -55], [-18, -24], [-40, -33], [-34, -31], [-27, -25], [-12, -53]
+      [-59.5, -32], [-52, -26], [-44, -30], [-38, -27], [-35, -50], [-28, -52], [-24, -50], [-13, -49],
+      [-10, -26], [-38, -52], [-56, -55], [-18, -24], [-40, -33], [-34, -31], [-27, -25], [-12, -52.5]
     ] as Vec2[]
   ).map((at, i) => ({ at, kind: (i % 3 === 0 ? 'pine' : i % 3 === 1 ? 'round' : 'blossom') as TreeKind })),
   // farm & hub edges
-  ...([[-59, -20], [-24, -19], [-18, 3], [-59, 22], [17, -5], [-16, -15], [17, 19], [-17, 19]] as Vec2[]).map((at, i) => ({
+  ...([[-59, -20], [-31, -21], [-18, 3], [-59, 22], [17, -5], [-13, -19], [17, 19], [-17, 19]] as Vec2[]).map((at, i) => ({
     at,
     kind: (i % 2 === 0 ? 'round' : 'blossom') as TreeKind
   })),
   // sports / dino
-  ...([[22, -48], [51, -45], [24, -9], [59, -4], [31, 22], [59, 22]] as Vec2[]).map((at, i) => ({
+  ...([[16, -50], [51, -45], [33, -18], [60, -18], [31, 22], [59, 22]] as Vec2[]).map((at, i) => ({
     at,
     kind: (i % 2 === 0 ? 'pine' : 'round') as TreeKind
   })),
   // playground
-  ...([[13, 33], [50, 49], [28, 53], [53, 16]] as Vec2[]).map((at) => ({ at, kind: 'round' as TreeKind })),
+  ...([[13, 33], [50, 49], [28, 53], [48, 17]] as Vec2[]).map((at) => ({ at, kind: 'round' as TreeKind })),
   // beach palms
   ...([[-16, 25], [-17, 33], [-16, 50], [16, 49], [19, 22]] as Vec2[]).map((at) => ({ at, kind: 'palm' as TreeKind })),
   // winter
-  ...([[-53, 28], [-59, 38], [-27, 52], [-18, 33], [-41, 53], [-31, 21], [-19, 45]] as Vec2[]).map((at) => ({
+  ...([[-52, 28], [-59.5, 38], [-27, 52], [-18, 33], [-41, 52], [-31, 21], [-19, 45]] as Vec2[]).map((at) => ({
     at,
     kind: 'snowpine' as TreeKind
   }))
@@ -372,7 +408,7 @@ export type FloorKind = 'forest' | 'dirt' | 'dino' | 'rubber' | 'carnival' | 'sn
 export const FLOOR_PATCHES: { center: Vec2; radius: number; kind: FloorKind; y: number }[] = [
   { center: ZONES.forest, radius: 20, kind: 'forest', y: 0.006 },
   { center: ZONES.farm, radius: 13, kind: 'dirt', y: 0.007 },
-  { center: [40, 2], radius: 17, kind: 'dino', y: 0.007 },
+  { center: [40, 2], radius: 15.5, kind: 'dino', y: 0.007 },
   { center: [33, 37], radius: 17, kind: 'rubber', y: 0.007 },
   { center: [0, -40], radius: 15, kind: 'carnival', y: 0.007 },
   { center: SNOW.center, radius: SNOW.radius, kind: 'snow', y: 0.008 },

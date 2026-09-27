@@ -1,7 +1,8 @@
 import { Birds } from './world/Birds';
+import { Landmarks } from './world/Landmarks';
 import { Cats } from './world/Cats';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Physics } from '@react-three/rapier';
+import { Physics, useRapier } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { getAudioState, playShutter, updateListener } from './audio';
@@ -140,9 +141,16 @@ function CameraRig() {
   const lookAt = useMemo(() => new THREE.Vector3(0, 0, 4), []);
   const orbit = useRef(0);
 
-  useFrame(({ camera, size }, delta) => {
+  useFrame(({ camera, size, scene }, delta) => {
     const dt = Math.min(delta, 0.05);
     const game = useGame.getState();
+    if (TEST_MODE && camState.override) {
+      const { position, lookAt } = camState.override;
+      camera.position.set(...position);
+      camera.lookAt(...lookAt);
+      scene.fog = null;
+      return;
+    }
     if (game.phase === 'title' || players.size === 0) {
       orbit.current += dt * 0.04;
       desiredFocus.set(0, 0, 0);
@@ -166,7 +174,8 @@ function CameraRig() {
       desiredFocus.y = Math.min(4, Math.max(0, desiredFocus.y - 0.5) * 0.5);
       const aspect = size.width / Math.max(1, size.height);
       const portraitBoost = aspect < 1.3 ? Math.min(1.7, 1.3 / aspect) : 1;
-      const dist = THREE.MathUtils.clamp(13 + spread * 1.4, 13, 50) * portraitBoost + (isPartyTime() ? 2.5 : 0);
+      const dist = (THREE.MathUtils.clamp(13 + spread * 1.4, 13, 50) * portraitBoost + (isPartyTime() ? 2.5 : 0)) * useSettings.getState().zoom;
+      camState.dist = dist;
       focus.lerp(desiredFocus, 1 - Math.exp(-5 * dt));
       desiredPos.set(focus.x, focus.y + dist * 0.8, focus.z + dist * 0.78);
     }
@@ -309,6 +318,17 @@ function DevHook() {
   return null;
 }
 
+/** Dev/test only: the physics world, for poking at colliders. */
+function PhysicsHook() {
+  const { world, rapier } = useRapier();
+  useEffect(() => {
+    if (!import.meta.env.DEV && !TEST_MODE) return;
+    const w = window as unknown as { __silly?: Record<string, unknown> };
+    if (w.__silly) Object.assign(w.__silly, { world, rapier });
+  }, [world, rapier]);
+  return null;
+}
+
 function Players() {
   const list = useGame((s) => s.players);
   return (
@@ -336,8 +356,10 @@ export function Scene() {
       <PartyDirector />
       <PhotoDirector />
       <Physics gravity={[0, GRAVITY, 0]} paused={paused}>
+        <PhysicsHook />
         <Terrain />
         <Trees />
+        <Landmarks />
         <Hub />
         <Carnival />
         <Sports />

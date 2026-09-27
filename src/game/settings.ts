@@ -25,7 +25,12 @@ export type Settings = {
   chase: Level | 'auto';
   /** 'auto' picks from the graphics card. */
   quality: Quality | 'auto';
+  /** How far the camera stands back: 1 is normal, less is closer, more shows more of the park. */
+  zoom: number;
 };
+
+export const ZOOM_MIN = 0.6;
+export const ZOOM_MAX = 1.6;
 
 export const SPEED_FACTOR = [0.8, 1, 1.15] as const;
 export const MAGIC_FACTOR = [0.5, 1, 2] as const;
@@ -33,7 +38,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto' };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto', zoom: 1 };
 
 const KEY = 'settings:v1';
 
@@ -49,7 +54,8 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
     buddy: typeof raw?.buddy === 'boolean' ? raw.buddy : DEFAULT_SETTINGS.buddy,
     chase: raw?.chase === 'auto' ? 'auto' : level(raw?.chase, 1) === raw?.chase ? (raw.chase as Level) : DEFAULT_SETTINGS.chase,
-    quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality
+    quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality,
+    zoom: typeof raw?.zoom === 'number' && Number.isFinite(raw.zoom) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, raw.zoom)) : DEFAULT_SETTINGS.zoom
   };
 }
 
@@ -70,8 +76,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality } = get();
-    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality });
+    const { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality, zoom } = get();
+    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality, zoom });
   },
   setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));

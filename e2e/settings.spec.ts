@@ -11,10 +11,14 @@ test('grown-ups settings: a controller changes them in the menu, and they change
   await game.pad(0, 0, 0.1);
   await game.seconds(1.5);
 
-  // hold Start for the menu; D-pad down twice reaches the first setting (running speed)
+  // hold Start for the menu; D-pad down: the volume, the zoom, then the first setting (running speed)
   await game.pad(0, 9, 1.2);
   await expect(page.getByTestId('grown-up-menu')).toBeVisible();
   await game.pad(0, 13);
+  await game.pad(0, 13);
+  await game.pad(0, 15); // right: a step further out
+  expect((await settings(game)).zoom).toBeCloseTo(1.1, 5);
+  await game.pad(0, 14);
   await game.pad(0, 13);
   await game.pad(0, 14); // left: calm
   expect((await settings(game)).speed).toBe(0);
@@ -39,5 +43,17 @@ test('grown-ups settings: a controller changes them in the menu, and they change
   await page.evaluate(() => (window as any).__silly.useSettings.getState().set({ speed: 0 }));
   const calm = await run();
   expect(zoomy / calm).toBeGreaterThan(1.3);
+
+  // the zoom slider: the camera stands further back (or closer), within limits
+  const dist = async (zoom: number) => {
+    await page.evaluate((z) => (window as any).__silly.useSettings.getState().set({ zoom: z }), zoom);
+    await game.seconds(0.2);
+    return page.evaluate(() => (window as any).__silly.runtime.camera.dist as number);
+  };
+  const normal = await dist(1);
+  expect(await dist(1.6)).toBeCloseTo(normal * 1.6, 3);
+  expect(await dist(0.6)).toBeCloseTo(normal * 0.6, 3);
+  expect(await dist(9)).toBeCloseTo(normal * 1.6, 3);
+  expect((await settings(game)).zoom).toBe(1.6);
   game.expectNoErrors();
 });
