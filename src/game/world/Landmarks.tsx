@@ -2,7 +2,7 @@ import { BallCollider, CuboidCollider, CylinderCollider, RigidBody } from '@reac
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { gameClock, useGameFrame } from '../clock';
-import { FOOTBRIDGE, MESA, RIVER_FOOTBRIDGE, STEPPING_STONES, TRAIN_BRIDGE } from '../layout';
+import { BOULDERS, FOOTBRIDGE, MESA, RIVER_FOOTBRIDGE, STEPPING_STONES, SUMMIT_FLAG, TRAIN_BRIDGE } from '../layout';
 import { lambert, speckleTexture } from '../materials';
 import { groundHeight } from '../terrain';
 import { Ramp, StaticBox, useHint } from './common';
@@ -18,7 +18,7 @@ function grassMaterial(name: string) {
   return new THREE.MeshLambertMaterial({ map: speckleTexture(name, '#6cbd4c', ['#5faa42', '#7fcf5e', '#c9e59a'], 8) });
 }
 
-function Flag({ position }: { position: [number, number, number] }) {
+function Flag({ position, color = '#ff4d5e' }: { position: [number, number, number]; color?: string }) {
   const cloth = useRef<THREE.Mesh>(null);
   useGameFrame(() => {
     if (cloth.current) cloth.current.rotation.y = Math.sin(gameClock.time * 3) * 0.25;
@@ -34,7 +34,7 @@ function Flag({ position }: { position: [number, number, number] }) {
       <group position={[0, 2.5, 0]}>
         <mesh ref={cloth} position={[0.65, 0, 0]}>
           <planeGeometry args={[1.3, 0.8]} />
-          <meshLambertMaterial color="#ff4d5e" side={THREE.DoubleSide} />
+          <meshLambertMaterial color={color} side={THREE.DoubleSide} />
         </mesh>
       </group>
     </group>
@@ -215,9 +215,29 @@ function SteppingStones() {
   );
 }
 
+/** Boulders on the mountainside, sunk a little into the slope. */
+function Boulders() {
+  const rock = useMemo(() => new THREE.MeshLambertMaterial({ map: speckleTexture('boulder', '#9a948a', ['#85807a', '#b0aaa0', '#7a756e'], 3) }), []);
+  const items = useMemo(() => BOULDERS.map((b, i) => ({ ...b, y: groundHeight(b.at[0], b.at[1]) + b.r * 0.55, spin: i * 1.3 })), []);
+  return (
+    <RigidBody type="fixed" colliders={false}>
+      {items.map((b, i) => (
+        <group key={i} position={[b.at[0], b.y, b.at[1]]} rotation={[0, b.spin, 0]}>
+          <BallCollider args={[b.r]} friction={1} />
+          <mesh castShadow receiveShadow material={rock}>
+            <icosahedronGeometry args={[b.r, 1]} />
+          </mesh>
+        </group>
+      ))}
+    </RigidBody>
+  );
+}
+
 export function Landmarks() {
   return (
     <>
+      <Boulders />
+      <Flag position={[SUMMIT_FLAG[0], groundHeight(SUMMIT_FLAG[0], SUMMIT_FLAG[1]) - 0.1, SUMMIT_FLAG[1]]} color="#3b82f6" />
       <Mesa />
       <Footbridge />
       <TrainBridge />

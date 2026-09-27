@@ -134,6 +134,25 @@ test('the beach: sand slopes into the lagoon, the sea is out past the buoys', as
   const p = await game.player(0);
   expect(p.z).toBeLessThan(66);
   expect(p.y).toBeGreaterThan(-1);
+
+  // a duck dropped into the lagoon splashes in and bobs back up: it floats, it doesn't sink
+  const duck = () =>
+    page.evaluate(() => {
+      const d = [...(window as any).__silly.runtime.props.values()].find((p: any) => p.kind === 'duck');
+      const t = d.getBody().translation();
+      return { x: t.x, y: t.y, z: t.z, body: d.getBody() && true };
+    });
+  await page.evaluate(() => {
+    const d = [...(window as any).__silly.runtime.props.values()].find((p: any) => p.kind === 'duck');
+    const b = d.getBody();
+    b.setTranslation({ x: 6, y: 5, z: 40 }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  });
+  await game.seconds(4);
+  const d = await duck();
+  expect(Math.hypot(d.x - 6, d.z - 40)).toBeLessThan(4);
+  expect(d.y).toBeGreaterThan(-0.2); // the lagoon floor is at -0.7: resting there it would be at -0.38
+  expect(d.y).toBeLessThan(0.3);
   game.expectNoErrors();
 });
 

@@ -37,6 +37,8 @@ add('ski jump', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2], 2.2, { winter: true });
 add('ski jump ramp foot', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2] - 1.6 - 7, 1.2, { winter: true });
 add('summit', L.SNOW_HILL.center[0], L.SNOW_HILL.center[1], L.SNOW_HILL.radius, { winter: true });
 L.MUSHROOMS.forEach((m, i) => add(`mushroom ${i}`, m.center[0], m.center[1], m.radius));
+L.BOULDERS.forEach((b, i) => add(`boulder ${i}`, b.at[0], b.at[1], b.r, { slopeOk: true }));
+add('summit flag', L.SUMMIT_FLAG[0], L.SUMMIT_FLAG[1], 0.2, { winter: true, slopeOk: true });
 L.HILLS.forEach((h, i) => add(`hill ${i}`, h.center[0], h.center[1], h.radius));
 L.BALLOONS.forEach((b, i) => add(`balloon ${i}`, b[0], b[2], 0.5, { floats: true, onPathOk: true }));
 L.GOLDEN_STARS.forEach((s, i) => s !== 'train' && add(`star ${i}`, s[0], s[2], 0.5, { floats: true, onPathOk: true }));

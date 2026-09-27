@@ -173,6 +173,8 @@ export const SNOW_HILL = { center: at(Z.winter, -10, -3), radius: 8, height: 4 }
 export const SKI_JUMP = { base: at3(Z.winter, 18, WINTER.level, 2), height: 4.5 };
 export const ICE = { center: at(Z.winter, 0, 6), radius: 4.5 };
 export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.winter, 21, -6), at(Z.winter, -14, 8)];
+/** A flag on the summit, beside where the launch pad lands you. */
+export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
 export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7)];
 
 // ---------------------------------------------------------------------------
@@ -223,6 +225,16 @@ export const HILLS: { center: Vec2; radius: number; height: number }[] = [
   { center: [-30, -36], radius: 5.5, height: 2.5 },
   { center: [-27, 45], radius: 5, height: 2.2 },
   { center: [-36, -52], radius: 6, height: 2.6 }
+];
+
+/** Big boulders on the mountain's slopes: climb up, jump off. */
+export const BOULDERS: { at: Vec2; r: number }[] = [
+  { at: [-12, -42], r: 1.5 },
+  { at: [8, -37], r: 1.1 },
+  { at: [36, -57], r: 1.6 },
+  { at: [-21, -57], r: 1.8 },
+  { at: [45, -60], r: 1.3 },
+  { at: [-3, -33], r: 0.9 }
 ];
 
 /**

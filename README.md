@@ -23,9 +23,10 @@ can chase them all over the park. Jump into a flock as it takes off to bonk a bi
 they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
 
 The park is 160 by 130 metres and the ground itself is part of the fun: a **mountain** across the north with the winter
-zone on its flat, snowy top (walk up the path on its south face, or take the launch pad at the foot straight to the
-summit; the ski jump at the top fires you off the edge), a **river** that springs up there, tumbles down the mountainside
-and runs through the middle of the park to the sea (wade across, or keep dry on the footbridge and the stepping stones),
+zone on its flat, snowy top (walk up the path on its south face past the boulders, or take the launch pad at the foot
+straight to the summit and its flag; the ski jump at the top fires you off the edge), a **river** that springs up there,
+rushes down a gully in the mountainside, foams where it lands and drifts through the middle of the park to the sea (wade
+across, or keep dry on the footbridge and the stepping stones; anything that falls in splashes, and ducks and balls float),
 a **lagoon** at the beach, and the **sea** along the whole south edge with a line of buoys where the park ends. In
 between, the grass rolls, there are hills to run up and jump off, and a mesa at the mountain's foot with the train tunnel
 through it (up the ramp from the mountainside, wave the flag, watch the train come out underneath you).
@@ -258,8 +259,8 @@ src/
       AnimalModel.tsx, Hat.tsx
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
-      Water.tsx         the sea, the stream down the mountain, the buoys, things that float
-      Landmarks.tsx     the mesa with the train tunnel, the footbridge, the river crossings
+      Water.tsx         the sea, the river's flow and the falls, the buoys, splashes, things that float
+      Landmarks.tsx     the mesa with the train tunnel, the footbridge, the river crossings, boulders, the summit flag
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

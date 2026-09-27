@@ -2,8 +2,8 @@ import { CuboidCollider, CylinderCollider, HeightfieldCollider, RigidBody } from
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
-import { buildHeightGrid, groundHeight, riverAt, TERRAIN, trackDist } from '../terrain';
-import { distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, MAZE, MESA, MOUNTAIN_PATHS, PATH_WIDTH, PATHS, PLAZA, SEA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
+import { buildHeightGrid, groundHeight, mountainWeight, riverAt, TERRAIN, trackDist } from '../terrain';
+import { BOULDERS, distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, MAZE, MESA, MOUNTAIN_PATHS, PATH_WIDTH, PATHS, PLAZA, SEA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
 import { HedgeSegment } from './common';
 import { Water } from './Water';
@@ -43,7 +43,7 @@ function groundMaterial() {
         '#include <map_fragment>',
         [
           '#include <map_fragment>',
-          'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.6, 0.55, 0.47) * (0.7 + 0.5 * diffuseColor.g), vBlend.x);',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.5, 0.44, 0.38) * (0.55 + 0.9 * diffuseColor.g), vBlend.x);',
           'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.95, 0.97, 1.0) * (0.85 + 0.3 * diffuseColor.g), vBlend.y);',
           'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.88, 0.8, 0.6) * (0.75 + 0.4 * diffuseColor.g), vBlend.z);'
         ].join('\n')
@@ -99,19 +99,28 @@ function Ground() {
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     geometry.setIndex(new THREE.BufferAttribute(index, 1));
     geometry.computeVertexNormals();
-    // rock on the steep bits, snow up top, sand where it goes under the water
-    const normal = geometry.getAttribute('normal') as THREE.BufferAttribute;
+    // The mountain in bands, like a picture-book mountain: grass at its foot, a band of rock up
+    // its face, snow from the rim up. The bands have crisp edges (soft ones read as fog). Sand
+    // under the water and along the coast. The rolling grass and the hills stay green.
+    const band = (y: number, edge: number) => THREE.MathUtils.smoothstep(y, edge - 0.18, edge + 0.18);
     const blend = new Float32Array(count * 3);
-    for (let k = 0; k < count; k += 1) {
-      const y = heights[k];
-      const ny = normal.getY(k);
-      const snow = THREE.MathUtils.clamp((y - 7.4) / 0.9, 0, 1);
-      const sand = y < 0.05 ? THREE.MathUtils.clamp((0.05 - y) / 0.3, 0, 1) : 0;
-      const rock = THREE.MathUtils.clamp((0.93 - ny) / 0.12, 0, 1) * (1 - sand) * (1 - snow * 0.7);
-      blend[k * 3] = rock;
-      blend[k * 3 + 1] = snow;
-      blend[k * 3 + 2] = sand;
-    }
+    const beach = SEA.coast - SEA.shore - 3;
+    for (let iz = 0; iz <= nz; iz += 1)
+      for (let ix = 0; ix <= nx; ix += 1) {
+        const k = iz * (nx + 1) + ix;
+        const x = minX + ix * cell;
+        const z = minZ + iz * cell;
+        const y = heights[k];
+        const onMountain = mountainWeight(x, z) > 0.12 ? 1 : 0;
+        const snow = band(y, 8.2);
+        const rock = band(y, 3.2) * (1 - snow) * onMountain;
+        const wet = band(-y, 0.12);
+        const shore = band(z, beach + 1);
+        const sand = Math.max(wet, shore) * (1 - snow);
+        blend[k * 3] = rock * (1 - sand);
+        blend[k * 3 + 1] = snow;
+        blend[k * 3 + 2] = sand;
+      }
     geometry.setAttribute('blend', new THREE.BufferAttribute(blend, 3));
     // rapier wants the height matrix column-major: rows along z, columns along x
     const colMajor = new Float32Array(count);
@@ -297,6 +306,7 @@ const BLOCKERS: { c: Vec2; r: number }[] = [
   { c: ZONES.sports, r: 15 },
   ...HILLS.map((h) => ({ c: h.center, r: h.radius + 1.2 })),
   { c: MESA.center, r: 12 },
+  ...BOULDERS.map((b) => ({ c: b.at, r: b.r + 0.5 })),
   { c: [(FOOTBRIDGE.rampFrom + FOOTBRIDGE.deckTo) / 2, FOOTBRIDGE.z] as Vec2, r: 10 }
 ];
 

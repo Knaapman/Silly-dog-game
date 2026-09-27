@@ -109,8 +109,38 @@ export function riverAt(x: number, z: number, out = { d: Infinity, level: 0 }) {
 }
 const riverTmp = { d: Infinity, level: 0 };
 
+/** Where a flat can reach (its reach plus its blend): outside this box it leaves the ground alone. */
+type Box = { x0: number; x1: number; z0: number; z1: number };
+const boxes = new WeakMap<Flat, Box>();
+function boxOf(f: Flat): Box {
+  let b = boxes.get(f);
+  if (b) return b;
+  const e = f.blend ?? BLEND;
+  if (f.kind === 'disc') b = { x0: f.c[0] - f.r - e, x1: f.c[0] + f.r + e, z0: f.c[1] - f.r - e, z1: f.c[1] + f.r + e };
+  else if (f.kind === 'seg') {
+    const m = f.r + e;
+    b = { x0: Math.min(f.a[0], f.b[0]) - m, x1: Math.max(f.a[0], f.b[0]) + m, z0: Math.min(f.a[1], f.b[1]) - m, z1: Math.max(f.a[1], f.b[1]) + m };
+  } else if (f.kind === 'track') {
+    const m = f.r + e;
+    b = { x0: TRAIN.center[0] - TRAIN.halfX - m, x1: TRAIN.center[0] + TRAIN.halfX + m, z0: TRAIN.center[1] - TRAIN.halfZ - m, z1: TRAIN.center[1] + TRAIN.halfZ + m };
+  } else if (f.kind === 'river') {
+    const m = RIVER_HALF_WIDTH + e;
+    b = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+    for (const { p } of RIVER) {
+      b.x0 = Math.min(b.x0, p[0] - m);
+      b.x1 = Math.max(b.x1, p[0] + m);
+      b.z0 = Math.min(b.z0, p[1] - m);
+      b.z1 = Math.max(b.z1, p[1] + m);
+    }
+  } else b = { x0: -Infinity, x1: Infinity, z0: SEA.coast - e, z1: Infinity };
+  boxes.set(f, b);
+  return b;
+}
+
 /** How much a flat pulls the ground to its level at a point: 1 inside, fading to 0 over its blend. */
 function weight(f: Flat, x: number, z: number) {
+  const box = boxOf(f);
+  if (x <= box.x0 || x >= box.x1 || z <= box.z0 || z >= box.z1) return 0;
   const blend = f.blend ?? BLEND;
   let d: number;
   if (f.kind === 'disc') d = distXZ(x, z, f.c[0], f.c[1]) - f.r;
