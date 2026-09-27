@@ -134,7 +134,8 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
 - **The party meter** (top of the screen) fills up with every silly thing you do. When it is full, confetti rains down,
   fireworks go off and everybody gets a new hat.
 - Headbutt **trees** to make apples (or coconuts) fall, and lick an apple to eat it. Trees in front of the camera turn
-  see-through so you never lose your animal.
+  see-through so you never lose your animal (and so do the big things: the T-rex, the brontosaurus, the giant
+  mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
 - **The sticker album** 📒: 36 stickers, one for each silly thing there is to do (first poop, golden poop, getting
