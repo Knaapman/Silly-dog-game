@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../../src/game/config';
 import * as L from '../../src/game/layout';
 import { groundHeight, mountainWeight, riverAt, trackDist } from '../../src/game/terrain';
+import { makeCourse } from '../../src/game/course';
 
 // The park layout, checked for things standing where they shouldn't: on the train track, on a
 // path, in the river, on top of each other, on the mountain's slope, in the sea or in the
@@ -82,6 +83,9 @@ add('fallen log', L.FALLEN_LOG[0], L.FALLEN_LOG[2], 2.6);
 add('mesa ramp foot', L.MESA.rampFrom[0], L.MESA.rampFrom[2], 1.5, { slopeOk: true });
 add('footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z, 1.5);
 L.SPAWN_POINTS.forEach((p, i) => add(`spawn ${i}`, p[0], p[2], 0.6));
+L.SLED_RUN.starts.forEach((s, i) => add(`sled ${i}`, s[0], s[1], 1.2, { winter: true }));
+add('tube landing', L.TUBE_RIDE.landing[0], L.TUBE_RIDE.landing[1], 1.5, { onPathOk: true });
+add('jetty foot', L.TUBE_RIDE.jettyFrom + 1, L.TUBE_RIDE.jettyZ, 1.2, { wet: true }); // a jetty stands at the water's edge
 L.MAZE.walls.forEach((w, i) => add(`maze wall ${i}`, (w[0] + w[2]) / 2, (w[1] + w[3]) / 2, 0.45));
 
 const river = { d: 0, level: 0 };
@@ -198,6 +202,42 @@ describe('park layout', () => {
     expect(out).toEqual([]);
     const wet = spots.filter((s) => !s.wet && !s.floats && groundHeight(s.x, s.z) < -0.2).map((s) => `${s.name} at (${s.x}, ${s.z}) is under water`);
     expect(wet).toEqual([]);
+  });
+
+  it('the river tubes float down the middle of the river, under the footbridge, clear of everything', () => {
+    const course = makeCourse(L.TUBE_RIDE.course);
+    const sway = 0.45;
+    let worst = 0;
+    for (let s = 0; s <= course.length; s += 0.25) {
+      const p = course.at(s);
+      worst = Math.max(worst, riverAt(p.x, p.z, river).d);
+    }
+    expect(worst + sway + L.TUBE_RIDE.radius).toBeLessThan(L.RIVER_HALF_WIDTH);
+    // the train bridge is upstream of the line of waiting tubes, the stepping stones downstream of the take-out
+    const first = course.at(0);
+    expect(first.z - L.TUBE_RIDE.radius).toBeGreaterThan(L.TRAIN_BRIDGE.center[1] + L.TRAIN_BRIDGE.width / 2);
+    expect(L.TUBE_RIDE.takeOutZ + L.TUBE_RIDE.radius + sway).toBeLessThan(L.STEPPING_STONES.from[1] - L.STEPPING_STONES.radius - 1);
+    // a rider standing on a tube (1.1 m, on a tube 0.27 m out of the water) fits under the footbridge
+    const underside = L.RIVER_FOOTBRIDGE.height - L.RIVER_FOOTBRIDGE.deckThickness;
+    expect(underside - (L.WATER_LEVEL + 0.27 + 1.1)).toBeGreaterThan(0.2);
+    // and the deck spans where the tubes go
+    const atBridge = course.at(course.sAtZ(L.RIVER_FOOTBRIDGE.center[1]));
+    expect(Math.abs(atBridge.x - L.RIVER_FOOTBRIDGE.center[0]) + L.TUBE_RIDE.radius + sway).toBeLessThan(L.RIVER_FOOTBRIDGE.deck / 2);
+  });
+
+  it('the sleds start on the mountain top and run clear down to the hill that throws you off', () => {
+    const { starts, laneHalfWidth, kickX, landingX } = L.SLED_RUN;
+    const blocking = spots.filter((s) => !s.floats && !['hill', 'sled', 'summit'].includes(s.name.split(' ')[0]));
+    for (const [sx, sz] of starts) {
+      expect(mountainWeight(sx, sz)).toBe(1);
+      expect(groundHeight(sx, sz)).toBeCloseTo(L.WINTER.level, 3);
+      const inLane = blocking.filter((s) => s.x < sx + 1 && s.x > kickX - 1 - s.r && Math.abs(s.z - sz) < laneHalfWidth + 0.8 + s.r).map((s) => s.name);
+      expect(inLane, `in the lane of the sled at z ${sz}`).toEqual([]);
+      // the run goes up the hill where you're thrown off, and the landing is clear grass
+      for (let z = sz - laneHalfWidth; z <= sz + laneHalfWidth; z += 1) expect(groundHeight(kickX, z)).toBeGreaterThan(groundHeight(kickX + 4, z));
+      const nearLanding = blocking.filter((s) => Math.abs(s.x - landingX) < 3 + s.r && Math.abs(s.z - sz) < laneHalfWidth + 2 + s.r).map((s) => s.name);
+      expect(nearLanding, `at the landing of the sled at z ${sz}`).toEqual([]);
+    }
   });
 
   it('every zone is a reasonable way from its neighbours', () => {

@@ -26,7 +26,9 @@ import {
   VOLCANO,
   WINDMILL,
   BRONTO,
-  distXZ
+  distXZ,
+  SLED_RUN,
+  TUBE_RIDE
 } from './layout';
 import { flocks, parkCats } from './chase';
 import { players } from './runtime';
@@ -84,7 +86,9 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   hat: [HAT_RACK.center],
   swim: [[LAKE.center[0] + 4, LAKE.center[1] - 4]],
   snowball: SNOWBALLS.map((s) => [s[0], s[2]] as P),
-  windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]]
+  windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]],
+  tube: [[TUBE_RIDE.jettyFrom + 3, TUBE_RIDE.jettyZ]],
+  sled: SLED_RUN.starts
 };
 
 /** Stickers found by chasing: the guide leads to the nearest cat or flock of birds. */

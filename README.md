@@ -31,6 +31,13 @@ a **lagoon** at the beach, and the **sea** along the whole south edge with a lin
 between, the grass rolls, there are hills to run up and jump off, and a mesa at the mountain's foot with the train tunnel
 through it (up the ramp from the mountainside, wave the flag, watch the train come out underneath you).
 
+Two rides use the new ground. **River tubing**: rubber rings wait in a line at a jetty below the railway bridge; step onto
+the one at the end of the jetty and it floats off down the middle of the river, spinning gently, under the arched
+footbridge, and tips you out onto the bank before the stepping stones (then bobs back up at the jetty). Friends can
+share a ring, or jump from one to another. **Sledding**: two sleds wait on the west rim of the mountain's top; walk into
+one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
+you off the hill at the bottom. The path up the mountain has log steps now.
+
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
 
@@ -164,9 +171,9 @@ wagon to ride along). A footbridge over the west track lets you look down on it.
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 36 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 44 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
-  chicken, jumping in a puddle...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  chicken, jumping in a puddle, a tube ride, a sled ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower.
@@ -233,6 +240,7 @@ src/
     config.ts           tuning: speeds, party points, players, species, hats
     layout.ts           where everything in the park lives
     terrain.ts          the lie of the land: groundHeight(x, z); the mountain, the river, the sea, and flats under everything that must stand level
+    course.ts           a smooth line through points, measured along its length (the river tubes' course)
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
@@ -260,7 +268,8 @@ src/
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
       Water.tsx         the sea, the river's flow and the falls, the buoys, splashes, things that float
-      Landmarks.tsx     the mesa with the train tunnel, the footbridge, the river crossings, boulders, the summit flag
+      Landmarks.tsx     the mesa with the train tunnel, the footbridges, the river crossings, boulders, the summit flag
+      Rides.tsx         river tubing (rings on a course down the river) and the sleds down the mountain
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

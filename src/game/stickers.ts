@@ -60,6 +60,8 @@ export const STICKERS = [
   { id: 'hat', icon: '🎩', color: MORE },
   { id: 'swim', icon: '🏊', color: MORE },
   { id: 'roar', icon: '🦖', color: MORE },
+  { id: 'tube', icon: '🛟', color: MORE },
+  { id: 'sled', icon: '🛷', color: MORE },
   // surprises, and a few more things to find
   { id: 'chicken', icon: '🐔', badge: '✨', color: SURPRISE },
   { id: 'present', icon: '🎁', color: SURPRISE },

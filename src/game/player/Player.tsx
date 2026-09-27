@@ -82,9 +82,11 @@ export function Player({ info }: { info: PlayerInfo }) {
       launchTo: (target, apex) => {
         s.pendingLaunch = { target: target.clone(), apex };
       },
-      hold: (position, hidden = false) => {
-        s.holdAt = position ? position.clone() : null;
+      hold: (position, hidden = false, facing) => {
+        if (position && s.holdAt) s.holdAt.copy(position);
+        else s.holdAt = position ? position.clone() : null;
         s.hidden = position ? hidden : false;
+        if (facing != null) s.facing = s.targetFacing = facing;
       },
       isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null,
       grounded: false,

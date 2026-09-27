@@ -164,25 +164,33 @@ function TrainBridge() {
   );
 }
 
-/** A little arched footbridge over the river on the way to the dino park. */
+/**
+ * An arched footbridge over the river on the way to the dino park: up a ramp, over a chunky
+ * deck high enough for the river tubes to float under, down the other side.
+ */
 function RiverFootbridge() {
   const [x, z] = RIVER_FOOTBRIDGE.center;
-  const { length, width } = RIVER_FOOTBRIDGE;
+  const { length, width, deck, height, deckThickness } = RIVER_FOOTBRIDGE;
   const wood = '#a1887f';
   const rail = '#6d4c41';
+  const west = x - length / 2;
+  const east = x + length / 2;
+  // each ramp's end rests on the deck, a little above it (level with it, it leaves a step)
   return (
     <group>
-      <StaticBox position={[x, -0.2, z]} size={[length, 0.4, width]} color={wood} />
+      <Ramp from={[west, 0, z]} to={[x - deck / 2 + 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} />
+      <Ramp from={[east, 0, z]} to={[x + deck / 2 - 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} />
+      <StaticBox position={[x, height - deckThickness / 2, z]} size={[deck, deckThickness, width]} color={wood} />
       {[-1, 1].map((side) => (
-        <group key={side}>
-          <StaticBox position={[x, 0.35, z + side * (width / 2 + 0.1)]} size={[length, 0.7, 0.2]} color={rail} shadow={false} />
-          {[-1, 1].map((end) => (
-            <mesh key={end} castShadow position={[x + end * (length / 2 - 0.3), 0.5, z + side * (width / 2 + 0.1)]} material={lambert(rail)}>
-              <cylinderGeometry args={[0.1, 0.12, 1.4, 8]} />
-            </mesh>
-          ))}
-        </group>
+        <StaticBox key={side} position={[x, height + 0.35, z + side * (width / 2 + 0.1)]} size={[deck, 0.7, 0.2]} color={rail} shadow={false} />
       ))}
+      {[-1, 1].map((end) =>
+        [-1, 1].map((side) => (
+          <mesh key={`${end}${side}`} castShadow position={[x + (end * deck) / 2, (height - 0.6) / 2 - 0.3, z + side * (width / 2 - 0.2)]} material={lambert(rail)}>
+            <cylinderGeometry args={[0.14, 0.16, height + 0.6, 8]} />
+          </mesh>
+        ))
+      )}
     </group>
   );
 }

@@ -232,7 +232,7 @@ export const BOULDERS: { at: Vec2; r: number }[] = [
   { at: [-12, -42], r: 1.5 },
   { at: [8, -37], r: 1.1 },
   { at: [36, -57], r: 1.6 },
-  { at: [-21, -57], r: 1.8 },
+  { at: [-24, -63], r: 1.6 },
   { at: [45, -60], r: 1.3 },
   { at: [-3, -33], r: 0.9 }
 ];
@@ -279,10 +279,47 @@ export const TRAIN = {
 
 /** The track over the river: a low bridge (its deck carries the track over the channel). */
 export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, length: 14, width: 3.4 };
-/** The path from the hub to the dino park crosses the river here. */
-export const RIVER_FOOTBRIDGE = { center: [25, -2] as Vec2, length: 12, width: 2.8 };
+/**
+ * The path from the hub to the dino park crosses the river here, on an arched footbridge: the
+ * river tubes float underneath (a rider standing on a tube is 1.1 m tall; the deck's underside
+ * is at `height - deckThickness`).
+ */
+export const RIVER_FOOTBRIDGE = { center: [25, -2] as Vec2, length: 12.4, width: 2.8, deck: 5.2, height: 1.95, deckThickness: 0.45 };
 /** Stepping stones across the river on the way to the playground. */
 export const STEPPING_STONES = { from: [20.5, 30] as Vec2, to: [31.5, 30] as Vec2, count: 7, radius: 0.75 };
+
+// ---------------------------------------------------------------------------
+// Rides on the new ground: rubber rings down the river, sleds down the mountain
+
+/**
+ * River tubing: rubber rings wait in a line at a jetty below the train bridge. Step onto the one
+ * at the jetty and off it floats, down the middle of the river (the `course`, a smooth line
+ * through these points), under the footbridge, to the take-out before the stepping stones,
+ * where it tips you out onto the bank.
+ */
+export const TUBE_RIDE = {
+  course: [[24, -19], [24, -10], [26, 4], [23, 18], [25.5, 28]] as Vec2[],
+  jettyZ: -13,
+  jettyFrom: 16.5,
+  takeOutZ: 23,
+  landing: [17.5, 23] as Vec2,
+  count: 3,
+  radius: 1.05,
+  speed: 2.4
+};
+
+/**
+ * Sledding: two sleds on the west rim of the mountain's top. Walk into one and it pushes off,
+ * down the west face (steer with the stick), and throws you off where the run goes up the
+ * hill at the mountain's foot.
+ */
+export const SLED_RUN = {
+  starts: [[-6.5, -55], [-6.5, -52]] as Vec2[],
+  /** How far a sled can be steered to either side of its start line. */
+  laneHalfWidth: 3,
+  kickX: -33,
+  landingX: -48
+};
 
 // ---------------------------------------------------------------------------
 // Launch pads (glowing arrows)
@@ -441,7 +478,7 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
   // beach palms
   ...treesOf('palm', [[-22, 30], [-19, 42], [12, 44], [16, 50], [-22, 52], [38, 51]]),
   // snow pines on the plateau
-  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-8, -50], [14, -64], [8, -45], [-2, -63]])
+  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-12, -46], [14, -64], [8, -45], [-2, -63]])
 ];
 
 export function distXZ(ax: number, az: number, bx: number, bz: number) {

@@ -47,8 +47,9 @@ export function movement(f: FrameCtx) {
     v.z += (input.z * speed + pv.z - v.z) * k;
     if (mag > 0.15 && s.bonkTime <= 0) s.targetFacing = Math.atan2(input.x, input.z);
   }
-  // Stick to rides going up and down.
-  if (s.grounded && surface?.velocityAt && s.jumpBuffer <= 0) v.y = pv.y - 0.3;
+  // Stick to rides going up and down (but not in the frame a launch throws you off one: the
+  // launch's upward speed would be replaced by the ride's, and you'd flop off the side).
+  if (s.grounded && surface?.velocityAt && s.jumpBuffer <= 0 && s.launched <= 0) v.y = pv.y - 0.3;
   if (s.dashTime > 0) {
     v.x = tmp.fwd.x * MOVE.bonkDashSpeed + pv.x;
     v.z = tmp.fwd.z * MOVE.bonkDashSpeed + pv.z;

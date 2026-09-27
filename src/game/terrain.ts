@@ -37,6 +37,7 @@ import {
   STALLS,
   TRAIN,
   TREX,
+  TUBE_RIDE,
   UMBRELLAS,
   WATER_LEVEL,
   WINTER,
@@ -180,6 +181,9 @@ export const FLATS: Flat[] = [
   ...FLOOR_PATCHES.filter((p) => p.kind !== 'sand').map((p) => disc(p.center, p.radius + 1, { level: p.kind === 'snow' ? WINTER.level : 0 })),
   disc(PLAZA.center, PLAZA.radius + 1),
   disc(LAWN.center, LAWN.radius),
+  // the river tubes' jetty and the bank they tip you out on
+  disc([TUBE_RIDE.jettyFrom + 1, TUBE_RIDE.jettyZ], 2.5),
+  disc(TUBE_RIDE.landing, 2.5),
   ...PATHS.map(([a, b]) => seg(a, b, PATH_WIDTH / 2 + 1)),
   { kind: 'track', r: 4 },
   disc(MESA.center, 11),
