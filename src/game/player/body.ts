@@ -289,4 +289,5 @@ export function syncRuntime(f: FrameCtx) {
   rt.power = s.power;
   rt.size = s.size;
   rt.ridingOn = s.ridingOn;
+  rt.grounded = s.grounded;
 }

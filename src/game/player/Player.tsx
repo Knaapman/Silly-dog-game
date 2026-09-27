@@ -87,6 +87,7 @@ export function Player({ info }: { info: PlayerInfo }) {
         s.hidden = position ? hidden : false;
       },
       isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null,
+      grounded: false,
       belly: 0,
       feed: () => {
         s.chew = 0.7;

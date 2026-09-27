@@ -102,6 +102,8 @@ export type PlayerRuntime = {
   /** Pin the player at a point (e.g. inside a cannon), hidden or not. null releases. */
   hold: (position: THREE.Vector3 | null, hidden?: boolean) => void;
   isLaunched: () => boolean;
+  /** Standing on something (not in the air). */
+  grounded: boolean;
   /** Bites in the belly (0..BELLY_MAX). Each one comes back out with the poop button. */
   belly: number;
   /** Eat something: the belly grows (or, when already full, a big burp). */
@@ -125,6 +127,12 @@ export type PlayerRuntime = {
 export type PowerKind = 'beans' | 'giant' | 'chili';
 
 export const players = new Map<number, PlayerRuntime>();
+
+/**
+ * Where each animal last stepped onto a launch pad, into a cannon or onto a geyser (game ms), so
+ * the buddy can follow a child the same way.
+ */
+export const launchSpots = new Map<number, { x: number; z: number; at: number }>();
 
 /** Food that stays put (bowls, cakes, carrots...). Only the tongue looks at these. */
 export type FoodEntry = {

@@ -21,8 +21,10 @@ badge, so colour-blind kids can tell who is who.
 
 **Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
 and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
-lick it and throw it, or go to a see-saw and it climbs onto the far end so you can fling it. When a real friend
-joins, the buddy makes room. Grown-ups can switch it off.
+lick it and throw it, or go to a see-saw and it climbs onto the far end so you can fling it. Fly off a launch pad,
+cannon or geyser and it takes the same one after you; get up somewhere it can't walk to (the lighthouse, the barn
+roof) and it steps back and comes after you with a big boing. When a real friend joins, the buddy makes room.
+Grown-ups can switch it off.
 
 | | Controller | Keyboard P1 | Keyboard P2 | Touch |
 |---|---|---|---|---|

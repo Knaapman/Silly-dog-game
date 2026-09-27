@@ -5,7 +5,7 @@ import { playBoom, playGeyser, playWhoosh } from '../audio';
 import { emit, poof, ring } from '../fx';
 import { distXZ, type LaunchPadDef, type Vec2, type Vec3 } from '../layout';
 import { lambert } from '../materials';
-import { players, props, propPosition, shakeCamera } from '../runtime';
+import { launchSpots, players, props, propPosition, shakeCamera } from '../runtime';
 import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -58,6 +58,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
       if ((cooldown.current.get(p.slot) ?? 0) > now || p.isLaunched() || p.flopped) return;
       if (distXZ(p.position.x, p.position.z, pad.position[0], pad.position[2]) > 1.3 || p.position.y > 1.6) return;
       cooldown.current.set(p.slot, now + 2500);
+      launchSpots.set(p.slot, { x: pad.position[0], z: pad.position[2], at: now });
       p.launchTo(target, pad.apex);
       earnSticker('pad');
       playWhoosh(p.position);
@@ -114,6 +115,7 @@ export function Geyser({ at, target, apex, period = 5, offset = 0 }: { at: Vec2;
       players.forEach((p) => {
         if (p.isLaunched() || p.flopped) return;
         if (distXZ(p.position.x, p.position.z, at[0], at[1]) > 1.4 || p.position.y > 2) return;
+        launchSpots.set(p.slot, { x: at[0], z: at[1], at: gameNow() });
         p.launchTo(tgt, apex);
         earnSticker('geyser');
         emit('drop', p.position, { count: 20, color: ['#bfe9ff', '#ffffff'], speed: 4, up: 8 });
@@ -174,6 +176,7 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
         if (distXZ(p.position.x, p.position.z, loadSpot.x, loadSpot.z) > 1.1 || Math.abs(p.position.y - (position[1] + 0.5)) > 1.2) return;
         s.slot = p.slot;
         s.timer = 0.9;
+        launchSpots.set(p.slot, { x: loadSpot.x, z: loadSpot.z, at: now });
         p.hold(inside, true);
         poof(inside, '#ffffff', 8);
       });

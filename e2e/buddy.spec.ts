@@ -87,3 +87,62 @@ test('a buddy keeps a child playing alone company', async ({ page }) => {
   expect(after.length).toBe(2);
   game.expectNoErrors();
 });
+
+test('the buddy follows the child up high: the same way, or with a big boing', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await page.evaluate(() => ((window as any).__silly.buddyControl.auto = true));
+  await game.seconds(5);
+  const buddy = (await roster(game)).find((p) => p.bot)!.slot;
+
+  // the child rides a geyser onto the top of the fountain...
+  await game.teleport(0, 8.5, 1, 5);
+  await game.teleport(buddy, 15, 1, 10);
+  let kidUp = false;
+  for (let i = 0; i < 80 && !kidUp; i += 1) {
+    await game.seconds(0.1);
+    const k = await rt(game, 0);
+    kidUp = !k.launched && k.y > 3.5 && Math.hypot(k.x, k.z + 2) < 1.5;
+  }
+  expect(kidUp).toBe(true);
+  // ...and the buddy goes to the same geyser and flies up after it (not a boing, not a pop)
+  const spot = () => page.evaluate((s) => (window as any).__silly.runtime.launchSpots.get(s) ?? null, buddy);
+  for (let i = 0; i < 150 && !(await spot()); i += 1) await game.seconds(0.1);
+  expect(await spot()).toMatchObject({ x: 8.5, z: 5 });
+  await game.seconds(3);
+  let b = await rt(game, buddy);
+  expect(b.y).toBeGreaterThan(3.5);
+  expect(Math.hypot(b.x, b.z + 2)).toBeLessThan(2.5);
+
+  // somewhere with no way up (the top of the lighthouse): a big boing up next to the child
+  await game.teleport(0, 0, 10, 42.6);
+  await game.teleport(buddy, 6, 1, 36);
+  await game.seconds(8);
+  const k = await rt(game, 0);
+  b = await rt(game, buddy);
+  expect(k.y).toBeGreaterThan(8.5);
+  expect(b.y).toBeGreaterThan(8.5);
+  expect(Math.hypot(b.x - k.x, b.z - k.z)).toBeLessThan(3);
+  await game.screenshot('test-results/buddy-up-high.png');
+
+  // back down on the grass, a buddy riding on the child's back still hops off after a while
+  await game.teleport(0, 6, 1, 30);
+  // (it comes down too: wait till it's on the ground again)
+  for (let i = 0; i < 20; i += 1) {
+    await game.seconds(0.5);
+    b = await rt(game, buddy);
+    if (!b.launched && b.y < 1.5 && b.ridingOn == null) break;
+  }
+  expect(b.y).toBeLessThan(1.5);
+  await game.seconds(1);
+  const kid = await rt(game, 0);
+  await game.teleport(buddy, kid.x, kid.y + 1.6, kid.z);
+  await game.seconds(1);
+  expect((await rt(game, buddy)).ridingOn).toBe(0);
+  await game.seconds(7);
+  b = await rt(game, buddy);
+  expect(b.ridingOn).toBeNull();
+  expect(b.y).toBeLessThan(1.5);
+  game.expectNoErrors();
+});
