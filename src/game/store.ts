@@ -22,6 +22,8 @@ export type PlayerInfo = {
   padId?: string;
   /** Controller disconnected: the animal naps until it comes back. */
   asleep?: boolean;
+  /** The computer buddy that keeps a child playing alone company. */
+  bot?: boolean;
 };
 
 type Phase = 'title' | 'play';
@@ -44,6 +46,9 @@ interface GameStore {
   start: (source: SourceId) => void;
   join: (source: SourceId) => number | null;
   leave: (slot: number) => void;
+  /** Bring in / send off the computer buddy. */
+  addBuddy: () => void;
+  removeBuddy: () => void;
   setAsleep: (slot: number, asleep: boolean) => void;
   reattach: (slot: number, source: SourceId) => void;
   backToTitle: () => void;
@@ -104,6 +109,8 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     join: (source) => {
+      // a real friend arrives: the buddy makes room
+      if (source !== 'bot' && get().players.some((p) => p.bot)) get().removeBuddy();
       const state = get();
       if (state.players.some((p) => p.source === source)) return null;
       if (state.players.length >= MAX_PLAYERS) return null;
@@ -117,13 +124,28 @@ export const useGame = create<GameStore>((set, get) => {
         hat: 'none',
         color: PLAYER_COLORS[slot],
         joinedAt: Date.now(),
-        padId: padIdOf(source)
+        padId: padIdOf(source),
+        bot: source === 'bot'
       };
       set({ players: [...state.players, player].sort((a, b) => a.slot - b.slot) });
       return slot;
     },
 
     leave: (slot) => set((state) => ({ players: state.players.filter((p) => p.slot !== slot) })),
+
+    addBuddy: () => {
+      const state = get();
+      if (state.players.some((p) => p.bot)) return;
+      const slot = get().join('bot');
+      if (slot == null) return;
+      // a different animal from the child's, so they can tell each other apart
+      const kid = state.players.find((p) => !p.bot);
+      const all = unlockedSpecies();
+      const species = all.find((s) => s !== kid?.species && s !== 'dog') ?? all[0];
+      set((s) => ({ players: s.players.map((p) => (p.slot === slot ? { ...p, species } : p)) }));
+    },
+
+    removeBuddy: () => set((state) => ({ players: state.players.filter((p) => !p.bot) })),
 
     setAsleep: (slot, asleep) =>
       set((state) => ({ players: state.players.map((p) => (p.slot === slot && !!p.asleep !== asleep ? { ...p, asleep } : p)) })),

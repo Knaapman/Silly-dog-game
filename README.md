@@ -19,6 +19,11 @@ so friends can drop in and out at any time. All players share one camera that zo
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
 
+**Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
+and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
+lick it and throw it, or go to a see-saw and it climbs onto the far end so you can fling it. When a real friend
+joins, the buddy makes room. Grown-ups can switch it off.
+
 | | Controller | Keyboard P1 | Keyboard P2 | Touch |
 |---|---|---|---|---|
 | Move | Left stick or D-pad | `W A S D` | Arrow keys | Drag anywhere on the left half |
@@ -40,7 +45,7 @@ tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
   before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
-  rumble on/off, surprises on/off, and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  rumble on/off, surprises on/off, the buddy on/off, and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just
@@ -136,7 +141,8 @@ around the whole park: stand on a wagon to ride along, and it stops at the stati
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Four stickers need a friend playing too (they have a little 👫 on them).
+  remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  counts, except for the three-animal tower.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
@@ -185,7 +191,9 @@ same frame. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
 and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
-build, then the browser tests; `npm run ci` runs the same locally.
+build, then the browser tests; `npm run ci` runs the same locally. Two "chaos" tests play the game with robot
+players mashing random buttons (four players for three minutes, and one child with the buddy) and fail on any error,
+broken position or animal leaving the world; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are
@@ -230,6 +238,8 @@ src/
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Events.tsx        surprises: golden chicken, present balloon, rain and puddles
+      Buddy.tsx         the computer buddy for a child playing alone (its "brain" makes controller input)
+      Guide.tsx         the sticker guide's arrows and beams
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform

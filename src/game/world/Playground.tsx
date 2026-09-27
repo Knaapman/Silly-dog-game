@@ -15,7 +15,7 @@ import { MOVE } from '../config';
 import { emit } from '../fx';
 import { BALL_PIT, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, type Surface } from '../runtime';
+import { debugInfo, players, type Surface, seesawLow } from '../runtime';
 import { SlideTower, StaticBox, useHint } from './common';
 import { Prop } from './Prop';
 import { useSurface } from './surface';
@@ -154,6 +154,7 @@ function SeeSaw({ index }: { index: number }) {
       swing.current.dir = dir;
     }
     if (lowEnd !== low.current.end) low.current = { end: lowEnd, since: now };
+    seesawLow[index] = lowEnd;
 
     // 2. Who is calmly standing on which end (for the next swing).
     for (const p of players.values()) {

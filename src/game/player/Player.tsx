@@ -107,6 +107,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       ridingOn: null,
       grabbedBy: null,
       tug: new THREE.Vector3(),
+      bot: source === 'bot',
       powerUp: (kind) => {
         s.powerTime = POWER_TIME[kind] * MAGIC_FACTOR[settings().magic];
         if (s.power === kind) return;

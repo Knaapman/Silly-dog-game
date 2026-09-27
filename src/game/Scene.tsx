@@ -36,6 +36,7 @@ import { Trees } from './world/Trees';
 import { Winter } from './world/Winter';
 import { ParkEvents, weather } from './world/Events';
 import { StickerGuide } from './world/Guide';
+import { Buddy } from './world/Buddy';
 import { LAUNCH_PADS } from './layout';
 
 function SkyDome() {
@@ -328,6 +329,7 @@ export function Scene() {
       <Lighting />
       <CameraRig />
       <InputSystem />
+      <Buddy />
       <AudioDirector />
       <PartyDirector />
       <PhotoDirector />

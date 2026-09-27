@@ -130,6 +130,15 @@ function settingRows(autoLevel: Quality): ChoiceRow[] {
       ]
     },
     {
+      key: 'buddy',
+      icon: '🐾',
+      label: 'Buddy when playing alone',
+      options: [
+        { value: false, label: 'Off' },
+        { value: true, label: 'On' }
+      ]
+    },
+    {
       key: 'rumble',
       icon: '📳',
       label: 'Controller rumble',

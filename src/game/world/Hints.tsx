@@ -73,7 +73,7 @@ export function Hints() {
     hints.forEach((h) => {
       let near = false;
       players.forEach((p) => {
-        if (!near && !p.isLaunched() && p.position.distanceTo(h.position) < h.radius) near = true;
+        if (!near && !p.bot && !p.isLaunched() && p.position.distanceTo(h.position) < h.radius) near = true;
       });
       const f = fades.get(h.id) ?? 0;
       const next = THREE.MathUtils.clamp(f + (near ? delta * 4 : -delta * 3), 0, 1);

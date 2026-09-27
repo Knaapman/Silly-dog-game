@@ -19,6 +19,8 @@ export type Settings = {
   rumble: boolean;
   /** Park surprises now and then: rain, a runaway golden chicken, a present balloon. */
   surprises: boolean;
+  /** A computer buddy keeps a child playing alone company. */
+  buddy: boolean;
   /** 'auto' picks from the graphics card. */
   quality: Quality | 'auto';
 };
@@ -29,7 +31,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, quality: 'auto' };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, quality: 'auto' };
 
 const KEY = 'settings:v1';
 
@@ -43,6 +45,7 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     together: level(raw?.together, DEFAULT_SETTINGS.together),
     rumble: typeof raw?.rumble === 'boolean' ? raw.rumble : DEFAULT_SETTINGS.rumble,
     surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
+    buddy: typeof raw?.buddy === 'boolean' ? raw.buddy : DEFAULT_SETTINGS.buddy,
     quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality
   };
 }
@@ -64,8 +67,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, rumble, surprises, quality } = get();
-    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, quality });
+    const { speed, magic, sprout, together, rumble, surprises, buddy, quality } = get();
+    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, quality });
   },
   setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));

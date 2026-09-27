@@ -3,7 +3,8 @@
 
 import { TEST_MODE } from './testMode';
 
-export type SourceId = 'kb1' | 'kb2' | 'touch' | `pad${number}`;
+/** 'bot' is the computer buddy (its input is made by buddy.ts, not read from a device). */
+export type SourceId = 'kb1' | 'kb2' | 'touch' | 'bot' | `pad${number}`;
 export type ActionName = 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'species' | 'hat';
 export const ACTIONS: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'species', 'hat'];
 
@@ -487,6 +488,19 @@ export function getInput(source: SourceId): InputFrame {
 export function photoPressed() {
   for (const frame of frames.values()) if (frame.photo) return true;
   return false;
+}
+
+/** An input frame put together by code (the buddy). */
+export function makeInputFrame(x = 0, z = 0, pressed: Partial<Record<ActionName, boolean>> = {}): InputFrame {
+  const p = { ...emptyActions(), ...pressed };
+  const presses = noPresses();
+  for (const a of ACTIONS) presses[a] = p[a] ? 1 : 0;
+  return { x, z, held: p, pressed: p, presses, anyPressed: false };
+}
+
+/** Hand a code-made input frame to a source for this frame (after pollInputs). */
+export function setInputFrame(source: SourceId, frame: InputFrame) {
+  frames.set(source, frame);
 }
 
 /** Did anyone ask for the sticker album this frame? */

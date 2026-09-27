@@ -80,6 +80,7 @@ function PlayerBadges() {
             <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
             {p.asleep && <span className="emoji absolute -bottom-2 -right-2 animate-pulse text-xl">💤</span>}
+            {p.bot && <span className="emoji absolute -bottom-2 -right-2 text-lg" title="Buddy">💛</span>}
             <span className="absolute -bottom-1.5 -left-1.5" data-shape={PLAYER_SHAPES[slot]}>
               <PlayerShapeIcon shape={PLAYER_SHAPES[slot]} color={p.color} size={20} />
             </span>

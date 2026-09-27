@@ -113,6 +113,8 @@ export type PlayerRuntime = {
   size: number;
   /** Slot of the friend this one is riding piggyback on. */
   ridingOn: number | null;
+  /** The computer buddy (not a child): hints and a few other things ignore it. */
+  bot: boolean;
   /** Slot of the friend whose tongue has got hold of this one (lick a friend!). */
   grabbedBy: number | null;
   /** Where that tongue is pulling us to (set by the friend every frame). */
@@ -236,3 +238,6 @@ export const drains = new Set<Drain>();
 
 /** Live numbers some rides publish (read by automated checks / the dev console). */
 export const debugInfo: Record<string, unknown> = {};
+
+/** Which end of each see-saw rests low right now (+1 / -1 along its length, 0 = level). */
+export const seesawLow: number[] = [];
