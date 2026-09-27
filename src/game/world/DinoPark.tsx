@@ -14,6 +14,7 @@ import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { useSeeThrough } from './seeThrough';
 
 // ---------------------------------------------------------------------------
 // Volcano: climb in (or take the launch pad) and it erupts you into the sky.
@@ -138,8 +139,10 @@ function Brontosaurus() {
   const dark = '#5cb83a';
   const slide = useMemo(() => ({ slippery: 0.35, slide: true }), []);
   useHint([bx - 7.5, 1, bz], 'walk', 4);
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, bx + 3, bz, 7);
   return (
-    <group>
+    <group ref={whole}>
       <RigidBody type="fixed" colliders={false} position={[bx, 2.6, bz]}>
         <CapsuleCollider args={[2.4, 2]} rotation={[0, 0, Math.PI / 2]} />
       </RigidBody>
@@ -235,8 +238,10 @@ function TRex() {
   });
 
   const skin = '#4caf50';
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, x, z, 3.5);
   return (
-    <group position={[x, 0, z]} rotation={[0, -0.4, 0]}>
+    <group ref={whole} position={[x, 0, z]} rotation={[0, -0.4, 0]}>
       <RigidBody type="fixed" colliders={false}>
         <CylinderCollider args={[1.5, 1.6]} position={[0, 1.5, 0]} />
         <CapsuleCollider args={[1.2, 1.3]} position={[0, 3.6, 0]} rotation={[0, 0, 1.1]} />

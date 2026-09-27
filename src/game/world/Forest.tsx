@@ -8,6 +8,7 @@ import { useHint } from './common';
 import { Prop } from './Prop';
 import { useSurface } from './surface';
 import { gameNow, useGameFrame } from '../clock';
+import { useSeeThrough } from './seeThrough';
 
 /** Giant mushroom: the cap is a trampoline. Hop from cap to cap up the spiral. */
 function Mushroom({ index }: { index: number }) {
@@ -33,8 +34,10 @@ function Mushroom({ index }: { index: number }) {
       }),
     [index, m.radius]
   );
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, x, z, m.radius);
   return (
-    <group position={[x, 0, z]}>
+    <group ref={whole} position={[x, 0, z]}>
       <RigidBody type="fixed" colliders={false}>
         <CylinderCollider args={[m.height / 2, 0.45]} position={[0, m.height / 2, 0]} />
         <CylinderCollider ref={col} args={[0.2, m.radius]} position={[0, m.height, 0]} restitution={0.9} />

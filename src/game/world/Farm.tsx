@@ -15,6 +15,7 @@ import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
 import { useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { useSeeThrough } from './seeThrough';
 
 function Mud() {
   const bubbleTimer = useRef(0);
@@ -60,8 +61,10 @@ function Barn() {
     return new THREE.ExtrudeGeometry(shape, { depth: BARN.width, bevelEnabled: false });
   }, [halfDepth, rise]);
 
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, BARN.center[0], BARN.center[1], BARN.width / 2 + 1);
   return (
-    <group>
+    <group ref={whole}>
       <RigidBody type="fixed" colliders={false} position={[BARN.center[0], 0, BARN.center[1]]}>
         <CuboidCollider args={[BARN.width / 2, BARN.wallHeight / 2, BARN.depth / 2]} position={[0, BARN.wallHeight / 2, 0]} />
         {[-1, 1].map((side) => (

@@ -8,6 +8,7 @@ import { Ramp, StaticBox } from './common';
 import { Cannon } from './Launchers';
 import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
+import { useSeeThrough } from './seeThrough';
 
 function Lake() {
   const water = useRef<THREE.Mesh>(null);
@@ -52,8 +53,10 @@ function Lighthouse() {
   const base = ISLAND.height - 0.1;
   const towerH = h - base;
   const railSegments = 14;
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, lx, lz, LIGHTHOUSE.radius + 1.5);
   return (
-    <group>
+    <group ref={whole}>
       <RigidBody type="fixed" colliders={false}>
         <CylinderCollider args={[towerH / 2, LIGHTHOUSE.radius]} position={[lx, base + towerH / 2, lz]} />
         <CylinderCollider args={[0.15, LIGHTHOUSE.balcony]} position={[lx, h - 0.15, lz]} />
