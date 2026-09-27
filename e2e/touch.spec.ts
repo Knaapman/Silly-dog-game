@@ -12,7 +12,7 @@ test('tablet: touch to play, drag to move, tap the big buttons (even while movin
   await game.seconds(1.5, true);
   expect(await game.state<string>('(g) => g.players[0]?.source')).toBe('touch');
   await expect(page.getByLabel('Jump')).toBeVisible();
-  await game.teleport(0, 18, 1, 8);
+  await game.teleport(0, 12, 1, -4);
   await game.seconds(0.5);
 
   // thumb down on the left half and drag right: the animal walks right

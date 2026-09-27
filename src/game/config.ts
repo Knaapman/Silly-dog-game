@@ -28,8 +28,12 @@ export type HatId = (typeof HATS)[number];
 
 export const GRAVITY = -22;
 
-/** Half size of the fenced play area (hedges sit on this line). */
-export const WORLD_HALF = 62;
+/**
+ * Half size of the fenced play area: x runs east-west, z north-south (the camera looks north).
+ * The hedge sits on these lines, except along the south edge, where the park meets the sea.
+ */
+export const WORLD_HALF_X = 80;
+export const WORLD_HALF_Z = 65;
 
 export const MOVE = {
   speed: 9,

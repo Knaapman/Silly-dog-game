@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { playBoing } from '../audio';
 import { MOVE } from '../config';
 import { emit } from '../fx';
-import { BALL_PIT, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES } from '../layout';
+import { at3, BALL_PIT, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES, ZONES } from '../layout';
 import { lambert } from '../materials';
 import { debugInfo, players, type Surface, seesawLow } from '../runtime';
 import { SlideTower, StaticBox, useHint } from './common';
@@ -261,9 +261,9 @@ export function Playground() {
       {TRAMPOLINES.map((t, i) => (
         <Trampoline key={i} position={t.position} radius={t.radius} color={i} />
       ))}
-      <Prop kind="beachball" position={[30, 1.8, 46]} />
-      <Prop kind="beachball" position={[40, 1, 36]} />
-      <Prop kind="ball" position={[36, 1.5, 40]} color="#ffd23f" />
+      <Prop kind="beachball" position={at3(ZONES.playground, -4, 1.8, 10)} />
+      <Prop kind="beachball" position={at3(ZONES.playground, 6, 1, 0)} />
+      <Prop kind="ball" position={at3(ZONES.playground, 2, 1.5, 4)} color="#ffd23f" />
     </group>
   );
 }

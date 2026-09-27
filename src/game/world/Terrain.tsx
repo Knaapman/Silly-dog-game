@@ -1,47 +1,92 @@
 import { CuboidCollider, CylinderCollider, HeightfieldCollider, RigidBody } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { WORLD_HALF } from '../config';
-import { buildHeightGrid, groundHeight, TERRAIN } from '../terrain';
-import { distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, LAKE, MAZE, MESA, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
+import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
+import { buildHeightGrid, groundHeight, riverAt, TERRAIN, trackDist } from '../terrain';
+import { distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, MAZE, MESA, MOUNTAIN_PATHS, PATH_WIDTH, PATHS, PLAZA, SEA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
-import { GroundPatch, HedgeSegment } from './common';
+import { HedgeSegment } from './common';
+import { Water } from './Water';
 import { gameClock, useGameFrame } from '../clock';
+
+/** The big flat grass beyond the hedge, running off into the fog (it stops at the coast). */
+const FAR = 400;
+const FAR_Z = SEA.coast - FAR / 2;
+
+/** A flat rectangle of far grass at y -0.02, tiled like the park's ground so the two match at the seam. */
+function farGrass(x0: number, x1: number, z0: number, z1: number) {
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array([x0, -0.02, z0, x1, -0.02, z0, x0, -0.02, z1, x1, -0.02, z1]);
+  const uv = new Float32Array([x0, z0, x1, z0, x0, z1, x1, z1].map((v, i) => (i % 2 === 0 ? (v + FAR / 2) / FAR : (FAR_Z + FAR / 2 - v) / FAR)));
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
+  g.setIndex([0, 2, 1, 1, 2, 3]);
+  return g;
+}
 
 /**
  * The ground: a heightfield for the physics and a matching grass mesh (see terrain.ts), over a
  * big flat plane that runs off into the fog beyond the hedge.
  */
+/**
+ * The grass texture, tinted per vertex: rock where the ground is steep, snow up the mountain,
+ * sand where it dips under the water (the river's banks, the beach).
+ */
+function groundMaterial() {
+  const m = new THREE.MeshLambertMaterial({ map: grassTexture() });
+  m.onBeforeCompile = (shader) => {
+    shader.vertexShader = 'attribute vec3 blend;\nvarying vec3 vBlend;\n' + shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\nvBlend = blend;');
+    shader.fragmentShader =
+      'varying vec3 vBlend;\n' +
+      shader.fragmentShader.replace(
+        '#include <map_fragment>',
+        [
+          '#include <map_fragment>',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.6, 0.55, 0.47) * (0.7 + 0.5 * diffuseColor.g), vBlend.x);',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.95, 0.97, 1.0) * (0.85 + 0.3 * diffuseColor.g), vBlend.y);',
+          'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.88, 0.8, 0.6) * (0.75 + 0.4 * diffuseColor.g), vBlend.z);'
+        ].join('\n')
+      );
+  };
+  m.customProgramCacheKey = () => 'ground-blend';
+  return m;
+}
+
 function Ground() {
-  const material = useMemo(() => new THREE.MeshLambertMaterial({ map: grassTexture() }), []);
-  const h = WORLD_HALF;
-  const { n, heights, geometry, scale } = useMemo(() => {
-    const { n, heights } = buildHeightGrid();
-    const { half, cell } = TERRAIN;
-    const size = n * cell;
+  const material = useMemo(groundMaterial, []);
+  const far = useMemo(() => new THREE.MeshLambertMaterial({ map: grassTexture() }), []);
+  const farStrips = useMemo(
+    () => [farGrass(-FAR / 2, FAR / 2, -FAR / 2, TERRAIN.minZ), farGrass(-FAR / 2, TERRAIN.minX, TERRAIN.minZ, SEA.coast), farGrass(TERRAIN.maxX, FAR / 2, TERRAIN.minZ, SEA.coast)],
+    []
+  );
+  const { nx, nz, heights, geometry, scale, center } = useMemo(() => {
+    const { nx, nz, heights } = buildHeightGrid();
+    const { minX, minZ, maxX, maxZ, cell } = TERRAIN;
     // the mesh: one vertex per grid sample, the same heights the physics uses
     const geometry = new THREE.BufferGeometry();
-    const pos = new Float32Array((n + 1) * (n + 1) * 3);
-    const uv = new Float32Array((n + 1) * (n + 1) * 2);
-    for (let iz = 0; iz <= n; iz += 1)
-      for (let ix = 0; ix <= n; ix += 1) {
-        const k = iz * (n + 1) + ix;
-        const x = -half + ix * cell;
-        const z = -half + iz * cell;
+    const count = (nx + 1) * (nz + 1);
+    const pos = new Float32Array(count * 3);
+    const uv = new Float32Array(count * 2);
+    for (let iz = 0; iz <= nz; iz += 1)
+      for (let ix = 0; ix <= nx; ix += 1) {
+        const k = iz * (nx + 1) + ix;
+        const x = minX + ix * cell;
+        const z = minZ + iz * cell;
         pos[k * 3] = x;
         pos[k * 3 + 1] = heights[k];
         pos[k * 3 + 2] = z;
         // the same tiling as the big plane underneath, so the two match at the edge
-        uv[k * 2] = (x + 160) / 320;
-        uv[k * 2 + 1] = (160 - z) / 320;
+        uv[k * 2] = (x + FAR / 2) / FAR;
+        uv[k * 2 + 1] = (FAR_Z + FAR / 2 - z) / FAR;
       }
-    const index = new Uint32Array(n * n * 6);
+    const index = new Uint32Array(nx * nz * 6);
     let q = 0;
-    for (let iz = 0; iz < n; iz += 1)
-      for (let ix = 0; ix < n; ix += 1) {
-        const a = iz * (n + 1) + ix;
+    for (let iz = 0; iz < nz; iz += 1)
+      for (let ix = 0; ix < nx; ix += 1) {
+        const a = iz * (nx + 1) + ix;
         const b = a + 1;
-        const c = a + (n + 1);
+        const c = a + (nx + 1);
         const d = c + 1;
         index[q++] = a;
         index[q++] = c;
@@ -54,39 +99,68 @@ function Ground() {
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     geometry.setIndex(new THREE.BufferAttribute(index, 1));
     geometry.computeVertexNormals();
+    // rock on the steep bits, snow up top, sand where it goes under the water
+    const normal = geometry.getAttribute('normal') as THREE.BufferAttribute;
+    const blend = new Float32Array(count * 3);
+    for (let k = 0; k < count; k += 1) {
+      const y = heights[k];
+      const ny = normal.getY(k);
+      const snow = THREE.MathUtils.clamp((y - 7.4) / 0.9, 0, 1);
+      const sand = y < 0.05 ? THREE.MathUtils.clamp((0.05 - y) / 0.3, 0, 1) : 0;
+      const rock = THREE.MathUtils.clamp((0.93 - ny) / 0.12, 0, 1) * (1 - sand) * (1 - snow * 0.7);
+      blend[k * 3] = rock;
+      blend[k * 3 + 1] = snow;
+      blend[k * 3 + 2] = sand;
+    }
+    geometry.setAttribute('blend', new THREE.BufferAttribute(blend, 3));
     // rapier wants the height matrix column-major: rows along z, columns along x
-    const colMajor = new Float32Array((n + 1) * (n + 1));
-    for (let iz = 0; iz <= n; iz += 1) for (let ix = 0; ix <= n; ix += 1) colMajor[ix * (n + 1) + iz] = heights[iz * (n + 1) + ix];
-    return { n, heights: Array.from(colMajor), geometry, scale: { x: size, y: 1, z: size } };
+    const colMajor = new Float32Array(count);
+    for (let iz = 0; iz <= nz; iz += 1) for (let ix = 0; ix <= nx; ix += 1) colMajor[ix * (nz + 1) + iz] = heights[iz * (nx + 1) + ix];
+    return { nx, nz, heights: Array.from(colMajor), geometry, scale: { x: nx * cell, y: 1, z: nz * cell }, center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number] };
   }, []);
+  const hx = WORLD_HALF_X;
+  const hz = WORLD_HALF_Z;
   return (
     <RigidBody type="fixed" colliders={false} friction={1}>
-      <HeightfieldCollider args={[n, n, heights, scale]} friction={1} />
+      <HeightfieldCollider args={[nz, nx, heights, scale]} position={center} friction={1} />
       <mesh receiveShadow geometry={geometry} material={material} />
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} material={material}>
-        <planeGeometry args={[320, 320]} />
-      </mesh>
-      {/* Tall invisible walls so nothing escapes the park */}
-      <CuboidCollider args={[h + 2, 30, 0.5]} position={[0, 30, -h - 1]} />
-      <CuboidCollider args={[h + 2, 30, 0.5]} position={[0, 30, h + 1]} />
-      <CuboidCollider args={[0.5, 30, h + 2]} position={[-h - 1, 30, 0]} />
-      <CuboidCollider args={[0.5, 30, h + 2]} position={[h + 1, 30, 0]} />
+      {/* the flat grass beyond the park's ground: north, west and east (the sea takes the south) */}
+      {farStrips.map((g, i) => (
+        <mesh key={i} receiveShadow geometry={g} material={far} />
+      ))}
+      {/* Tall invisible walls so nothing escapes the park (or swims out to sea) */}
+      <CuboidCollider args={[hx + 2, 30, 0.5]} position={[0, 30, -hz - 1]} />
+      <CuboidCollider args={[hx + 2, 30, 0.5]} position={[0, 30, hz + 1]} />
+      <CuboidCollider args={[0.5, 30, hz + 2]} position={[-hx - 1, 30, 0]} />
+      <CuboidCollider args={[0.5, 30, hz + 2]} position={[hx + 1, 30, 0]} />
       {/* and a floor under it all, in case anything ever gets past the heightfield's edge */}
-      <CuboidCollider args={[h + 20, 0.5, h + 20]} position={[0, -1.5, 0]} />
+      <CuboidCollider args={[hx + 30, 0.5, hz + 40]} position={[0, -1.6, 0]} />
     </RigidBody>
   );
 }
 
+/** The hedge round three sides of the park (the sea is the fourth), in pieces that follow the ground. */
 function Border() {
-  const h = WORLD_HALF + 0.6;
+  const pieces = useMemo(() => {
+    const out: { from: Vec2; to: Vec2; y0: number; y1: number }[] = [];
+    const hx = WORLD_HALF_X + 0.6;
+    const hz = WORLD_HALF_Z + 0.6;
+    const add = (from: Vec2, to: Vec2) => out.push({ from, to, y0: groundHeight(from[0], from[1]), y1: groundHeight(to[0], to[1]) });
+    const STEP = 4;
+    for (let x = -hx; x < hx - 0.01; x += STEP) add([x, -hz], [Math.min(hx, x + STEP), -hz]);
+    for (let z = -hz; z < SEA.coast - 0.01; z += STEP) {
+      add([-hx, z], [-hx, Math.min(SEA.coast, z + STEP)]);
+      add([hx, z], [hx, Math.min(SEA.coast, z + STEP)]);
+    }
+    return out;
+  }, []);
   return (
     <>
-      <HedgeSegment from={[-h, -h]} to={[h, -h]} height={2.4} />
-      <HedgeSegment from={[-h, h]} to={[h, h]} height={2.4} />
-      <HedgeSegment from={[-h, -h]} to={[-h, h]} height={2.4} />
-      <HedgeSegment from={[h, -h]} to={[h, h]} height={2.4} />
+      {pieces.map((p, i) => (
+        <HedgeSegment key={i} from={p.from} to={p.to} y0={p.y0} y1={p.y1} height={2.4} />
+      ))}
       {MAZE.walls.map(([x1, z1, x2, z2], i) => (
-        <HedgeSegment key={i} from={[x1, z1]} to={[x2, z2]} height={1.4} thickness={0.9} />
+        <HedgeSegment key={`m${i}`} from={[x1, z1]} to={[x2, z2]} height={1.4} thickness={0.9} />
       ))}
     </>
   );
@@ -98,6 +172,74 @@ function offsetMaterial(map: THREE.Texture, factor = -1) {
   m.polygonOffsetFactor = factor;
   m.polygonOffsetUnits = factor;
   return m;
+}
+
+/** A disc of ground cover that follows the lie of the land (rings a metre apart). */
+export function groundDiscGeometry(center: Vec2, radius: number, lift: number, segments = 48) {
+  const rings = Math.max(2, Math.ceil(radius * 2));
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const index: number[] = [];
+  pos.push(center[0], groundHeight(center[0], center[1]) + lift, center[1]);
+  uv.push(0.5, 0.5);
+  for (let ring = 1; ring <= rings; ring += 1) {
+    const r = (radius * ring) / rings;
+    for (let s = 0; s < segments; s += 1) {
+      const a = (s / segments) * Math.PI * 2;
+      const x = center[0] + Math.cos(a) * r;
+      const z = center[1] + Math.sin(a) * r;
+      pos.push(x, groundHeight(x, z) + lift, z);
+      uv.push(0.5 + (Math.cos(a) * r) / (radius * 2), 0.5 - (Math.sin(a) * r) / (radius * 2));
+    }
+  }
+  const at = (ring: number, s: number) => (ring === 0 ? 0 : 1 + (ring - 1) * segments + (s % segments));
+  for (let s = 0; s < segments; s += 1) index.push(0, at(1, s + 1), at(1, s));
+  for (let ring = 1; ring < rings; ring += 1)
+    for (let s = 0; s < segments; s += 1) {
+      const a = at(ring, s);
+      const b = at(ring, s + 1);
+      const c = at(ring + 1, s);
+      const d = at(ring + 1, s + 1);
+      index.push(a, d, c, a, b, d);
+    }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
+}
+
+/** A strip of ground cover from `a` to `b` that follows the lie of the land. */
+export function groundRibbonGeometry(a: Vec2, b: Vec2, width: number, lift: number) {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const steps = Math.max(1, Math.ceil(len));
+  const dx = (b[0] - a[0]) / len;
+  const dz = (b[1] - a[1]) / len;
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const index: number[] = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    const x = a[0] + (b[0] - a[0]) * t;
+    const z = a[1] + (b[1] - a[1]) * t;
+    for (const side of [-1, 1]) {
+      const px = x + (dz * side * width) / 2;
+      const pz = z - (dx * side * width) / 2;
+      pos.push(px, groundHeight(px, pz) + lift, pz);
+      uv.push(t, side > 0 ? 1 : 0);
+    }
+  }
+  for (let i = 0; i < steps; i += 1) {
+    const k = i * 2;
+    index.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  return g;
 }
 
 /** Each zone gets its own floor so it reads as a different place at a glance. */
@@ -115,10 +257,11 @@ function ZoneFloors() {
     }),
     []
   );
+  const geometries = useMemo(() => FLOOR_PATCHES.map((p) => groundDiscGeometry(p.center, p.radius, p.y)), []);
   return (
     <group>
-      {FLOOR_PATCHES.map((p) => (
-        <GroundPatch key={p.kind} center={p.center} radius={p.radius} color="" material={mats[p.kind]} y={p.y} />
+      {FLOOR_PATCHES.map((p, i) => (
+        <mesh key={p.kind} receiveShadow geometry={geometries[i]} material={mats[p.kind]} />
       ))}
     </group>
   );
@@ -132,22 +275,16 @@ function Paths() {
     m.polygonOffsetUnits = -1;
     return m;
   }, []);
+  const parts = useMemo(
+    () =>
+      [...PATHS, ...MOUNTAIN_PATHS].flatMap(([a, b]) => [groundRibbonGeometry(a, b, PATH_WIDTH, 0.012), groundDiscGeometry(a, PATH_WIDTH / 2, 0.012, 20), groundDiscGeometry(b, PATH_WIDTH / 2, 0.012, 20)]),
+    []
+  );
   return (
     <group>
-      {PATHS.map(([a, b], i) => {
-        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
-        return (
-          <group key={i}>
-            <mesh receiveShadow rotation={[-Math.PI / 2, 0, -angle]} position={[(a[0] + b[0]) / 2, 0.009, (a[1] + b[1]) / 2]} material={material}>
-              <planeGeometry args={[len, PATH_WIDTH]} />
-            </mesh>
-            <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[b[0], 0.009, b[1]]} material={material}>
-              <circleGeometry args={[PATH_WIDTH / 2, 20]} />
-            </mesh>
-          </group>
-        );
-      })}
+      {parts.map((g, i) => (
+        <mesh key={i} receiveShadow geometry={g} material={material} />
+      ))}
     </group>
   );
 }
@@ -155,23 +292,13 @@ function Paths() {
 /** Keep decorations on plain grass. */
 const BLOCKERS: { c: Vec2; r: number }[] = [
   { c: PLAZA.center, r: PLAZA.radius + 1 },
-  { c: ZONES.forest, r: 21 },
-  { c: ZONES.farm, r: 16 },
-  { c: [40, 2], r: 18 },
-  { c: [33, 37], r: 18 },
-  { c: [0, -40], r: 16 },
-  { c: SNOW.center, r: SNOW.radius + 1 },
-  { c: LAKE.center, r: LAKE.radius + 3.5 },
-  { c: [38, -40], r: 12 },
-  { c: [51, -23], r: 10 },
+  ...FLOOR_PATCHES.map((p) => ({ c: p.center, r: p.radius + 1 })),
+  { c: SNOW.center, r: SNOW.radius + 3 },
+  { c: ZONES.sports, r: 15 },
   ...HILLS.map((h) => ({ c: h.center, r: h.radius + 1.2 })),
   { c: MESA.center, r: 12 },
-  { c: [FOOTBRIDGE.x, -52] as Vec2, r: 5 }
+  { c: [(FOOTBRIDGE.rampFrom + FOOTBRIDGE.deckTo) / 2, FOOTBRIDGE.z] as Vec2, r: 10 }
 ];
-
-function onTrack(x: number, z: number) {
-  return Math.abs(Math.abs(x) - 56) < 2.5 || Math.abs(Math.abs(z) - 56) < 2.5;
-}
 
 function seeded(seed: number) {
   let s = seed;
@@ -188,13 +315,16 @@ function Flowers() {
     const rnd = seeded(7);
     const colors = ['#ff6f91', '#ffd23f', '#ffffff', '#b388ff', '#ff9e40', '#4fc3f7'];
     const out: { x: number; z: number; y: number; s: number; color: string }[] = [];
+    const river = { d: 0, level: 0 };
     let guard = 0;
-    while (out.length < 420 && guard < 12000) {
+    while (out.length < 520 && guard < 16000) {
       guard += 1;
-      const x = (rnd() - 0.5) * (WORLD_HALF * 2 - 3);
-      const z = (rnd() - 0.5) * (WORLD_HALF * 2 - 3);
-      if (BLOCKERS.some((b) => distXZ(x, z, b.c[0], b.c[1]) < b.r) || onTrack(x, z)) continue;
-      out.push({ x, z, y: groundHeight(x, z), s: 0.7 + rnd() * 0.6, color: colors[Math.floor(rnd() * colors.length)] });
+      const x = (rnd() - 0.5) * (WORLD_HALF_X * 2 - 4);
+      const z = -WORLD_HALF_Z + 2 + rnd() * (SEA.coast - 8 + WORLD_HALF_Z - 2);
+      if (BLOCKERS.some((b) => distXZ(x, z, b.c[0], b.c[1]) < b.r) || trackDist(x, z) < 2.5 || riverAt(x, z, river).d < 6.5) continue;
+      const y = groundHeight(x, z);
+      if (y < 0) continue;
+      out.push({ x, z, y, s: 0.7 + rnd() * 0.6, color: colors[Math.floor(rnd() * colors.length)] });
     }
     return out;
   }, []);
@@ -356,6 +486,7 @@ export function Terrain() {
   return (
     <>
       <Ground />
+      <Water />
       <Border />
       <ZoneFloors />
       <Paths />

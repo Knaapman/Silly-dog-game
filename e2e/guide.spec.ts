@@ -12,7 +12,7 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   await game.withPads();
   await game.open();
   await game.start();
-  await game.teleport(0, -4, 1, 16);
+  await game.teleport(0, -10, 1, 20);
   await game.seconds(0.5);
 
   // B opens the album; stickers that need a friend are marked
@@ -37,15 +37,15 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   expect(await game.state<number>('(g) => g.players.length')).toBe(1);
   let g = await guide(game);
   expect(g.sticker).toBe('flush');
-  // the arrow points from the dog (-4, 16) to the toilet (10.8, -2): north-east
+  // the arrow points from the dog (-10, 20) to the toilet (4.8, -2): north-east
   expect(g.arrow.visible).toBe(true);
-  expect(g.arrow.yaw).toBeCloseTo(Math.atan2(10.8 + 4, -2 - 16), 1);
+  expect(g.arrow.yaw).toBeCloseTo(Math.atan2(4.8 + 10, -2 - 20), 1);
   expect(g.beam).toMatchObject({ visible: true });
-  expect(g.beam.x).toBeCloseTo(10.8, 1);
+  expect(g.beam.x).toBeCloseTo(4.8, 1);
   await game.screenshot('test-results/guide.png');
 
   // once there, the arrow goes away (the beam stays)
-  await game.teleport(0, 8, 1, 0);
+  await game.teleport(0, 2, 1, 0);
   await game.seconds(0.5);
   g = await guide(game);
   expect(g.arrow.visible).toBe(false);

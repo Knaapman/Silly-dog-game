@@ -10,7 +10,7 @@ test('stickers: earned by playing, shown big, collected in an album that pauses 
   expect(await got(game)).toEqual([]);
 
   // an empty tummy: the poop button toots (away from the birds, or the toot would scare them)
-  await game.teleport(0, 20, 1, -10);
+  await game.teleport(0, 14, 1, -6);
   await game.seconds(0.5);
   await game.tap('KeyG');
   expect(await got(game)).toEqual(['toot']);
@@ -19,7 +19,7 @@ test('stickers: earned by playing, shown big, collected in an album that pauses 
   await page.screenshot({ path: 'test-results/sticker-pop.png' });
 
   // a geyser throws you onto the fountain, where the first star is
-  await game.teleport(0, -8.5, 1, 5);
+  await game.teleport(0, -14.5, 1, 5);
   await game.seconds(7);
   expect(await got(game)).toEqual(['geyser', 'star', 'toot']);
   await expect(page.getByTestId('album-button')).toContainText('3');

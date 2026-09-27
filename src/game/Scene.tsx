@@ -155,7 +155,7 @@ function CameraRig() {
       orbit.current += dt * 0.04;
       desiredFocus.set(0, 0, 0);
       focus.lerp(desiredFocus, 1 - Math.exp(-1.5 * dt));
-      desiredPos.set(Math.sin(orbit.current) * 62, 44, Math.cos(orbit.current) * 62);
+      desiredPos.set(Math.sin(orbit.current) * 70, 48, Math.cos(orbit.current) * 70);
     } else {
       desiredFocus.set(0, 0, 0);
       const anyAwake = [...players.values()].some((p) => !p.asleep);
@@ -171,7 +171,13 @@ function CameraRig() {
         if (anyAwake && p.asleep) return;
         spread = Math.max(spread, Math.abs(p.position.x - desiredFocus.x) * 0.85, Math.abs(p.position.z - desiredFocus.z) * 1.35);
       });
-      desiredFocus.y = Math.min(4, Math.max(0, desiredFocus.y - 0.5) * 0.5);
+      // a jump barely moves the camera; up the mountain (or the ferris wheel) it follows properly
+      const up = Math.max(0, desiredFocus.y - 0.5);
+      desiredFocus.y = up * 0.5 + Math.max(0, up - 3) * 0.5;
+      players.forEach((p) => {
+        if (anyAwake && p.asleep) return;
+        spread = Math.max(spread, Math.abs(p.position.y - desiredFocus.y) * 0.9);
+      });
       const aspect = size.width / Math.max(1, size.height);
       const portraitBoost = aspect < 1.3 ? Math.min(1.7, 1.3 / aspect) : 1;
       const dist = (THREE.MathUtils.clamp(13 + spread * 1.4, 13, 50) * portraitBoost + (isPartyTime() ? 2.5 : 0)) * useSettings.getState().zoom;
@@ -347,7 +353,7 @@ export function Scene() {
       <FrameLoop />
       <DevHook />
       <SkyDome />
-      <fog attach="fog" args={['#d6f1ff', 90, 230]} />
+      <fog attach="fog" args={['#d6f1ff', 100, 260]} />
       <Lighting />
       <CameraRig />
       <InputSystem />

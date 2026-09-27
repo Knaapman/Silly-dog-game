@@ -8,7 +8,7 @@ test.describe('eating and pooping', () => {
     await game.start();
 
     // the dog bowl next to the spawn: 4 bites
-    await game.hopTo(0, [-5, 11], [-5, 8.8]);
+    await game.hopTo(0, [-11, 11], [-11, 8.8]);
     for (let i = 0; i < 4; i += 1) {
       await game.tap('KeyQ');
       await game.seconds(0.2);
@@ -21,7 +21,7 @@ test.describe('eating and pooping', () => {
     expect((await game.player()).belly).toBe(4);
 
     // grass anywhere: the 5th bite; then a burp keeps it at 5
-    await game.hopTo(0, [18, 9], [18, 6]);
+    await game.hopTo(0, [12, -6], [12, -4]);
     await game.tap('KeyQ');
     await game.seconds(0.2);
     expect((await game.player()).belly).toBe(5);
@@ -52,11 +52,11 @@ test.describe('eating and pooping', () => {
     const game = new Game(page);
     await game.open();
     await game.start();
-    await page.evaluate(() => (window as any).__silly.runtime.spawners.poop({ x: 19, y: 0.4, z: 6 }, { x: 0, y: 0, z: 0 }, 1, false));
+    await page.evaluate(() => (window as any).__silly.runtime.spawners.poop({ x: 13, y: 0.4, z: -6 }, { x: 0, y: 0, z: 0 }, 1, false));
     await game.seconds(1.5);
 
     // lick it: flicked away, never carried, not eaten
-    await game.hopTo(0, [19, 9.5], [19, 7.25]);
+    await game.hopTo(0, [13, -2.5], [13, -4.75]);
     const before = (await game.props('poop'))[0];
     await game.tap('KeyQ');
     await game.seconds(0.5);
@@ -79,7 +79,7 @@ test.describe('eating and pooping', () => {
     const game = new Game(page);
     await game.open();
     await game.start();
-    await page.evaluate(() => (window as any).__silly.runtime.spawners.poop({ x: 18, y: 0.4, z: 8 }, { x: 0, y: 0, z: 0 }, 1, false));
+    await page.evaluate(() => (window as any).__silly.runtime.spawners.poop({ x: 12, y: 0.4, z: -4 }, { x: 0, y: 0, z: 0 }, 1, false));
     await game.seconds(34);
     expect(await game.poopStats()).toMatchObject({ poops: 1, flowers: 0 });
     await game.seconds(2);

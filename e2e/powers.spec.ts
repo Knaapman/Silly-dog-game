@@ -6,7 +6,7 @@ test.describe('magic food', () => {
     const game = new Game(page);
     await game.open();
     await game.start();
-    await game.hopTo(0, [-6.5, -3.3], [-9.5, -3.3]); // facing the mushroom on the magic table
+    await game.hopTo(0, [-12.5, -3.3], [-15.5, -3.3]); // facing the mushroom on the magic table
     await game.tap('KeyQ');
     await game.seconds(2);
     const p = await game.player();
@@ -21,7 +21,7 @@ test.describe('magic food', () => {
     await game.open();
     await game.start();
     await page.evaluate(() => (window as any).__silly.runtime.players.get(0).powerUp('beans'));
-    await game.teleport(0, 18, 1, 8);
+    await game.teleport(0, 12, 1, -4);
     await game.seconds(1);
     const y0 = (await game.player()).y;
     let top = y0;
@@ -40,8 +40,8 @@ test.describe('magic food', () => {
     await game.start();
     await game.join('kb2');
     await page.evaluate(() => (window as any).__silly.runtime.players.get(0).powerUp('chili'));
-    await game.hopTo(0, [20, 3], [20, 6]); // lands facing +z
-    await game.teleport(1, 20, 1, 9); // friend 3 m in front
+    await game.hopTo(0, [14, -7], [14, -4]); // lands facing +z
+    await game.teleport(1, 14, 1, -1); // friend 3 m in front
     await game.seconds(1);
     const y0 = (await game.player(1)).y;
     await game.tap('KeyR');

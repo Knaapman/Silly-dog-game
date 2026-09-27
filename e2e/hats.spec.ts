@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
 // Mirrors pegPosition() in HatRack.tsx: heads in unlock order along x, facing the plaza.
-const RACK = { x: -4.85, z: -10.3, spacing: 0.85, count: 7 };
+const RACK = { x: -10.85, z: -10.3, spacing: 0.85, count: 7 };
 const pegX = (i: number) => RACK.x + (i - (RACK.count - 1) / 2) * RACK.spacing;
 
 test('stars unlock hats: the finder wears the new one, the rack has the rest', async ({ page }) => {
@@ -29,7 +29,7 @@ test('stars unlock hats: the finder wears the new one, the rack has the rest', a
   expect(await hat()).toBe('none');
 
   // the first star unlocks the crown, and whoever found it wears it
-  await game.teleport(0, 0, 4.6, -2);
+  await game.teleport(0, -6, 4.6, -2);
   await game.seconds(0.5);
   expect(await page.evaluate(() => (window as any).__silly.useProgress.getState().starsEver)).toBe(1);
   expect(await hat()).toBe('crown');

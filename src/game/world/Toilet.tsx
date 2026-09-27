@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playFlush, playPlop } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, emit, ring } from '../fx';
-import { BALL_PIT, BOUNCY_CASTLE, distXZ, ICE, LAKE, TOILET } from '../layout';
+import { BALL_PIT, BOUNCY_CASTLE, distXZ, ICE, LAKE, TOILET, WINTER } from '../layout';
 import { lambert } from '../materials';
 import { drains, players, shakeCamera, type Drain } from '../runtime';
 import { useGame } from '../store';
@@ -19,10 +19,10 @@ const BOWL_R = 0.95;
 const TOP = 1.0;
 /** Soft landings: splash in the lake, the ball pit, the bouncy castle, a slide on the ice. */
 const LANDINGS: THREE.Vector3[] = [
-  new THREE.Vector3(LAKE.center[0] - 4, 0, LAKE.center[1] - 3),
+  new THREE.Vector3(LAKE.center[0] + 6, 0, LAKE.center[1] - 4),
   new THREE.Vector3(BALL_PIT.center[0], 0, BALL_PIT.center[1]),
   new THREE.Vector3(BOUNCY_CASTLE.center[0], 0.4, BOUNCY_CASTLE.center[1]),
-  new THREE.Vector3(ICE.center[0], 0, ICE.center[1])
+  new THREE.Vector3(ICE.center[0], WINTER.level, ICE.center[1])
 ];
 
 export function Toilet() {

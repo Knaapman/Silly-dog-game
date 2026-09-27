@@ -7,7 +7,9 @@ import { playPop, playSplat, playSquelch, playYuck } from '../audio';
 import { POOP_GROUPS } from '../collision';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
-import { isInPond, type Vec3 } from '../layout';
+import { type Vec3 } from '../layout';
+import { isInWater } from '../terrain';
+import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { allocPropId, debugInfo, drains, players, props, registerProp, spawners, type PropEntry } from '../runtime';
 import { settings, SPROUT_SECONDS } from '../settings';
 import { useGame } from '../store';
@@ -144,7 +146,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
       } else if (how === 'flush') {
         emit('drop', [p.x, p.y, p.z], { count: 10, color: ['#7fd3ff', '#ffffff'], speed: 2, up: 2, size: 0.12 });
       } else if (how === 'sprout') {
-        const onGround = p.y < 1.2 && !isInPond(p.x, p.z) && Math.abs(p.x) < 60 && Math.abs(p.z) < 60;
+        const onGround = p.y < 1.2 && !isInWater(p.x, p.z) && Math.abs(p.x) < WORLD_HALF_X - 2 && Math.abs(p.z) < WORLD_HALF_Z - 2;
         if (onGround) usePoops.getState().plant(p.x, p.z);
         poof([p.x, p.y + 0.2, p.z], onGround ? '#b6f5a8' : '#ffffff', 10);
         playPop(p);

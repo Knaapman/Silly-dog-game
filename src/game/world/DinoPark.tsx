@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playCrack, playPoof, playRoar, playRumble } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
-import { BRONTO, distXZ, EGG_NEST, TREX, VOLCANO, type Vec3 } from '../layout';
+import { BRONTO, DINO_PAD, distXZ, EGG_NEST, TREX, VOLCANO, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { players, props, propPosition, registerStatic, shakeCamera, spawners, statics } from '../runtime';
 import { useGame } from '../store';
@@ -390,7 +390,7 @@ export function DinoPark() {
       <TRex />
       <EggNest />
       <BabyDinos />
-      <LaunchPad pad={{ position: [32, 0, 10.5], target: [vx, CRATER_FLOOR, vz], apex: RIM + 4 }} />
+      <LaunchPad pad={{ position: DINO_PAD, target: [vx, CRATER_FLOOR, vz], apex: RIM + 4 }} />
     </group>
   );
 }

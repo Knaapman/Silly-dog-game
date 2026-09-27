@@ -38,10 +38,10 @@ async function fleeDistance(game: Game, i: number) {
   // the same cat from the same spot each time: the open soccer field, with a clear run east
   await game.page.evaluate((i) => {
     const b = (window as any).__silly.chase.parkCats[i].getBody();
-    b.setTranslation({ x: 32, y: 1, z: -38 }, true);
+    b.setTranslation({ x: 52, y: 1, z: -46 }, true);
     b.setLinvel({ x: 0, y: 0, z: 0 }, true);
   }, i);
-  await game.teleport(0, 24.5, 1, -38);
+  await game.teleport(0, 44.5, 1, -46);
   await game.seconds(0.2);
   await game.tap('KeyR');
   await game.seconds(0.6); // startled (a hop), then off
@@ -68,7 +68,7 @@ test('chase a cat: it runs, you catch it, it flees up a tree, and a bark brings 
   // chase is the same every time and nothing gets in the way)
   await game.page.evaluate(() => {
     const b = (window as any).__silly.chase.parkCats[0].getBody();
-    b.setTranslation({ x: 32, y: 1, z: -38 }, true);
+    b.setTranslation({ x: 52, y: 1, z: -46 }, true);
     b.setLinvel({ x: 0, y: 0, z: 0 }, true);
   });
   await game.seconds(0.3);
@@ -187,7 +187,7 @@ test('catching the cats: easy, tricky, and auto that learns from each chase', as
   expect((await skill(game))[0]).toBe(0.5);
   await game.page.evaluate(() => {
     const b = (window as any).__silly.chase.parkCats[2].getBody();
-    b.setTranslation({ x: 32, y: 1, z: -38 }, true);
+    b.setTranslation({ x: 52, y: 1, z: -46 }, true);
     b.setLinvel({ x: 0, y: 0, z: 0 }, true);
   });
   await game.seconds(0.3);
@@ -198,7 +198,7 @@ test('catching the cats: easy, tricky, and auto that learns from each chase', as
   expect(up).toBeGreaterThan(0.5);
   // chase cat 3 for a bit, then give up: it calms down and counts as an escape
   await chase(game, 3, 6, 9);
-  await game.teleport(0, -40, 1, -40);
+  await game.teleport(0, -74, 1, -34);
   await game.seconds(3.5);
   expect((await cat(game, 3)).mode).toBe('idle');
   expect((await skill(game))[0]).toBeLessThan(up);
@@ -249,6 +249,7 @@ test('tag all four and the cats follow you in a line, then go home', async ({ pa
   await game.seconds(0.3);
   expect((await cat(game, 0)).mode).toBe('conga');
   await game.seconds(16);
-  for (let i = 0; i < 4; i += 1) expect((await cat(game, i)).mode).toBe('idle');
+  // (home again: napping, or already eyeing up some birds)
+  for (let i = 0; i < 4; i += 1) expect(['idle', 'stalk']).toContain((await cat(game, i)).mode);
   game.expectNoErrors();
 });

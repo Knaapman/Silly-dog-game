@@ -106,6 +106,8 @@ export type PlayerRuntime = {
   isLaunched: () => boolean;
   /** Standing on something (not in the air). */
   grounded: boolean;
+  /** Wet feet: in the river, the lagoon, the sea or the fountain. */
+  swimming: boolean;
   /** Bites in the belly (0..BELLY_MAX). Each one comes back out with the poop button. */
   belly: number;
   /** Eat something: the belly grows (or, when already full, a big burp). */

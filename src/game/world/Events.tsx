@@ -4,14 +4,14 @@ import * as THREE from 'three';
 import { create } from 'zustand';
 import { playCheer, playCollect, playFanfare, playPop, playRainPatter, playSplash, playSquawk } from '../audio';
 import { gameClock, gameNow, useGameFrame } from '../clock';
-import { PARTY_POINTS, WORLD_HALF } from '../config';
+import { PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { burstConfetti, emit, poof, ring } from '../fx';
-import { distXZ, isInPond } from '../layout';
+import { distXZ } from '../layout';
 import { lambert } from '../materials';
 import { camera, players, playersCentroid, registerFood, type PlayerRuntime } from '../runtime';
 import { settings } from '../settings';
 import { earnSticker } from '../stickers';
-import { groundHeight } from '../terrain';
+import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 
@@ -62,12 +62,11 @@ const tmp = new THREE.Vector3();
 /** A point `dist` away from the players (or the plaza), inside the park and not in the lake. */
 function spotNearPlayers(dist: number, out: THREE.Vector3) {
   if (playersCentroid(out) === 0) out.set(0, 0, 4);
-  const lim = WORLD_HALF - 8;
   for (let tries = 0; tries < 12; tries += 1) {
     const a = Math.random() * Math.PI * 2;
-    const x = THREE.MathUtils.clamp(out.x + Math.cos(a) * dist, -lim, lim);
-    const z = THREE.MathUtils.clamp(out.z + Math.sin(a) * dist, -lim, lim);
-    if (!isInPond(x, z)) return out.set(x, groundHeight(x, z), z);
+    const x = THREE.MathUtils.clamp(out.x + Math.cos(a) * dist, -WORLD_HALF_X + 8, WORLD_HALF_X - 8);
+    const z = THREE.MathUtils.clamp(out.z + Math.sin(a) * dist, -WORLD_HALF_Z + 8, WORLD_HALF_Z - 16);
+    if (!isInWater(x, z)) return out.set(x, groundHeight(x, z), z);
   }
   return out.set(0, 0, 8);
 }
@@ -157,10 +156,9 @@ function GoldenChicken() {
       dz = Math.cos(s.facing + Math.sin(gameClock.time * 0.7));
     }
     // stay in the park and out of the lake
-    const lim = WORLD_HALF - 8;
-    if (Math.abs(t.x) > lim) dx -= Math.sign(t.x) * 2;
-    if (Math.abs(t.z) > lim) dz -= Math.sign(t.z) * 2;
-    if (isInPond(t.x + dx * 2.5, t.z + dz * 2.5)) {
+    if (Math.abs(t.x) > WORLD_HALF_X - 8) dx -= Math.sign(t.x) * 2;
+    if (t.z < -WORLD_HALF_Z + 8 || t.z > WORLD_HALF_Z - 16) dz -= Math.sign(t.z) * 2;
+    if (isInWater(t.x + dx * 2.5, t.z + dz * 2.5)) {
       const ox = dx;
       dx = -dz;
       dz = ox;

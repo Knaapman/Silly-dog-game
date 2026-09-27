@@ -1,7 +1,7 @@
 import { BallCollider, CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { ISLAND, LAKE, LIGHTHOUSE, SANDCASTLES, SHIP, type Vec3 } from '../layout';
+import { at3, ISLAND, LAKE, LIGHTHOUSE, SANDCASTLES, SHIP, UMBRELLAS, WATER_LEVEL, ZONES, type Vec3 } from '../layout';
 import { lambert, stripeTexture } from '../materials';
 import { Breakable, type Piece } from './Breakable';
 import { Ramp, StaticBox } from './common';
@@ -10,21 +10,14 @@ import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
 import { useSeeThrough } from './seeThrough';
 
-function Lake() {
-  const water = useRef<THREE.Mesh>(null);
-  const capAngle = Math.acos((ISLAND.sphereRadius - ISLAND.height) / ISLAND.sphereRadius);
-  useGameFrame(() => {
-    const m = water.current?.material as THREE.MeshStandardMaterial | undefined;
-    if (m) m.color.setHSL(0.56, 0.75, 0.58 + Math.sin(gameClock.time * 1.5) * 0.025);
-  });
+/** The lagoon: the water itself is the sea's (see Water.tsx); here are the lily pads and the island. */
+function Lagoon() {
+  // the island's cap reaches a little below the waterline, so there is sand at the water's edge
+  const capAngle = Math.acos((ISLAND.sphereRadius - ISLAND.height - 0.4) / ISLAND.sphereRadius);
   return (
     <group>
-      <mesh ref={water} receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[LAKE.center[0], 0.04, LAKE.center[1]]}>
-        <circleGeometry args={[LAKE.radius, 56]} />
-        <meshStandardMaterial color="#4fc3f7" roughness={0.15} metalness={0.1} />
-      </mesh>
       {[[5, -4, 0.8], [-6, 6, 0.9], [7, 6, 0.7], [-4, -7, 0.75]].map(([x, z, r], i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, i]} position={[LAKE.center[0] + x, 0.05, LAKE.center[1] + z]} material={lambert('#4caf50')}>
+        <mesh key={i} rotation={[-Math.PI / 2, 0, i]} position={[LAKE.center[0] + x, WATER_LEVEL + 0.02, LAKE.center[1] + z]} material={lambert('#4caf50')}>
           <circleGeometry args={[r, 16, 0.3, Math.PI * 1.75]} />
         </mesh>
       ))}
@@ -115,14 +108,14 @@ function PirateShip() {
   return (
     <group>
       {/* hull */}
-      <StaticBox position={[sx, deck / 2 - 0.2, sz]} size={[L, deck + 0.4, W]} color="#8b5a2b" />
+      <StaticBox position={[sx, deck / 2 - 0.35, sz]} size={[L, deck + 0.7, W]} color="#8b5a2b" />
       <mesh castShadow position={[sx + L / 2 + 0.9, deck / 2 - 0.1, sz]} rotation={[0, Math.PI / 4, 0]} material={lambert('#8b5a2b')}>
         <boxGeometry args={[W / 1.42, deck + 0.2, W / 1.42]} />
       </mesh>
       <mesh receiveShadow position={[sx, deck + 0.01, sz]} rotation={[-Math.PI / 2, 0, 0]} material={lambert('#c9a36b')}>
         <planeGeometry args={[L - 0.2, W - 0.2]} />
       </mesh>
-      <mesh position={[sx, 0.6, sz]} material={lambert('#ffd23f')}>
+      <mesh position={[sx, 0.35, sz]} material={lambert('#ffd23f')}>
         <boxGeometry args={[L + 0.02, 0.25, W + 0.02]} />
       </mesh>
       {/* low railings (gap on the shore side for the gangplank) */}
@@ -214,23 +207,24 @@ function Umbrella({ position, colors }: { position: Vec3; colors: string[] }) {
 }
 
 export function Beach() {
+  const B = ZONES.beach;
   return (
     <group>
-      <Lake />
+      <Lagoon />
       <Lighthouse />
       <PirateShip />
       {SANDCASTLES.map((at, i) => (
         <Sandcastle key={i} at={at} />
       ))}
-      <Umbrella position={[-3, 0, 25.2]} colors={['#ff4d5e', '#ffffff']} />
-      <Umbrella position={[13.5, 0, 33]} colors={['#3b82f6', '#ffd23f']} />
-      <StaticBox position={[0, 0.3, 50.8]} size={[0.3, 0.6, 0.3]} color="#8b5a2b" />
-      <Prop kind="beachball" position={[2, 1, 25]} />
-      <Prop kind="beachball" position={[-13, 1, 40]} />
-      <Prop kind="duck" position={[4, 0.35, 33]} />
-      <Prop kind="duck" position={[6, 0.35, 42]} color="#ff8fd8" />
-      <Prop kind="duck" position={[-5, 0.35, 44]} />
-      <Prop kind="duck" position={[3, 0.35, 47]} color="#8fd3ff" />
+      {UMBRELLAS.map((u, i) => (
+        <Umbrella key={i} position={u.position} colors={u.colors} />
+      ))}
+      <Prop kind="beachball" position={at3(B, 2, 1, -14)} />
+      <Prop kind="beachball" position={at3(B, -13, 1, 0)} />
+      <Prop kind="duck" position={at3(B, 4, 0.35, -5)} />
+      <Prop kind="duck" position={at3(B, 6, 0.35, 4)} color="#ff8fd8" />
+      <Prop kind="duck" position={at3(B, -5, 0.35, 6)} />
+      <Prop kind="duck" position={at3(B, 3, 0.35, 9)} color="#8fd3ff" />
     </group>
   );
 }

@@ -22,13 +22,13 @@ test('a buddy keeps a child playing alone company', async ({ page }) => {
   const buddy = list.find((p) => p.bot)!.slot;
 
   // it follows the child
-  await game.teleport(0, 20, 1, 4);
+  await game.teleport(0, 12, 1, -4);
   await game.seconds(4);
   let b = await rt(game, buddy);
-  expect(Math.hypot(b.x - 20, b.z - 4)).toBeLessThan(6);
+  expect(Math.hypot(b.x - 12, b.z + 4)).toBeLessThan(6);
 
   // it copies a jump
-  await game.teleport(buddy, 24, 1, 4);
+  await game.teleport(buddy, 16, 1, -4);
   await game.seconds(0.5);
   const before = (await rt(game, buddy)).jumpedAt;
   await game.tap('Space');
@@ -51,9 +51,9 @@ test('a buddy keeps a child playing alone company', async ({ page }) => {
   await game.seconds(1.5);
 
   // lick it and throw it
-  await game.teleport(buddy, 23.6, 1, 10);
-  await game.hopTo(0, [20, 10], [22, 10]);
-  await game.teleport(buddy, 23.6, 1, 10);
+  await game.teleport(buddy, 10.6, 1, -3);
+  await game.hopTo(0, [7, -3], [9, -3]);
+  await game.teleport(buddy, 10.6, 1, -3);
   await game.seconds(0.1);
   await game.tap('KeyQ');
   expect((await rt(game, buddy)).grabbedBy).toBe(0);
@@ -63,14 +63,14 @@ test('a buddy keeps a child playing alone company', async ({ page }) => {
   await game.seconds(3);
 
   // near a see-saw it waits on the far end, and gets flung when the child lands on the near end
-  await game.teleport(0, 25.5, 1, 46);
-  await game.teleport(buddy, 29, 1, 50);
+  await game.teleport(0, 47.5, 1, 48);
+  await game.teleport(buddy, 51, 1, 52);
   await game.seconds(7);
   b = await rt(game, buddy);
   // (on the far end, which it has pushed down)
-  expect(Math.hypot(b.x - 33.3, b.z - 46)).toBeLessThan(1);
+  expect(Math.hypot(b.x - 55.3, b.z - 48)).toBeLessThan(1);
   expect(await page.evaluate(() => (window as any).__silly.runtime.seesawLow[0])).toBe(1);
-  await game.teleport(0, 28.8, 7, 46.3); // drop onto the raised near end
+  await game.teleport(0, 50.8, 7, 48.3); // drop onto the raised near end
   let top = 0;
   for (let i = 0; i < 30; i += 1) {
     await game.seconds(0.1);
@@ -97,27 +97,27 @@ test('the buddy follows the child up high: the same way, or with a big boing', a
   const buddy = (await roster(game)).find((p) => p.bot)!.slot;
 
   // the child rides a geyser onto the top of the fountain...
-  await game.teleport(0, 8.5, 1, 5);
-  await game.teleport(buddy, 15, 1, 10);
+  await game.teleport(0, 2.5, 1, 5);
+  await game.teleport(buddy, 9, 1, 12);
   let kidUp = false;
   for (let i = 0; i < 80 && !kidUp; i += 1) {
     await game.seconds(0.1);
     const k = await rt(game, 0);
-    kidUp = !k.launched && k.y > 3.5 && Math.hypot(k.x, k.z + 2) < 1.5;
+    kidUp = !k.launched && k.y > 3.5 && Math.hypot(k.x + 6, k.z + 2) < 1.5;
   }
   expect(kidUp).toBe(true);
   // ...and the buddy goes to the same geyser and flies up after it (not a boing, not a pop)
   const spot = () => page.evaluate((s) => (window as any).__silly.runtime.launchSpots.get(s) ?? null, buddy);
   for (let i = 0; i < 150 && !(await spot()); i += 1) await game.seconds(0.1);
-  expect(await spot()).toMatchObject({ x: 8.5, z: 5 });
+  expect(await spot()).toMatchObject({ x: 2.5, z: 5 });
   await game.seconds(3);
   let b = await rt(game, buddy);
   expect(b.y).toBeGreaterThan(3.5);
-  expect(Math.hypot(b.x, b.z + 2)).toBeLessThan(2.5);
+  expect(Math.hypot(b.x + 6, b.z + 2)).toBeLessThan(2.5);
 
   // somewhere with no way up (the top of the lighthouse): a big boing up next to the child
-  await game.teleport(0, 0, 10, 42.6);
-  await game.teleport(buddy, 6, 1, 36);
+  await game.teleport(0, -4, 10.8, 48.6);
+  await game.teleport(buddy, -4, 1, 28.5);
   await game.seconds(8);
   const k = await rt(game, 0);
   b = await rt(game, buddy);
@@ -127,7 +127,7 @@ test('the buddy follows the child up high: the same way, or with a big boing', a
   await game.screenshot('test-results/buddy-up-high.png');
 
   // back down on the grass, a buddy riding on the child's back still hops off after a while
-  await game.teleport(0, 6, 1, 30);
+  await game.teleport(0, 12, 1, -4);
   // (it comes down too: wait till it's on the ground again)
   for (let i = 0; i < 20; i += 1) {
     await game.seconds(0.5);

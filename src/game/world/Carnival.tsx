@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playBell, playBonk } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, emit } from '../fx';
-import { CAROUSEL, FERRIS, HIGH_STRIKER, type Vec2, type Vec3 } from '../layout';
+import { BUNTING_POLES, CAROUSEL, FERRIS, HIGH_STRIKER, STALLS, type Vec3 } from '../layout';
 import { lambert, stripeTexture } from '../materials';
 import { debugInfo, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
@@ -352,13 +352,6 @@ function HighStriker() {
 // ---------------------------------------------------------------------------
 // Decorations: bunting and stalls
 
-const BUNTING_POLES: Vec2[] = [
-  [-20, -28],
-  [-8, -26],
-  [8, -26],
-  [20, -28],
-  [22, -40]
-];
 
 function Bunting() {
   const flags = useRef<THREE.InstancedMesh>(null);
@@ -443,8 +436,9 @@ export function Carnival() {
       <Carousel />
       <HighStriker />
       <Bunting />
-      <Stall position={[-9, 0, -29]} colors={['#ff4d5e', '#ffffff']} />
-      <Stall position={[22, 0, -31]} colors={['#3b82f6', '#ffffff']} />
+      {STALLS.map((s, i) => (
+        <Stall key={i} position={s.position} colors={s.colors} />
+      ))}
     </group>
   );
 }

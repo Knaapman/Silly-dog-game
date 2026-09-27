@@ -10,37 +10,43 @@ import { Ramp, StaticBox, useHint } from './common';
 import { GoldenStar } from './Stars';
 import { useSurface } from './surface';
 import { gameNow, useGameFrame } from '../clock';
+import { groundHeight } from '../terrain';
 
-// The track is a rounded rectangle; `trackAt(s)` gives position + heading at distance s.
+// The track is a rounded rectangle round TRAIN.center; `trackAt(s)` gives position + heading at
+// distance s along it. The train runs east along the south straight (over the water), north up
+// the east straight past the station, west along the north straight through the tunnel, and
+// south down the west straight.
 
-const H = TRAIN.half;
 const R = TRAIN.cornerRadius;
-const C = H - R;
-const STRAIGHT = 2 * C;
+const CX = TRAIN.halfX - R;
+const CZ = TRAIN.halfZ - R;
+const [TX, TZ] = TRAIN.center;
 const ARC = (Math.PI / 2) * R;
-const LENGTH = 4 * STRAIGHT + 4 * ARC;
+const LENGTH = 4 * CX + 4 * CZ + 4 * ARC;
 const CAR_GAP = 4.6;
 const CARS = 4; // locomotive + 3 wagons
-const STOP_S = 62; // loco front at x = 20 on the bottom straight, wagons along the platform
+/** The loco's front stops at the far end of the platform (it heads north up the east straight). */
+const STOP_S = 2 * CX + ARC + (TZ + CZ - TRAIN.station.from);
+/** The platform: on the inside of the east straight. */
+const PLATFORM_X = TX + TRAIN.halfX - 2.4;
 
-type Segment = { kind: 'line'; from: [number, number]; dir: [number, number] } | { kind: 'arc'; center: [number, number]; a0: number };
+type Segment = { kind: 'line'; from: [number, number]; dir: [number, number]; len: number } | { kind: 'arc'; center: [number, number]; a0: number; len: number };
 
 const SEGMENTS: Segment[] = [
-  { kind: 'line', from: [-C, H], dir: [1, 0] },
-  { kind: 'arc', center: [C, C], a0: Math.PI / 2 },
-  { kind: 'line', from: [H, C], dir: [0, -1] },
-  { kind: 'arc', center: [C, -C], a0: 0 },
-  { kind: 'line', from: [C, -H], dir: [-1, 0] },
-  { kind: 'arc', center: [-C, -C], a0: -Math.PI / 2 },
-  { kind: 'line', from: [-H, -C], dir: [0, 1] },
-  { kind: 'arc', center: [-C, C], a0: -Math.PI }
+  { kind: 'line', from: [TX - CX, TZ + TRAIN.halfZ], dir: [1, 0], len: 2 * CX },
+  { kind: 'arc', center: [TX + CX, TZ + CZ], a0: Math.PI / 2, len: ARC },
+  { kind: 'line', from: [TX + TRAIN.halfX, TZ + CZ], dir: [0, -1], len: 2 * CZ },
+  { kind: 'arc', center: [TX + CX, TZ - CZ], a0: 0, len: ARC },
+  { kind: 'line', from: [TX + CX, TZ - TRAIN.halfZ], dir: [-1, 0], len: 2 * CX },
+  { kind: 'arc', center: [TX - CX, TZ - CZ], a0: -Math.PI / 2, len: ARC },
+  { kind: 'line', from: [TX - TRAIN.halfX, TZ - CZ], dir: [0, 1], len: 2 * CZ },
+  { kind: 'arc', center: [TX - CX, TZ + CZ], a0: -Math.PI, len: ARC }
 ];
 
 export function trackAt(s: number, out: { x: number; z: number; dx: number; dz: number }) {
   let u = ((s % LENGTH) + LENGTH) % LENGTH;
   for (const seg of SEGMENTS) {
-    const len = seg.kind === 'line' ? STRAIGHT : ARC;
-    if (u <= len) {
+    if (u <= seg.len) {
       if (seg.kind === 'line') {
         out.x = seg.from[0] + seg.dir[0] * u;
         out.z = seg.from[1] + seg.dir[1] * u;
@@ -55,9 +61,43 @@ export function trackAt(s: number, out: { x: number; z: number; dx: number; dz: 
       }
       return out;
     }
-    u -= len;
+    u -= seg.len;
   }
   return out;
+}
+
+/**
+ * Where the track runs over water (the south straight and the corners either side of it) it
+ * rides on a trestle: a deck at ground level on posts down into the sea.
+ */
+function Trestle() {
+  const pieces = useMemo(() => {
+    const out: { x: number; z: number; yaw: number; len: number; depth: number }[] = [];
+    const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    const STEP = 2.5;
+    for (let s = 0; s < LENGTH; s += STEP) {
+      trackAt(s + STEP / 2, p);
+      const depth = -groundHeight(p.x, p.z);
+      if (depth < 0.1) continue;
+      out.push({ x: p.x, z: p.z, yaw: Math.atan2(p.dx, p.dz), len: STEP + 0.1, depth });
+    }
+    return out;
+  }, []);
+  return (
+    <group>
+      {pieces.map((d, i) => (
+        <group key={i}>
+          <StaticBox position={[d.x, -0.2, d.z]} rotation={[0, d.yaw, 0]} size={[3.2, 0.4, d.len]} color="#8d6e63" />
+          {i % 2 === 0 &&
+            [-1.2, 1.2].map((side) => (
+              <mesh key={side} castShadow position={[d.x + Math.cos(d.yaw) * side, -0.3 - d.depth / 2, d.z - Math.sin(d.yaw) * side]} material={lambert('#6d4c41')}>
+                <cylinderGeometry args={[0.16, 0.18, d.depth + 0.6, 8]} />
+              </mesh>
+            ))}
+        </group>
+      ))}
+    </group>
+  );
 }
 
 function Track() {
@@ -204,21 +244,22 @@ function Car({ index, cars, trainSpeed }: { index: number; cars: MutableRefObjec
 }
 
 function Station() {
-  const z = H - 2.4;
+  const x = PLATFORM_X;
   const [from, to] = [TRAIN.station.from, TRAIN.station.to];
-  useHint([(from + to) / 2, 1.2, z], 'walk', 5);
+  const mid = (from + to) / 2;
+  useHint([x, 1.2, mid], 'walk', 5);
   return (
     <group>
-      <StaticBox position={[(from + to) / 2, 0.475, z]} size={[to - from, 0.95, 2]} color="#b0bec5" />
-      <mesh position={[(from + to) / 2, 0.96, z + 0.85]} rotation={[-Math.PI / 2, 0, 0]} material={lambert('#ffd23f')}>
-        <planeGeometry args={[to - from, 0.2]} />
+      <StaticBox position={[x, 0.475, mid]} size={[2, 0.95, to - from]} color="#b0bec5" />
+      <mesh position={[x + 0.85, 0.96, mid]} rotation={[-Math.PI / 2, 0, 0]} material={lambert('#ffd23f')}>
+        <planeGeometry args={[0.2, to - from]} />
       </mesh>
-      <Ramp from={[from - 3.2, 0, z]} to={[from, 0.95, z]} width={2} color="#b0bec5" />
-      <Ramp from={[to + 3.2, 0, z]} to={[to, 0.95, z]} width={2} color="#b0bec5" />
-      <mesh castShadow position={[(from + to) / 2, 2.1, z - 0.6]} material={lambert('#37474f')}>
+      <Ramp from={[x, 0, from - 3.2]} to={[x, 0.95, from]} width={2} color="#b0bec5" />
+      <Ramp from={[x, 0, to + 3.2]} to={[x, 0.95, to]} width={2} color="#b0bec5" />
+      <mesh castShadow position={[x - 0.6, 2.1, mid]} material={lambert('#37474f')}>
         <cylinderGeometry args={[0.08, 0.08, 2.4, 8]} />
       </mesh>
-      <mesh position={[(from + to) / 2, 3.3, z - 0.6]} rotation={[Math.PI / 2, 0, 0]} material={lambert('#ffffff')}>
+      <mesh position={[x - 0.6, 3.3, mid]} rotation={[0, 0, Math.PI / 2]} material={lambert('#ffffff')}>
         <cylinderGeometry args={[0.45, 0.45, 0.12, 20]} />
       </mesh>
     </group>
@@ -303,6 +344,7 @@ export function Train() {
   return (
     <group>
       <Track />
+      <Trestle />
       <Station />
       {Array.from({ length: CARS }, (_, i) => (
         <Car key={i} index={i} cars={cars} trainSpeed={speed} />

@@ -1,235 +1,285 @@
 // Single source of truth for where things live in the park.
-// x → right, z → towards the camera, y → up. Hedges sit at ±WORLD_HALF.
+// x → east, z → south (towards the camera), y → up. The park is 160 × 130 m: hedges at
+// x ±WORLD_HALF_X and along the north edge, the sea along the south edge.
 //
-//            Forest & maze      Carnival          Sports
-//            Farm               Fountain hub      Dino park
-//            Winter             Beach & lake      Playground
-//        (a little train drives around all of it)
+//        Carnival        Mountain (winter on top)      Sports
+//        Forest & maze   Fountain hub  ~river~         Dino park
+//        Farm            Beach & lagoon                Playground
+//        ~~~~~~~~~~~~~~~~~~~~~~ the sea ~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// The little train loops round the hub: through a tunnel at the mountain's foot, over the
+// river, past the station, and along a trestle over the water. Every zone is laid out relative
+// to its anchor in ZONES, so a whole zone can be moved by changing one number.
 
 export type Vec3 = [number, number, number];
 export type Vec2 = [number, number];
 
 export const ZONES = {
-  hub: [0, 0] as Vec2,
-  carnival: [0, -40] as Vec2,
-  sports: [38, -36] as Vec2,
-  dino: [40, 0] as Vec2,
-  playground: [34, 36] as Vec2,
-  beach: [0, 38] as Vec2,
-  winter: [-36, 36] as Vec2,
-  farm: [-40, -2] as Vec2,
-  forest: [-38, -38] as Vec2
+  hub: [-6, 0] as Vec2,
+  carnival: [-50, -26] as Vec2,
+  forest: [-58, 6] as Vec2,
+  farm: [-50, 36] as Vec2,
+  beach: [-4, 44] as Vec2,
+  playground: [56, 38] as Vec2,
+  dino: [60, -4] as Vec2,
+  sports: [58, -44] as Vec2,
+  winter: [12, -56] as Vec2
 };
+
+/** A point some way from a zone's anchor. */
+export const at = (o: Vec2, dx: number, dz: number): Vec2 => [o[0] + dx, o[1] + dz];
+export const at3 = (o: Vec2, dx: number, y: number, dz: number): Vec3 => [o[0] + dx, y, o[1] + dz];
+const Z = ZONES;
+
+// ---------------------------------------------------------------------------
+// The lie of the land (see terrain.ts): a mountain across the north with a flat top the
+// winter zone sits on, a stream down its south face that becomes the river, a lagoon at the
+// beach, and the sea along the whole south edge.
+
+export const WATER_LEVEL = -0.15;
+/** The mountain: a plateau (a thick line from `a` to `b`, `radius` wide) `level` high, with slopes `slope` wide that you can walk straight up. */
+export const MOUNTAIN = { a: [2, -58] as Vec2, b: [22, -58] as Vec2, radius: 12, level: 9, slope: 18 };
+/** Where the sea begins (the beach slopes down into it over `shore` metres). */
+export const SEA = { coast: 57, floor: -0.8, shore: 6 };
+/** The lagoon at the beach: a round bay, open to the sea. */
+export const LAKE = { center: Z.beach, radius: 12, floor: -0.7 };
+/** The river: the spring on the mountain, the stream down its face, then flat all the way to the sea. `level` is the channel floor. */
+export const RIVER: { p: Vec2; level: number }[] = [
+  { p: [22, -46], level: 8.4 },
+  { p: [22, -38], level: 4.4 },
+  { p: [22, -30], level: 0.4 },
+  { p: [22, -25], level: -0.6 },
+  { p: [24, -10], level: -0.6 },
+  { p: [26, 4], level: -0.6 },
+  { p: [23, 18], level: -0.6 },
+  { p: [26, 30], level: -0.6 },
+  { p: [24, 44], level: -0.6 },
+  { p: [26, 57], level: -0.6 },
+  { p: [26, 64], level: -0.8 }
+];
+export const RIVER_HALF_WIDTH = 3;
+export const RIVER_BANK = 2.5;
 
 // ---------------------------------------------------------------------------
 // Hub
 
-export const PLAZA = { center: [0, 2] as Vec2, radius: 13 };
-export const FOUNTAIN = { center: [0, -2] as Vec2, basinRadius: 5.5, topHeight: 3.4 };
-const FOUNTAIN_TOP = 3.4;
-export const GEYSERS: Vec2[] = [
-  [-8.5, 5],
-  [8.5, 5],
-  [0, 10.5]
-];
-export const HAT_BOX = { position: [-9, 0, -7] as Vec3, size: 1.6 };
-export const RED_BUTTON = { position: [9, 0, -7] as Vec3, radius: 1.2 };
+export const PLAZA = { center: at(Z.hub, 0, 2), radius: 13 };
+export const FOUNTAIN = { center: at(Z.hub, 0, -2), basinRadius: 5.5, topHeight: 3.4 };
+export const GEYSERS: Vec2[] = [at(Z.hub, -8.5, 5), at(Z.hub, 8.5, 5), at(Z.hub, 0, 10.5)];
+export const HAT_BOX = { position: at3(Z.hub, -9, 0, -7), size: 1.6 };
+export const RED_BUTTON = { position: at3(Z.hub, 9, 0, -7), radius: 1.2 };
 /** The hat rack: one wooden head per hat, in unlock order, facing the plaza. */
-export const HAT_RACK = { center: [-4.85, -10.3] as Vec2, spacing: 0.85, headHeight: 1.05 };
-export const SPAWN_POINTS: Vec3[] = [
-  [-2.5, 1, 8],
-  [2.5, 1, 8],
-  [-4.5, 1, 11],
-  [4.5, 1, 11]
-];
+export const HAT_RACK = { center: at(Z.hub, -4.85, -10.3), spacing: 0.85, headHeight: 1.05 };
+export const SPAWN_POINTS: Vec3[] = [at3(Z.hub, -2.5, 1, 8), at3(Z.hub, 2.5, 1, 8), at3(Z.hub, -4.5, 1, 11), at3(Z.hub, 4.5, 1, 11)];
+export const LAMP_POSTS: Vec2[] = [at(Z.hub, -11, 3), at(Z.hub, 11, 3), at(Z.hub, -9, -11), at(Z.hub, 9, -11)];
+export const TOILET = { position: at3(Z.hub, 10.8, 0, -2), seatHeight: 1.05 };
+/** The picnic blanket, on the way from the plaza to the beach. */
+export const PICNIC = { center: [3, 23] as Vec2, size: 2.8 };
+/** The lawn east of the plaza: a level, open patch of grass to run about on (and the cats' favourite hunting ground). */
+export const LAWN = { center: [12, -4] as Vec2, radius: 8 };
 
 // ---------------------------------------------------------------------------
 // Carnival
 
-export const FERRIS = { center: [0, 11, -50] as Vec3, radius: 9, gondolas: 8, speed: 0.17 };
-export const CAROUSEL = { center: [-11, -37] as Vec2, radius: 5, speed: 0.55 };
-export const HIGH_STRIKER = { position: [14, 0, -36] as Vec3, height: 8 };
+export const FERRIS = { center: at3(Z.carnival, 0, 11, -10), radius: 9, gondolas: 8, speed: 0.17 };
+export const CAROUSEL = { center: at(Z.carnival, -11, 3), radius: 5, speed: 0.55 };
+export const HIGH_STRIKER = { position: at3(Z.carnival, 10, 0, 4), height: 8 };
+/** Ice-cream stalls (the ice creams sit on the counters). */
+export const STALLS: { position: Vec3; colors: [string, string] }[] = [
+  { position: at3(Z.carnival, -9, 0, 11), colors: ['#ff4d5e', '#ffffff'] },
+  { position: at3(Z.carnival, 9, 0, 13), colors: ['#3b82f6', '#ffffff'] }
+];
+export const BUNTING_POLES: Vec2[] = [at(Z.carnival, -20, 12), at(Z.carnival, -8, 14), at(Z.carnival, 6, 14), at(Z.carnival, 14, 9), at(Z.carnival, 14, -4)];
 
 // ---------------------------------------------------------------------------
 // Sports
 
 export const SOCCER = {
-  goalCenter: [38, 0, -48.5] as Vec3,
+  goalCenter: at3(Z.sports, 0, 0, -12.5),
   goalWidth: 7,
   goalHeight: 2.8,
   goalDepth: 2.2,
-  kickoff: [38, 0.8, -38] as Vec3,
-  field: { center: [38, -40] as Vec2, size: [16, 17] as Vec2 }
+  kickoff: at3(Z.sports, 0, 0.8, -2),
+  field: { center: at(Z.sports, 0, -4), size: [16, 17] as Vec2 }
 };
 
+const LANE_X = Z.sports[0] + 13;
+const LANE_FROM = Z.sports[1] + 4;
 export const BOWLING = {
-  laneX: 51,
-  laneFrom: -32,
-  laneTo: -14,
-  ballStart: [51, 0.6, -16.5] as Vec3,
+  laneX: LANE_X,
+  laneFrom: LANE_FROM,
+  laneTo: Z.sports[1] + 22,
+  ballStart: [LANE_X, 0.6, Z.sports[1] + 19.5] as Vec3,
   pins: [
-    [51, -26.6],
-    [50.6, -27.3],
-    [51.4, -27.3],
-    [50.2, -28.0],
-    [51, -28.0],
-    [51.8, -28.0]
+    [LANE_X, LANE_FROM + 5.4],
+    [LANE_X - 0.4, LANE_FROM + 4.7],
+    [LANE_X + 0.4, LANE_FROM + 4.7],
+    [LANE_X - 0.8, LANE_FROM + 4],
+    [LANE_X, LANE_FROM + 4],
+    [LANE_X + 0.8, LANE_FROM + 4]
   ] as Vec2[]
 };
 
-export const CRATE_TOWER = { base: [26, 0, -22] as Vec3, size: 1.2, rows: 4 };
+export const CRATE_TOWER = { base: at3(Z.sports, -12, 0, 14), size: 1.2, rows: 4 };
+export const CONES: Vec3[] = [at3(Z.sports, -9, 0.4, 5), at3(Z.sports, 9, 0.4, 5), at3(Z.sports, -9, 0.4, -12), at3(Z.sports, 9, 0.4, -12), at3(Z.sports, -18, 0.4, 16), at3(Z.sports, -15, 0.4, 18)];
 
 // ---------------------------------------------------------------------------
 // Dino park
 
-export const VOLCANO = { center: [44, 8] as Vec2, baseRadius: 9.5, height: 7, craterRadius: 2.2 };
-export const BRONTO = { center: [39, -10] as Vec2 };
-export const TREX = { position: [27, 0, 14] as Vec3 };
-export const EGG_NEST = { center: [31, 3] as Vec2, eggs: 5 };
+export const VOLCANO = { center: at(Z.dino, 4, 8), baseRadius: 9.5, height: 7, craterRadius: 2.2 };
+export const BRONTO = { center: at(Z.dino, -1, -10) };
+export const TREX = { position: at3(Z.dino, -13, 0, 14) };
+export const EGG_NEST = { center: at(Z.dino, -9, 3), eggs: 5 };
+/** The pad that drops you into the volcano's crater (the dino park places it). */
+export const DINO_PAD = at3(Z.dino, -8, 0, 10.5);
 
 // ---------------------------------------------------------------------------
 // Playground
 
-export const SLIDE_TOWER = { base: [22, 0, 29] as Vec3, height: 5 };
-export const BOUNCY_CASTLE = { center: [45, 29] as Vec2, size: 7 };
-export const BALL_PIT = { center: [46, 43] as Vec2, size: 6 };
+export const SLIDE_TOWER = { base: at3(Z.playground, -12, 0, -7), height: 5 };
+export const BOUNCY_CASTLE = { center: at(Z.playground, 11, -7), size: 7 };
+export const BALL_PIT = { center: at(Z.playground, 12, 7), size: 6 };
 export const SEESAWS: { center: Vec2; angle: number }[] = [
-  { center: [31, 46], angle: 0 },
-  { center: [37, 40], angle: Math.PI / 2 }
+  { center: at(Z.playground, -3, 10), angle: 0 },
+  { center: at(Z.playground, 3, 4), angle: Math.PI / 2 }
 ];
 export const TRAMPOLINES: { position: Vec3; radius: number }[] = [
-  { position: [18, 0, 40], radius: 1.8 },
-  { position: [23, 0, 45], radius: 1.8 },
-  { position: [28, 0, 40], radius: 1.8 }
+  { position: at3(Z.playground, -16, 0, 4), radius: 1.8 },
+  { position: at3(Z.playground, -11, 0, 9), radius: 1.8 },
+  { position: at3(Z.playground, -6, 0, 4), radius: 1.8 }
 ];
 export const TRAMPOLINE_TOP = 0.14;
 
 // ---------------------------------------------------------------------------
-// Beach & lake
+// Beach & lagoon
 
-export const LAKE = { center: [0, 38] as Vec2, radius: 12 };
-export const ISLAND = { center: [0, 41] as Vec2, sphereRadius: 7, height: 0.8 };
-export const LIGHTHOUSE = { center: [0, 41] as Vec2, height: 9, radius: 1.2, balcony: 2.4 };
-export const SHIP = { center: [-7, 35] as Vec2, deck: 1.8, length: 9, width: 3.6 };
-export const SANDCASTLES: Vec2[] = [
-  [6, 25.5],
-  [10, 29],
-  [-11, 29]
+export const ISLAND = { center: at(Z.beach, 0, 3), sphereRadius: 7, height: 0.8 };
+export const LIGHTHOUSE = { center: ISLAND.center, height: 9, radius: 1.2, balcony: 2.4 };
+/** The pirate ship, afloat at the lagoon's edge, its gangplank down to the sand. */
+export const SHIP = { center: at(Z.beach, -8, -6), deck: 1.8, length: 9, width: 3.6 };
+export const SANDCASTLES: Vec2[] = [at(Z.beach, 6, -15), at(Z.beach, 12, -11), at(Z.beach, -13, -11)];
+export const UMBRELLAS: { position: Vec3; colors: [string, string] }[] = [
+  { position: at3(Z.beach, -5, 0, -16), colors: ['#ff4d5e', '#ffffff'] },
+  { position: at3(Z.beach, 15, 0, -8), colors: ['#3b82f6', '#ffd23f'] }
 ];
 
 // ---------------------------------------------------------------------------
-// Winter
+// Winter: on top of the mountain. Everything here stands `level` metres up.
 
-export const SNOW = { center: [-36, 37] as Vec2, radius: 17 };
-export const SNOW_HILL = { center: [-43, 42] as Vec2, sphereRadius: 14, height: 4.5 };
-export const SKI_JUMP = { base: [-24, 0, 30] as Vec3, height: 4.5 };
-export const ICE = { center: [-27, 45] as Vec2, radius: 5.5 };
-export const SNOWMEN: Vec2[] = [
-  [-38, 26],
-  [-22, 36],
-  [-35, 50],
-  [-44, 30]
-];
-export const SNOWBALLS: Vec3[] = [
-  [-33, 1, 35],
-  [-30, 1, 39]
-];
+export const WINTER = { level: MOUNTAIN.level };
+export const SNOW = { center: Z.winter, radius: 13 };
+/** The summit: a round snowy top above the plateau (a launch pad at the foot gets you up). */
+export const SNOW_HILL = { center: at(Z.winter, -10, -3), radius: 8, height: 4 };
+export const SKI_JUMP = { base: at3(Z.winter, 18, WINTER.level, 2), height: 4.5 };
+export const ICE = { center: at(Z.winter, 0, 6), radius: 4.5 };
+export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.winter, 21, -6), at(Z.winter, -14, 8)];
+export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7)];
 
 // ---------------------------------------------------------------------------
 // Farm
 
-export const BARN = { center: [-47, -9] as Vec2, width: 10, depth: 8, wallHeight: 5, ridgeHeight: 8.2 };
-export const SILO = { center: [-51.5, 2] as Vec2, radius: 2.2, height: 9 };
-export const WINDMILL = { position: [-51, 0, 13] as Vec3 };
-export const MUD = { center: [-33, -9] as Vec2, radius: 3.5 };
-export const PASTURE = { center: [-41, 8] as Vec2, size: [12, 8] as Vec2 };
-export const CHICKEN_HOME = { center: [-36, -2] as Vec2, radius: 8, count: 8 };
-export const MELON_PATCH: Vec2[] = [
-  [-27, 6],
-  [-24.5, 6],
-  [-22, 6],
-  [-27, 9],
-  [-24.5, 9],
-  [-22, 9]
+export const BARN = { center: at(Z.farm, -7, -7), width: 10, depth: 8, wallHeight: 5, ridgeHeight: 8.2 };
+export const SILO = { center: at(Z.farm, -11.5, 4), radius: 2.2, height: 9 };
+export const WINDMILL = { position: at3(Z.farm, -11, 0, 15) };
+export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
+export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
+export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
+export const MELON_PATCH: Vec2[] = [at(Z.farm, 8, 10), at(Z.farm, 10.5, 10), at(Z.farm, 13, 10), at(Z.farm, 8, 13), at(Z.farm, 10.5, 13), at(Z.farm, 13, 13)];
+export const TRACTOR = at3(Z.farm, -3, 0, -17);
+export const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [
+  { kind: 'hay', position: at3(Z.farm, -0.5, 0.62, -12.5), rotation: [0, 0, Math.PI / 2] },
+  { kind: 'hay', position: at3(Z.farm, -2.9, 0.62, -12.8), rotation: [0, 0.3, Math.PI / 2] },
+  { kind: 'hay', position: at3(Z.farm, 1.5, 0.55, -7) },
+  { kind: 'barrel', position: at3(Z.farm, -4, 0.5, -1.5) },
+  { kind: 'barrel', position: at3(Z.farm, -5.2, 0.5, -2.3), color: '#3b82f6' },
+  { kind: 'barrel', position: at3(Z.farm, -12, 0.5, -1), color: '#22c55e' }
 ];
 
 // ---------------------------------------------------------------------------
 // Forest & maze
 
 export const MUSHROOMS: { center: Vec2; height: number; radius: number; color: string }[] = [
-  { center: [-25, -32], height: 1.8, radius: 2.3, color: '#ff4d5e' },
-  { center: [-21, -37], height: 3.4, radius: 2.1, color: '#a855f7' },
-  { center: [-24, -42.5], height: 5, radius: 2, color: '#3b82f6' },
-  { center: [-30, -43], height: 6.6, radius: 1.9, color: '#ff8fd8' },
-  { center: [-32, -37], height: 8.2, radius: 1.8, color: '#ffb020' }
+  { center: at(Z.forest, 13, 6), height: 1.8, radius: 2.3, color: '#ff4d5e' },
+  { center: at(Z.forest, 17, 1), height: 3.4, radius: 2.1, color: '#a855f7' },
+  { center: at(Z.forest, 14, -4.5), height: 5, radius: 2, color: '#3b82f6' },
+  { center: at(Z.forest, 8, -5), height: 6.6, radius: 1.9, color: '#ff8fd8' },
+  { center: at(Z.forest, 6, 1), height: 8.2, radius: 1.8, color: '#ffb020' }
 ];
 
+const MAZE_C = at(Z.forest, -6, -4);
+const mz = (x1: number, z1: number, x2: number, z2: number): [number, number, number, number] => [MAZE_C[0] + x1, MAZE_C[1] + z1, MAZE_C[0] + x2, MAZE_C[1] + z2];
 export const MAZE = {
-  center: [-44, -42] as Vec2,
-  // [x1, z1, x2, z2] hedge segments (axis aligned); clear of the train's corner
-  walls: [
-    [-50, -48, -38, -48],
-    [-50, -48, -50, -36],
-    [-50, -36, -46, -36],
-    [-42, -36, -38, -36],
-    [-38, -48, -38, -36],
-    [-47, -45, -41, -45],
-    [-47, -45, -47, -39],
-    [-47, -39, -45, -39],
-    [-41, -45, -41, -39],
-    [-43, -39, -41, -39]
-  ] as [number, number, number, number][]
+  center: MAZE_C,
+  /** [x1, z1, x2, z2] hedge segments (axis aligned). */
+  walls: [mz(-6, -6, 6, -6), mz(-6, -6, -6, 6), mz(-6, 6, -2, 6), mz(2, 6, 6, 6), mz(6, -6, 6, 6), mz(-3, -3, 3, -3), mz(-3, -3, -3, 3), mz(-3, 3, -1, 3), mz(3, -3, 3, 3), mz(1, 3, 3, 3)]
 };
+export const FALLEN_LOG = at3(Z.forest, -4, 0.55, 13);
 
 // ---------------------------------------------------------------------------
-// Landmarks in the open grass: hills to run up and jump off, a mesa with the train tunnel
-// through it (a ramp and a launch pad get you on top), and a footbridge over the track
+// Landmarks in the open grass
 
+/** Hills to run up and jump off: round bumps in the ground (the summit is one too). */
 export const HILLS: { center: Vec2; radius: number; height: number }[] = [
-  { center: [-26, -14], radius: 6.5, height: 2.6 },
-  { center: [27, -14], radius: 5, height: 2.2 },
-  { center: [23, -45], radius: 5.5, height: 2.4 }
+  { center: [-30, -36], radius: 5.5, height: 2.5 },
+  { center: [-27, 45], radius: 5, height: 2.2 },
+  { center: [-36, -52], radius: 6, height: 2.6 }
 ];
 
-/** The mesa straddles the east straight of the track: x 50..62, z -9..9, tunnel along z. */
+/**
+ * The mesa: a rocky outcrop at the mountain's foot with the train tunnel through it. The tunnel
+ * runs along x (the north straight). You get on top from the mountainside: a short ramp from
+ * the slope behind it. Its end rests a little above the top: a ramp that only meets a ledge
+ * level with it leaves a step that stops a rolling animal.
+ */
 export const MESA = {
-  center: [56, 0] as Vec2,
-  halfWidth: 6,
+  center: [-14, -22] as Vec2,
+  /** Half the tunnel's length (along x) and half the mesa's width (along z). */
   halfLength: 9,
+  halfWidth: 6,
   /** The tunnel: this wide, this tall (the train is 2.4 m wide, 3.6 m tall with its chimney). */
   opening: 4.4,
   clearance: 4.2,
   roof: 1,
-  /**
-   * A ramp up to the top, square on to the north face (a ramp that comes in at an angle lets an
-   * animal hugging its rail run into the corner). Its end rests a little above the top: a ramp
-   * that only meets a ledge level with it leaves a step that stops a rolling animal.
-   */
-  rampFrom: [51.3, 0, 20] as Vec3,
-  rampTo: [51.3, 5.6, 9.2] as Vec3
+  rampFrom: [-14, 0, -38] as Vec3,
+  rampTo: [-14, 5.5, -28.4] as Vec3
 };
 
 /**
- * A footbridge over the north straight: walk up from the park, look down on the train. The deck
- * is a chunky box: a thin slab lets a fast animal sink through (the physics flips the contact to
- * the underside once the ball's middle passes the slab's middle).
+ * A footbridge over the west straight, on the way to the farm: up the ramp from the hub side,
+ * along the deck, look down on the train. The deck is a chunky box: a thin slab lets a fast
+ * animal sink through.
  */
-export const FOOTBRIDGE = { x: -18, height: 4.6, deckThickness: 1, rampFrom: -43, deckFrom: -51.5, deckTo: -60.5, width: 2.6 };
+export const FOOTBRIDGE = { z: 36, height: 4.6, deckThickness: 1, rampFrom: -22, deckFrom: -30, deckTo: -39, width: 2.6 };
 
 // ---------------------------------------------------------------------------
-// Train (rounded rectangle around the whole park)
+// Train: a rounded rectangle round the hub. Legs: north z = -22, east x = 34, south z = 56
+// (over the water, on a trestle), west x = -34. The station is on the east straight.
 
-export const TRAIN = { half: 56, cornerRadius: 14, speed: 6, station: { from: 6, to: 20 } };
+export const TRAIN = {
+  center: [0, 17] as Vec2,
+  halfX: 34,
+  halfZ: 39,
+  cornerRadius: 10,
+  speed: 6,
+  /** The platform: along the east straight, between these z values, on the inside. */
+  station: { from: 12, to: 26 }
+};
+
+/** The track over the river: a low bridge (its deck carries the track over the channel). */
+export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, length: 14, width: 3.4 };
+/** The path from the hub to the dino park crosses the river here. */
+export const RIVER_FOOTBRIDGE = { center: [25, -2] as Vec2, length: 12, width: 2.8 };
+/** Stepping stones across the river on the way to the playground. */
+export const STEPPING_STONES = { from: [20.5, 30] as Vec2, to: [31.5, 30] as Vec2, count: 7, radius: 0.75 };
 
 // ---------------------------------------------------------------------------
 // Launch pads (glowing arrows)
 
 export type LaunchPadDef = { position: Vec3; target: Vec3; apex: number };
 export const LAUNCH_PADS: LaunchPadDef[] = [
-  { position: [-36, 0, -16], target: [BARN.center[0], BARN.ridgeHeight, BARN.center[1]], apex: 11.5 },
-  { position: [-20, 0, 18], target: [SNOW_HILL.center[0], SNOW_HILL.height, SNOW_HILL.center[1]], apex: 12 },
-  { position: [18, 0, -14], target: [CRATE_TOWER.base[0], 5, CRATE_TOWER.base[2]], apex: 9 },
-  { position: [42, 0, -19], target: [56, 5.2, 0], apex: 12 }
+  { position: at3(Z.farm, 4, 0, -18), target: [BARN.center[0], BARN.ridgeHeight, BARN.center[1]], apex: 11.5 },
+  { position: [10, 0, -29], target: [SNOW_HILL.center[0], WINTER.level + SNOW_HILL.height, SNOW_HILL.center[1]], apex: 18 },
+  { position: [38, 0, -22], target: [CRATE_TOWER.base[0], 5, CRATE_TOWER.base[2]], apex: 9 }
 ];
 
 // ---------------------------------------------------------------------------
@@ -242,11 +292,11 @@ export const GOLDEN_STARS: (Vec3 | 'train')[] = [
   [VOLCANO.center[0], 13, VOLCANO.center[1]], // above the volcano crater
   [SLIDE_TOWER.base[0], SLIDE_TOWER.height + 1.3, SLIDE_TOWER.base[2]], // top of the slide tower
   [LIGHTHOUSE.center[0], LIGHTHOUSE.height + 1.2, LIGHTHOUSE.center[1] + 1.6], // lighthouse balcony (ship cannon)
-  [SNOW_HILL.center[0], SNOW_HILL.height + 1.4, SNOW_HILL.center[1]], // snow hill top
+  [SNOW_HILL.center[0], WINTER.level + SNOW_HILL.height + 1.4, SNOW_HILL.center[1]], // the summit (launch pad)
   [BARN.center[0], BARN.ridgeHeight + 1.4, BARN.center[1]], // barn roof (launch pad)
   [MUSHROOMS[4].center[0], MUSHROOMS[4].height + 2.2, MUSHROOMS[4].center[1]], // above the tallest mushroom
   [MAZE.center[0], 1.0, MAZE.center[1]], // hedge maze centre
-  [48.2, 7.9, -10], // on the brontosaurus's head
+  [BRONTO.center[0] + 9.2, 7.9, BRONTO.center[1]], // on the brontosaurus's head
   'train' // riding on the train's roof
 ];
 
@@ -258,71 +308,80 @@ export type SnackKind = 'kibble' | 'cake' | 'carrot' | 'icecream' | MagicKind;
 export type MagicKind = 'beans' | 'mushroom' | 'chili';
 export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   // dog bowls right next to where everyone spawns
-  { kind: 'kibble', position: [-5, 0, 7.5] },
-  { kind: 'kibble', position: [5, 0, 7.5] },
-  // picnic blanket between the plaza and the beach
-  { kind: 'cake', position: [6.4, 0.06, 20] },
-  { kind: 'cake', position: [7.6, 0.06, 21] },
-  { kind: 'cake', position: [6.6, 0.06, 21.3] },
+  { kind: 'kibble', position: at3(Z.hub, -5, 0, 7.5) },
+  { kind: 'kibble', position: at3(Z.hub, 5, 0, 7.5) },
+  // cakes on the picnic blanket
+  { kind: 'cake', position: [PICNIC.center[0] - 0.6, 0.06, PICNIC.center[1] - 0.6] },
+  { kind: 'cake', position: [PICNIC.center[0] + 0.6, 0.06, PICNIC.center[1] + 0.4] },
+  { kind: 'cake', position: [PICNIC.center[0] - 0.4, 0.06, PICNIC.center[1] + 0.7] },
   // carrot patch on the farm
-  ...([[-32, 3], [-30.6, 3], [-29.2, 3], [-32, 4.6], [-30.6, 4.6], [-29.2, 4.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: [c[0], 0, c[1]] as Vec3 })),
-  // ice creams on the carnival stall counters
-  { kind: 'icecream', position: [-9.6, 1.2, -28.6] },
-  { kind: 'icecream', position: [-8.4, 1.2, -28.6] },
-  { kind: 'icecream', position: [21.4, 1.2, -30.6] },
-  { kind: 'icecream', position: [22.6, 1.2, -30.6] },
+  ...([[8, 5], [9.4, 5], [10.8, 5], [8, 6.6], [9.4, 6.6], [10.8, 6.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: at3(Z.farm, c[0], 0, c[1]) })),
+  // ice creams on the stall counters
+  ...STALLS.flatMap((s) => [-0.6, 0.6].map((dx) => ({ kind: 'icecream' as const, position: [s.position[0] + dx, 1.2, s.position[2] + 0.4] as Vec3 }))),
   // the magic snack table on the west side of the plaza...
-  { kind: 'beans', position: [-10.8, 0, -4.6] },
-  { kind: 'mushroom', position: [-10.8, 0, -3.3] },
-  { kind: 'chili', position: [-10.8, 0, -2] },
+  { kind: 'beans', position: at3(Z.hub, -10.8, 0, -4.6) },
+  { kind: 'mushroom', position: at3(Z.hub, -10.8, 0, -3.3) },
+  { kind: 'chili', position: at3(Z.hub, -10.8, 0, -2) },
   // ...and one of each out in the park, where it fits
-  { kind: 'beans', position: [-38, 0, -14] },
-  { kind: 'mushroom', position: [-29, 0, -28] },
-  { kind: 'chili', position: [32, 0, 10] }
+  { kind: 'beans', position: [-28, 0, 10] },
+  { kind: 'mushroom', position: at3(Z.forest, 8, 0, 10) },
+  { kind: 'chili', position: at3(Z.dino, -5, 0, 15) }
 ];
-export const TOILET = { position: [10.8, 0, -2] as Vec3, seatHeight: 1.05 };
-export const PICNIC = { center: [7, 20.6] as Vec2, size: 2.8 };
 
 // ---------------------------------------------------------------------------
+// Paths: from the signposts round the plaza out to each zone. They are level (the ground is
+// pressed flat under them); the ones up the mountain follow the slope instead.
 
 export const PATHS: [Vec2, Vec2][] = [
-  [[0, -12], [0, -30]],
-  [[8, -9], [30, -30]],
-  [[12, 0], [30, 0]],
-  [[9, 9], [22, 15]],
-  [[-9, 9], [-23, 19]],
-  [[-12, 0], [-30, 0]],
-  [[-8, -9], [-26, -28]],
-  [[10, 16], [16, 30]]
+  [[-1, -14], [-1, -20]], // north, to the mountain path
+  [[8, 0], [19, -2]], // east, to the river footbridge...
+  [[31, -2], [40, -2]], // ...and on to the dino park
+  [[40, -2], [46, -1]],
+  [[40, -2], [46, -24]], // north from the dino junction to the sports
+  [[6, 9], [20, 30]], // south-east, to the stepping stones...
+  [[32, 30], [42, 34]], // ...and on to the playground
+  [[-4, 15.6], [-4, 27]], // south, to the beach
+  [[-15.5, 11.5], [-34, 22]], // south-west, over the track to the farm
+  [[-34, 22], [-40, 22.5]],
+  [[-20, 2.5], [-26, 4]], // west, to the forest
+  [[-26, 4], [-37.5, 5]],
+  [[-16.5, -8.5], [-36, -19]] // north-west, to the carnival
 ];
+/**
+ * The path up the mountain: drawn on the slope. The ground under it is graded to a straight
+ * climb from the foot (`from`) to the plateau's edge (`to`), so there are no bumps on the way up.
+ */
+export const MOUNTAIN_PATHS: [Vec2, Vec2][] = [[[-1, -20], [2, -46]]];
+export const MOUNTAIN_PATH_GRADE = { from: [-1, -28] as Vec2, to: [2, -46] as Vec2 };
+export const PATH_WIDTH = 2.6;
 
 /** Pictogram signposts at the plaza edge, pointing at each zone. */
 export const SIGNS: { position: Vec2; zone: keyof typeof ZONES; icon: string }[] = [
-  { position: [-3.5, -13], zone: 'carnival', icon: '🎡' },
-  { position: [11, -9.5], zone: 'sports', icon: '⚽' },
-  { position: [14, 3.5], zone: 'dino', icon: '🦕' },
-  { position: [11.5, 12.5], zone: 'playground', icon: '🛝' },
-  { position: [-3, 16], zone: 'beach', icon: '🏝️' },
-  { position: [-11.5, 12.5], zone: 'winter', icon: '⛄' },
-  { position: [-14, -3.5], zone: 'farm', icon: '🐄' },
-  { position: [-11, -10], zone: 'forest', icon: '🍄' }
+  { position: [-1, -12.4], zone: 'winter', icon: '⛄' },
+  { position: [4.6, -8.4], zone: 'sports', icon: '⚽' },
+  { position: [8, 0], zone: 'dino', icon: '🦕' },
+  { position: [6, 9], zone: 'playground', icon: '🛝' },
+  { position: [-4, 15.6], zone: 'beach', icon: '🏝️' },
+  { position: [-15.5, 11.5], zone: 'farm', icon: '🐄' },
+  { position: [-20, 2.5], zone: 'forest', icon: '🍄' },
+  { position: [-16.5, -8.5], zone: 'carnival', icon: '🎡' }
 ];
 
 export const BALLOONS: Vec3[] = [
-  [-5, 2.4, 9],
-  [5, 2.8, 9],
-  [0, 3.2, 13.5],
-  [6, 3, -30],
-  [9, 4, -32],
-  [-6, 3.4, -30],
-  [19, 3, -32],
-  [18, 5.5, 40],
-  [28, 6, 40],
-  [23, 7.5, 45],
-  [45, 3.5, 36],
-  [4, 2.4, 23],
-  [-26, 2.6, -28],
-  [-21, 4.5, -33]
+  at3(Z.hub, -5, 2.4, 9),
+  at3(Z.hub, 5, 2.8, 9),
+  at3(Z.hub, 0, 3.2, 13.5),
+  at3(Z.carnival, 6, 3, 10),
+  at3(Z.carnival, 9, 4, 8),
+  at3(Z.carnival, -6, 3.4, 10),
+  at3(Z.carnival, 16, 3, 4),
+  at3(Z.playground, -16, 5.5, 4),
+  at3(Z.playground, -6, 6, 4),
+  at3(Z.playground, -11, 7.5, 9),
+  at3(Z.playground, 11, 3.5, 0),
+  [0, 2.4, 29],
+  at3(Z.forest, 12, 2.6, 10),
+  at3(Z.forest, 17, 4.5, 5)
 ];
 
 // ---------------------------------------------------------------------------
@@ -330,69 +389,51 @@ export const BALLOONS: Vec3[] = [
 // open grass, and on a few high spots you need a launcher for)
 
 export const CAT_HOMES: Vec2[] = [
-  [13, -10],
-  [-18, -7],
-  [11, 27],
-  [33, 19]
+  [8, -18],
+  [-26, -4],
+  [14, 41],
+  [38, 8]
 ];
 
-/** Where bird flocks land: [x, ground height, z, spread radius]. */
+/** Where bird flocks land: [x, height above the ground, z, spread radius]. */
 export const BIRD_SPOTS: [number, number, number, number][] = [
-  [-8, 0, 13, 2.2],
-  [7, 0, -13, 2.2],
-  [38, 0, -40, 2.6],
-  [-41, 0, 8, 2.6],
-  [-9, 0, 25, 2],
-  [-44, 0, 20, 2.2],
-  [7, 0, -28, 2.2],
-  [21, 0, 3, 2],
-  [36, 0, 29, 2.2],
-  [-26, 0, -39, 2],
-  [0, FOUNTAIN_TOP, -2, 0.9],
-  [-7, 1.8, 35, 1.3]
+  [-12, 0, 14, 2.2],
+  [3, 0, -14, 2.2],
+  [SOCCER.field.center[0], 0, SOCCER.field.center[1], 2.6],
+  [PASTURE.center[0], 0, PASTURE.center[1], 2.6],
+  [-15, 0, 25, 2],
+  [-48, 0, -10, 2.2],
+  [10, 0, 7, 2],
+  [60, 0, 35, 2.2],
+  [-52, 0, -4, 2],
+  [20, 0, -62, 2],
+  [-22, 0, -44, 2.2],
+  [FOUNTAIN.center[0], FOUNTAIN.topHeight, FOUNTAIN.center[1], 0.9],
+  [SHIP.center[0] + 1, SHIP.deck, SHIP.center[1], 1.3]
 ];
 export const BIRD_FLOCKS = 4;
 
 export type TreeKind = 'round' | 'blossom' | 'pine' | 'palm' | 'snowpine';
+const treesOf = (kind: TreeKind | ((i: number) => TreeKind), list: Vec2[]) => list.map((at, i) => ({ at, kind: typeof kind === 'function' ? kind(i) : kind }));
 export const TREES: { at: Vec2; kind: TreeKind }[] = [
   // forest (dense)
-  ...(
-    [
-      [-59.5, -32], [-52, -26], [-44, -30], [-38, -27], [-35, -50], [-28, -52], [-24, -50], [-13, -49],
-      [-10, -26], [-38, -52], [-56, -55], [-18, -24], [-40, -33], [-34, -31], [-27, -25], [-12, -52.5]
-    ] as Vec2[]
-  ).map((at, i) => ({ at, kind: (i % 3 === 0 ? 'pine' : i % 3 === 1 ? 'round' : 'blossom') as TreeKind })),
-  // farm & hub edges
-  ...([[-59, -20], [-31, -21], [-18, 3], [-59, 22], [17, -5], [-13, -19], [17, 19], [-17, 19]] as Vec2[]).map((at, i) => ({
-    at,
-    kind: (i % 2 === 0 ? 'round' : 'blossom') as TreeKind
-  })),
-  // sports / dino
-  ...([[16, -50], [51, -45], [33, -18], [60, -18], [31, 22], [59, 22]] as Vec2[]).map((at, i) => ({
-    at,
-    kind: (i % 2 === 0 ? 'pine' : 'round') as TreeKind
-  })),
-  // playground
-  ...([[13, 33], [50, 49], [28, 53], [48, 17]] as Vec2[]).map((at) => ({ at, kind: 'round' as TreeKind })),
+  ...treesOf((i) => (i % 3 === 0 ? 'pine' : i % 3 === 1 ? 'round' : 'blossom'), [
+    [-74, 12], [-72, -2], [-66, -8], [-60, -9], [-54, -9], [-46, -4], [-72, 18], [-68, 22], [-47, 25], [-48, 21], [-40, 0], [-40, 12], [-64, 12], [-56, 12], [-54, 3], [-70, 24]
+  ]),
+  // round the hub, and between the hub and its neighbours
+  ...treesOf((i) => (i % 2 === 0 ? 'round' : 'blossom'), [[-24, -10], [-30, -2], [-26, 30], [13, -13], [10, -12], [16, 12], [8, 26], [-30, -40], [-70, -26], [-66, -40], [-38, -42], [-66, 26], [-38, 31], [-66, 46]]),
+  // east: by the sports, the dino park and the playground
+  ...treesOf((i) => (i % 2 === 0 ? 'pine' : 'round'), [[40, -14], [72, 20], [74, -30], [50, -62], [40, -40], [40, -52], [38.5, 45.5], [46, 26]]),
+  // on the mountain's slopes
+  ...treesOf('pine', [[-16, -46], [34, -36], [-8, -36], [32, -30], [44, -50]]),
   // beach palms
-  ...([[-16, 25], [-17, 33], [-16, 50], [16, 49], [19, 22]] as Vec2[]).map((at) => ({ at, kind: 'palm' as TreeKind })),
-  // winter
-  ...([[-52, 28], [-59.5, 38], [-27, 52], [-18, 33], [-41, 52], [-31, 21], [-19, 45]] as Vec2[]).map((at) => ({
-    at,
-    kind: 'snowpine' as TreeKind
-  }))
+  ...treesOf('palm', [[-22, 30], [-19, 42], [12, 44], [16, 50], [-22, 52], [38, 51]]),
+  // snow pines on the plateau
+  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-8, -50], [14, -64], [8, -45], [-2, -63]])
 ];
 
 export function distXZ(ax: number, az: number, bx: number, bz: number) {
   return Math.hypot(ax - bx, az - bz);
-}
-
-export function isInPond(x: number, z: number) {
-  const inLake = distXZ(x, z, LAKE.center[0], LAKE.center[1]) < LAKE.radius - 0.4;
-  const onIsland = distXZ(x, z, ISLAND.center[0], ISLAND.center[1]) < 3.1;
-  const inFountain = distXZ(x, z, FOUNTAIN.center[0], FOUNTAIN.center[1]) < FOUNTAIN.basinRadius - 0.3;
-  const underShip = Math.abs(x - SHIP.center[0]) < SHIP.length / 2 && Math.abs(z - SHIP.center[1]) < SHIP.width / 2;
-  return (inLake && !onIsland && !underShip) || inFountain;
 }
 
 export function isInMud(x: number, z: number) {
@@ -403,31 +444,38 @@ export function isOnSnow(x: number, z: number) {
   return distXZ(x, z, SNOW.center[0], SNOW.center[1]) < SNOW.radius;
 }
 
+export function isInFountain(x: number, z: number) {
+  return distXZ(x, z, FOUNTAIN.center[0], FOUNTAIN.center[1]) < FOUNTAIN.basinRadius - 0.3;
+}
+
 /** Coloured ground in each area. Everything outside these (and the paths) is grass. */
 export type FloorKind = 'forest' | 'dirt' | 'dino' | 'rubber' | 'carnival' | 'snow' | 'sand' | 'plaza';
 export const FLOOR_PATCHES: { center: Vec2; radius: number; kind: FloorKind; y: number }[] = [
-  { center: ZONES.forest, radius: 20, kind: 'forest', y: 0.006 },
-  { center: ZONES.farm, radius: 13, kind: 'dirt', y: 0.007 },
-  { center: [40, 2], radius: 15.5, kind: 'dino', y: 0.007 },
-  { center: [33, 37], radius: 17, kind: 'rubber', y: 0.007 },
-  { center: [0, -40], radius: 15, kind: 'carnival', y: 0.007 },
+  { center: Z.forest, radius: 18, kind: 'forest', y: 0.006 },
+  { center: Z.farm, radius: 13, kind: 'dirt', y: 0.007 },
+  { center: at(Z.dino, 0, 2), radius: 15.5, kind: 'dino', y: 0.007 },
+  { center: at(Z.playground, -1, 1), radius: 15, kind: 'rubber', y: 0.007 },
+  { center: Z.carnival, radius: 15, kind: 'carnival', y: 0.007 },
   { center: SNOW.center, radius: SNOW.radius, kind: 'snow', y: 0.008 },
   { center: LAKE.center, radius: LAKE.radius + 2.6, kind: 'sand', y: 0.009 },
   { center: PLAZA.center, radius: PLAZA.radius, kind: 'plaza', y: 0.01 }
 ];
-export const PATH_WIDTH = 2.6;
 
-function distToSegment(x: number, z: number, a: Vec2, b: Vec2) {
+export function distToSegment(x: number, z: number, a: Vec2, b: Vec2) {
   const dx = b[0] - a[0];
   const dz = b[1] - a[1];
-  const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+  const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / Math.max(1e-6, dx * dx + dz * dz)));
   return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
 }
 
-/** Somewhere an animal can nibble grass (the forest floor counts). */
+export function isOnPath(x: number, z: number) {
+  return PATHS.some(([a, b]) => distToSegment(x, z, a, b) < PATH_WIDTH / 2) || MOUNTAIN_PATHS.some(([a, b]) => distToSegment(x, z, a, b) < PATH_WIDTH / 2);
+}
+
+/** Somewhere an animal can nibble grass (the forest floor counts; water, snow and sand don't). */
 export function isOnGrass(x: number, z: number) {
-  if (isInPond(x, z)) return false;
-  const onPath = PATHS.some(([a, b]) => distToSegment(x, z, a, b) < PATH_WIDTH / 2);
+  if (isInFountain(x, z)) return false;
+  const onPath = isOnPath(x, z);
   // patches are drawn in order, later ones on top: the topmost one decides
   for (let i = FLOOR_PATCHES.length - 1; i >= 0; i -= 1) {
     const p = FLOOR_PATCHES[i];

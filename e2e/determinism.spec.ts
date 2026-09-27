@@ -37,8 +37,8 @@ async function play(browser: Browser) {
       })
     );
 
-  await game.teleport(0, 18, 1, 8);
-  await game.teleport(1, 20, 1, 8);
+  await game.teleport(0, 12, 1, -4);
+  await game.teleport(1, 14, 1, -4);
   await game.seconds(0.5);
   // run, double jump, lick, eat, headbutt, poop, noise, flop
   await k.down('KeyD');
@@ -79,9 +79,9 @@ async function play(browser: Browser) {
   await game.seconds(0.8);
   await snap();
   // piggyback, hop off, get launched, wander
-  await game.teleport(1, 18, 1, 8);
+  await game.teleport(1, 12, 1, -4);
   await game.seconds(1);
-  await game.teleport(0, 18, 2.2, 8);
+  await game.teleport(0, 12, 2.2, -4);
   await game.seconds(1);
   await k.down('ArrowUp');
   await game.seconds(0.8);

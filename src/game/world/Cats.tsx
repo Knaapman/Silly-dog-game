@@ -4,15 +4,15 @@ import * as THREE from 'three';
 import { playCatSound, playRustle } from '../audio';
 import { CAT_COUNT, chaseParams, flocks, parkCats, treeShakeListeners, useChase, type CatMode, type CatRuntime } from '../chase';
 import { gameClock, gameNow, useGameFrame } from '../clock';
-import { MOVE, WORLD_HALF } from '../config';
+import { MOVE, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { emit, poof } from '../fx';
 import { rumble, type SourceId } from '../input';
-import { CAT_HOMES, distXZ, isInPond, TREES } from '../layout';
+import { CAT_HOMES, distXZ, TREES } from '../layout';
 import { lambert } from '../materials';
 import { allocPropId, noises, players, registerProp, statics, type PlayerRuntime, type PropEntry } from '../runtime';
 import { settings, SPEED_FACTOR } from '../settings';
 import { earnSticker } from '../stickers';
-import { groundHeight } from '../terrain';
+import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 
 // Park cats: the thing to chase. They nap, groom and stalk the birds. Come close (or bark) and
@@ -61,7 +61,7 @@ function clearHeading(x: number, z: number, a: number) {
     const h = a + off;
     const px = x + Math.sin(h) * 3;
     const pz = z + Math.cos(h) * 3;
-    if (Math.abs(px) > WORLD_HALF - 3 || Math.abs(pz) > WORLD_HALF - 3 || isInPond(px, pz)) continue;
+    if (Math.abs(px) > WORLD_HALF_X - 3 || Math.abs(pz) > WORLD_HALF_Z - 3 || isInWater(px, pz)) continue;
     return h;
   }
   return a + Math.PI;
@@ -661,7 +661,7 @@ function Cat({ index }: { index: number }) {
       } else {
         let heading = c.facing;
         if (steer && speed > 2.5) heading = clearHeading(t.x, t.z, c.facing);
-        if (isInPond(t.x, t.z)) heading = Math.atan2(home.x - t.x, home.z - t.z);
+        if (isInWater(t.x, t.z)) heading = Math.atan2(home.x - t.x, home.z - t.z);
         const k = 1 - Math.exp(-(speed > 3 ? 10 : 6) * dt);
         const vx = v.x + (Math.sin(heading) * speed - v.x) * k;
         const vz = v.z + (Math.cos(heading) * speed - v.z) * k;

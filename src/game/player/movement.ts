@@ -122,7 +122,7 @@ export function movement(f: FrameCtx) {
       playJump(s.pos);
       if (s.swimming) {
         playSplash(s.pos, false);
-        emit('drop', [t.x, 0.3, t.z], { count: 12, color: ['#7fd3ff', '#ffffff'], speed: 3, up: 5 });
+        emit('drop', [t.x, s.groundY + 0.5, t.z], { count: 12, color: ['#7fd3ff', '#ffffff'], speed: 3, up: 5 });
       } else emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 5, color: '#f5f0e6', speed: 2, up: 0.5, size: 0.25 });
     } else if (s.jumps < 2 && s.airTime > 0.05) {
       v.y = MOVE.doubleJumpVelocity * (s.power === 'giant' ? 1.3 : 1);

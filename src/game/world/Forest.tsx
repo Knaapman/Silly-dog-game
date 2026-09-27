@@ -1,7 +1,7 @@
 import { CylinderCollider, RigidBody, type RapierCollider } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { MUSHROOMS, ZONES } from '../layout';
+import { at3, FALLEN_LOG, MAZE, MUSHROOMS, ZONES } from '../layout';
 import { lambert } from '../materials';
 import type { Surface } from '../runtime';
 import { useHint } from './common';
@@ -73,7 +73,7 @@ function Toadstools() {
       const r = 4 + ((i * 7) % 15);
       const x = ZONES.forest[0] + Math.cos(a) * r;
       const z = ZONES.forest[1] + Math.sin(a) * r;
-      if (x < -41 && z < -38) continue; // keep the maze tidy
+      if (Math.abs(x - MAZE.center[0]) < 8 && Math.abs(z - MAZE.center[1]) < 8) continue; // keep the maze tidy
       if (MUSHROOMS.some((m) => Math.hypot(x - m.center[0], z - m.center[1]) < m.radius + 0.8)) continue;
       out.push({ x, z, s: 0.6 + ((i * 13) % 7) * 0.1, color: colors[i % colors.length] });
     }
@@ -114,7 +114,7 @@ function Toadstools() {
 
 function FallenLog() {
   return (
-    <RigidBody type="fixed" colliders={false} position={[-30, 0.55, -27]} rotation={[0, 0.5, Math.PI / 2]}>
+    <RigidBody type="fixed" colliders={false} position={FALLEN_LOG} rotation={[0, 0.5, Math.PI / 2]}>
       <CylinderCollider args={[2.5, 0.55]} />
       <mesh castShadow receiveShadow material={lambert('#8b5a2b')}>
         <cylinderGeometry args={[0.55, 0.6, 5, 12]} />
@@ -137,7 +137,7 @@ export function Forest() {
       ))}
       <Toadstools />
       <FallenLog />
-      <Prop kind="ball" position={[-40, 0.5, -30]} color="#ffb020" />
+      <Prop kind="ball" position={at3(ZONES.forest, -2, 0.5, 8)} color="#ffb020" />
     </group>
   );
 }

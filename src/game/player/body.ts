@@ -2,10 +2,11 @@ import type { RapierRigidBody } from '@react-three/rapier';
 import type { Ray, World } from '@dimforge/rapier3d-compat';
 import { playBoing, playBounce, playPower, playSlideWhistle, playSplash, playSquelch, playThud } from '../audio';
 import { ANIMAL_GROUPS } from '../collision';
-import { MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
+import { MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { emit, poof, ring } from '../fx';
 import { rumble } from '../input';
-import { isInMud, isInPond } from '../layout';
+import { isInFountain, isInMud } from '../layout';
+import { isInWater, waterLevelAt } from '../terrain';
 import { players, propPosition, props, shakeCamera, surfaces } from '../runtime';
 import { useGame } from '../store';
 import { GIANT_SIZE, RADIUS } from './constants';
@@ -40,14 +41,11 @@ export function powerAndSize(f: FrameCtx) {
 /** What's underneath: ground distance, special surfaces, moving platforms. */
 export function probeGround(f: FrameCtx, world: World, ray: Ray, excludeSensors: number) {
   const { s, rb, t, lv } = f;
-  ray.origin = { x: t.x, y: t.y, z: t.z };
-  let hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
-  if (!hit) {
-    // a ray exactly on one of the ground heightfield's grid lines slips through it (it happens
-    // right after a teleport to a round number): ask again a centimetre over
-    ray.origin = { x: t.x + 0.0123, y: t.y, z: t.z + 0.0071 };
-    hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
-  }
+  // A ray exactly on one of the ground heightfield's grid lines slips through it (it happens
+  // whenever an animal lands on a round number) and finds the safety floor far below instead,
+  // so the ray always starts a centimetre off the animal's middle.
+  ray.origin = { x: t.x + 0.0123, y: t.y, z: t.z + 0.0071 };
+  const hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
   f.hit = hit;
   f.groundDist = hit ? hit.timeOfImpact : 99;
   s.groundY = t.y - f.groundDist;
@@ -88,12 +86,16 @@ export function tickTimers(f: FrameCtx) {
 
 export function waterAndMud(f: FrameCtx) {
   const { s, t, dt } = f;
-  const swimming = isInPond(t.x, t.z) && t.y < 1.3;
+  // wet feet: standing on ground that is under the water (not on a bridge or a stepping stone
+  // over it), or splashing about in the fountain's basin
+  const wl = waterLevelAt(t.x, t.z);
+  const swimming = (isInFountain(t.x, t.z) && t.y < 1.3) || (isInWater(t.x, t.z) && s.groundY < wl - 0.1 && t.y < wl + 1.3);
   const inMud = isInMud(t.x, t.z) && t.y < 1.3;
   if (swimming && !s.swimming) {
+    const w = waterLevelAt(t.x, t.z);
     playSplash(s.pos);
-    emit('drop', [t.x, 0.3, t.z], { count: 26, color: ['#7fd3ff', '#ffffff'], speed: 4, up: 6 });
-    ring([t.x, 0.06, t.z], { color: '#e0f6ff', radius: 2.5, duration: 0.7 });
+    emit('drop', [t.x, w + 0.3, t.z], { count: 26, color: ['#7fd3ff', '#ffffff'], speed: 4, up: 6 });
+    ring([t.x, w + 0.06, t.z], { color: '#e0f6ff', radius: 2.5, duration: 0.7 });
     useGame.getState().addParty(PARTY_POINTS.splash);
     earnSticker('swim');
     rumble(f.source, 0.2, 0.4, 120);
@@ -242,7 +244,7 @@ export function landing(f: FrameCtx) {
     const impact = -s.lastVy;
     if (impact > 7) {
       s.squash = Math.min(0.5, impact * 0.025);
-      emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 8, color: s.inMud ? '#6b4a2b' : '#f5f0e6', speed: 3, up: 0.6, size: 0.3 });
+      emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 8, color: s.inMud ? '#6b4a2b' : s.swimming ? '#bfe9ff' : '#f5f0e6', speed: 3, up: 0.6, size: 0.3 });
       playBounce(s.pos, 0.3);
     }
     if (impact > 16) {
@@ -269,7 +271,7 @@ export function landing(f: FrameCtx) {
 /** Fell out of the world? Pop back in next to the others. */
 export function respawnIfLost(f: FrameCtx, rb: RapierRigidBody) {
   const { t } = f;
-  if (t.y < -8 || Math.abs(t.x) > WORLD_HALF + 6 || Math.abs(t.z) > WORLD_HALF + 6) {
+  if (t.y < -8 || Math.abs(t.x) > WORLD_HALF_X + 6 || Math.abs(t.z) > WORLD_HALF_Z + 6) {
     const p = pickSpawn(f.slot);
     rb.setTranslation(p, true);
     rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -296,4 +298,5 @@ export function syncRuntime(f: FrameCtx) {
   rt.size = s.size;
   rt.ridingOn = s.ridingOn;
   rt.grounded = s.grounded;
+  rt.swimming = s.swimming;
 }

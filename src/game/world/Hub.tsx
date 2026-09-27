@@ -2,7 +2,7 @@ import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { emit } from '../fx';
-import { FOUNTAIN, GEYSERS, type Vec3 } from '../layout';
+import { FOUNTAIN, GEYSERS, LAMP_POSTS, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { Geyser } from './Launchers';
 import { Toilet } from './Toilet';
@@ -120,13 +120,8 @@ export function Hub() {
       <HatRack />
       <RedButton />
       <Toilet />
-      {[
-        [-11, 0, 3],
-        [11, 0, 3],
-        [-6, 0, -12],
-        [6, 0, -12]
-      ].map((p, i) => (
-        <LampPost key={i} position={p as Vec3} />
+      {LAMP_POSTS.map((p, i) => (
+        <LampPost key={i} position={[p[0], 0, p[1]] as Vec3} />
       ))}
     </group>
   );

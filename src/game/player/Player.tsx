@@ -88,6 +88,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       },
       isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null,
       grounded: false,
+      swimming: false,
       belly: 0,
       feed: () => {
         s.chew = 0.7;

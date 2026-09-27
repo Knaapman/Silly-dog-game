@@ -27,8 +27,8 @@ test('the camera button: countdown, everyone jumps, a real picture, kept in the 
   await game.open();
   await game.start();
   await game.join('kb2');
-  await game.teleport(0, 18, 1, 8);
-  await game.teleport(1, 20, 1, 8);
+  await game.teleport(0, 12, 1, -4);
+  await game.teleport(1, 14, 1, -4);
   await game.seconds(1);
 
   // keyboard T: three beeps, then the picture; everybody hops for it

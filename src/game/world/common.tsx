@@ -97,7 +97,8 @@ export function Ramp({
   railColor,
   railHeight = 0.55,
   thickness = 0.3,
-  surface
+  surface,
+  friction
 }: {
   from: Vec3;
   to: Vec3;
@@ -107,6 +108,8 @@ export function Ramp({
   railHeight?: number;
   thickness?: number;
   surface?: Surface;
+  /** A slide is frictionless (0): a ball with grip starts rolling, and rolling is damped, so it would crawl. */
+  friction?: number;
 }) {
   const col = useRef<RapierCollider>(null);
   useSurface(col, surface ?? EMPTY_SURFACE);
@@ -126,7 +129,7 @@ export function Ramp({
 
   return (
     <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
-      <CuboidCollider ref={col} args={[width / 2, thickness / 2, length / 2]} />
+      <CuboidCollider ref={col} args={[width / 2, thickness / 2, length / 2]} {...(friction != null ? { friction } : {})} />
       <mesh castShadow receiveShadow material={lambert(color)}>
         <boxGeometry args={[width, thickness, length]} />
       </mesh>
@@ -143,13 +146,23 @@ export function Ramp({
   );
 }
 
-export function HedgeSegment({ from, to, height = 1.8, thickness = 1.3 }: { from: Vec2; to: Vec2; height?: number; thickness?: number }) {
-  const len = Math.hypot(to[0] - from[0], to[1] - from[1]) + thickness;
-  const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
-  const cx = (from[0] + to[0]) / 2;
-  const cz = (from[1] + to[1]) / 2;
+/**
+ * A hedge from `from` to `to`. With `y0`/`y1` (the ground height at each end) it tilts to follow
+ * the ground, so the border hedge runs up the mountain without steps.
+ */
+export function HedgeSegment({ from, to, y0 = 0, y1 = 0, height = 1.8, thickness = 1.3 }: { from: Vec2; to: Vec2; y0?: number; y1?: number; height?: number; thickness?: number }) {
+  const { len, quaternion, center } = useMemo(() => {
+    const dir = new THREE.Vector3(to[0] - from[0], y1 - y0, to[1] - from[1]);
+    const len = dir.length() + thickness;
+    dir.normalize();
+    // local x along the hedge, local y as near to straight up as the slope allows
+    const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+    const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(dir, up, right));
+    return { len, quaternion: q, center: [(from[0] + to[0]) / 2, (y0 + y1) / 2, (from[1] + to[1]) / 2] as Vec3 };
+  }, [from, to, y0, y1, thickness]);
   return (
-    <RigidBody type="fixed" colliders={false} position={[cx, 0, cz]} rotation={[0, -angle, 0]}>
+    <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
       <CuboidCollider args={[len / 2, height / 2, thickness / 2]} position={[0, height / 2, 0]} />
       <mesh castShadow receiveShadow position={[0, height / 2 - 0.1, 0]} material={lambert('#3f9a3f')}>
         <boxGeometry args={[len, height - 0.2, thickness]} />
@@ -207,10 +220,11 @@ export type SlideTowerProps = {
 
 /** Walk up the ramp, slide down the other side. Used for the playground slide and the ski jump. */
 export function SlideTower({ base, height, rampAngle, rampLength, slideAngle, slideLength, colors, kicker }: SlideTowerProps) {
-  const [bx, , bz] = base;
+  // `base[1]` is the ground level it stands on (the ski jump is up the mountain)
+  const [bx, y0, bz] = base;
   const half = 1.6;
   const slideSurface = useMemo<Surface>(() => ({ slippery: 0.35, slide: true }), []);
-  const edge = (angle: number, dist: number, y: number): Vec3 => [bx + Math.sin(angle) * dist, y, bz + Math.cos(angle) * dist];
+  const edge = (angle: number, dist: number, y: number): Vec3 => [bx + Math.sin(angle) * dist, y0 + y, bz + Math.cos(angle) * dist];
   const rampTop = edge(rampAngle, half, height);
   const rampBottom = edge(rampAngle, half + rampLength, 0);
   const slideTop = edge(slideAngle, half, height);
@@ -229,9 +243,9 @@ export function SlideTower({ base, height, rampAngle, rampLength, slideAngle, sl
   );
   return (
     <group>
-      <StaticBox position={[bx, height - 0.15, bz]} size={[half * 2, 0.3, half * 2]} color={colors.tower} />
+      <StaticBox position={[bx, y0 + height - 0.15, bz]} size={[half * 2, 0.3, half * 2]} color={colors.tower} />
       {posts.map(([x, z], i) => (
-        <StaticCylinder key={i} position={[x, (height - 0.3) / 2, z]} radius={0.18} height={height - 0.3} color={colors.rail} segments={8} />
+        <StaticCylinder key={i} position={[x, y0 + (height - 0.3) / 2, z]} radius={0.18} height={height - 0.3} color={colors.rail} segments={8} />
       ))}
       {railSides.map((a) => {
         const [x, , z] = edge(a, half - 0.1, 0);
@@ -239,15 +253,15 @@ export function SlideTower({ base, height, rampAngle, rampLength, slideAngle, sl
         return (
           <StaticBox
             key={a}
-            position={[x, height + 0.35, z]}
+            position={[x, y0 + height + 0.35, z]}
             size={along ? [0.2, 0.7, half * 2] : [half * 2, 0.7, 0.2]}
             color={colors.rail}
           />
         );
       })}
       <Ramp from={rampBottom} to={rampTop} width={2} color={colors.ramp} railColor={colors.rail} />
-      <Ramp from={slideTop} to={slideBottom} width={2} color={colors.slide} railColor={colors.slide} railHeight={0.6} surface={slideSurface} thickness={0.25} />
-      {kicker && <Ramp from={slideBottom} to={kickerEnd} width={2} color={colors.slide} surface={slideSurface} thickness={0.25} />}
+      <Ramp from={slideTop} to={slideBottom} width={2} color={colors.slide} railColor={colors.slide} railHeight={0.6} surface={slideSurface} thickness={0.25} friction={0} />
+      {kicker && <Ramp from={slideBottom} to={kickerEnd} width={2} color={colors.slide} surface={slideSurface} thickness={0.25} friction={0} />}
     </group>
   );
 }

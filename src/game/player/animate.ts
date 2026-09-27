@@ -6,6 +6,7 @@ import { players, propPosition, props, shakeCamera } from '../runtime';
 import type { createRig } from './AnimalModel';
 import { MODEL_SCALE, RADIUS, UP } from './constants';
 import type { FrameCtx } from './frame';
+import { waterLevelAt } from '../terrain';
 
 /** The scene objects one animal moves around every frame. */
 export type PlayerVisuals = {
@@ -34,7 +35,8 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
     const yg = vis.yawGroup;
     yg.visible = !s.hidden;
     yg.rotation.y = s.flopped ? yg.rotation.y : s.facing;
-    const swimDip = s.swimming ? -0.32 + Math.sin(time * 3) * 0.04 : 0;
+    // sit low in the water: right down in the shallow fountain, less where the water is deep
+    const swimDip = s.swimming ? -Math.max(0, 0.32 - Math.max(0, waterLevelAt(t.x, t.z) - s.groundY)) + Math.sin(time * 3) * 0.04 : 0;
     yg.position.y = THREE.MathUtils.lerp(yg.position.y, -rad + swimDip, 1 - Math.exp(-10 * dt));
   }
 
@@ -190,7 +192,7 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
     s.rippleTimer -= dt;
     if (s.rippleTimer <= 0) {
       s.rippleTimer = hSpeed > 1 ? 0.35 : 0.9;
-      ring([t.x, 0.06, t.z], { color: '#d9f3ff', radius: 1.6, duration: 0.9 });
+      ring([t.x, waterLevelAt(t.x, t.z) + 0.06, t.z], { color: '#d9f3ff', radius: 1.6, duration: 0.9 });
     }
   }
 

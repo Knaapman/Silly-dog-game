@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playCheer, playClack, playPoof, playStrike } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, poof, ring } from '../fx';
-import { BOWLING, CRATE_TOWER, SOCCER, type Vec3 } from '../layout';
+import { at3, BOWLING, CONES, CRATE_TOWER, SOCCER, ZONES, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
@@ -242,14 +242,6 @@ export function CrateTower() {
   );
 }
 
-const CONES: Vec3[] = [
-  [29, 0.4, -31],
-  [47, 0.4, -31],
-  [29, 0.4, -48],
-  [47, 0.4, -48],
-  [20, 0.4, -20],
-  [23, 0.4, -18]
-];
 
 export function Sports() {
   return (
@@ -260,8 +252,8 @@ export function Sports() {
       {CONES.map((p, i) => (
         <Prop key={i} kind="cone" position={p} />
       ))}
-      <Prop kind="ball" position={[33, 0.5, -30]} color="#ff4d5e" />
-      <Prop kind="beachball" position={[26, 1, -30]} />
+      <Prop kind="ball" position={at3(ZONES.sports, -5, 0.5, 6)} color="#ff4d5e" />
+      <Prop kind="beachball" position={at3(ZONES.sports, -12, 1, 6)} />
     </>
   );
 }

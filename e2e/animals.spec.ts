@@ -43,7 +43,7 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
   const want = ['cat', 'duck', 'cow', 'unicorn'];
   for (let slot = 0; slot < 4; slot += 1) {
     while ((await species(game, slot)) !== want[slot]) await page.evaluate((s) => (window as any).__silly.useGame.getState().cycleSpecies(s), slot);
-    await game.teleport(slot, 16 + slot * 2.2, 1, 10);
+    await game.teleport(slot, 10 + slot * 2.2, 1, -6);
   }
   await game.seconds(1.5);
   for (const key of ['KeyR', 'Slash']) await game.tap(key);

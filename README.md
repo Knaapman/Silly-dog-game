@@ -22,11 +22,13 @@ fountain and the ship). Run at them or bark and they burst into the air, circle 
 can chase them all over the park. Jump into a flock as it takes off to bonk a bird, and leave a poop lying about and
 they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
 
-Between the zones the grass isn't flat any more: the ground itself rolls (a heightfield: gentle mounds and three
-proper hills to run up and jump off, with every zone, path and set piece on its own level plateau), plus a mesa on the east side
-with the train tunnel running right through it (walk up the ramp on its north side or take the launch pad by the
-brontosaurus, then watch the train come out underneath you and wave the flag), and a wooden footbridge over the north
-track to look down on the train from.
+The park is 160 by 130 metres and the ground itself is part of the fun: a **mountain** across the north with the winter
+zone on its flat, snowy top (walk up the path on its south face, or take the launch pad at the foot straight to the
+summit; the ski jump at the top fires you off the edge), a **river** that springs up there, tumbles down the mountainside
+and runs through the middle of the park to the sea (wade across, or keep dry on the footbridge and the stepping stones),
+a **lagoon** at the beach, and the **sea** along the whole south edge with a line of buoys where the park ends. In
+between, the grass rolls, there are hills to run up and jump off, and a mesa at the mountain's foot with the train tunnel
+through it (up the ramp from the mountainside, wave the flag, watch the train come out underneath you).
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -105,20 +107,22 @@ menu or the album never also do something in the game.
 
 ## Things to discover
 
-The park is a ring of eight areas around a fountain plaza. Signposts with pictures point the way, and a **train** runs
-around the whole park: stand on a wagon to ride along, and it stops at the station.
+The park is a ring of eight areas around a fountain plaza, with the mountain across the north and the sea along the
+south. Signposts with pictures point the way, and a **train** loops round the middle of it: over the river bridge, through
+the tunnel under the mesa, along a trestle out over the water, and it stops at the station on the east side (stand on a
+wagon to ride along). A footbridge over the west track lets you look down on it.
 
 | Area | What is there |
 |---|---|
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, and the big red button (puts the park back) |
-| 🎡 Carnival (north) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
+| 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
-| 🏖️ Beach (south) | A lake to swim in, a lighthouse, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls |
-| ⛄ Winter (south-west) | Snow hill with a launch pad, ski jump, slippery ice pond, snowmen to headbutt, snowballs that grow as you push them |
-| 🚜 Farm (west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
-| 🍄 Forest (north-west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
+| 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
+| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them |
+| 🚜 Farm (south-west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
+| 🍄 Forest (west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
 
 - **Eating and pooping.** Lick food to eat it: dog bowls next to the fountain, cupcakes on the picnic blanket,
   carrots on the farm, ice creams on the carnival stalls, apples and coconuts that fall from trees, or just the grass
@@ -227,7 +231,7 @@ src/
   game/
     config.ts           tuning: speeds, party points, players, species, hats
     layout.ts           where everything in the park lives
-    terrain.ts          the lie of the land: groundHeight(x, z), flat plateaus under everything that must stand level
+    terrain.ts          the lie of the land: groundHeight(x, z); the mountain, the river, the sea, and flats under everything that must stand level
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
@@ -254,7 +258,8 @@ src/
       AnimalModel.tsx, Hat.tsx
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
-      Landmarks.tsx     the grassy hills, the mesa with the train tunnel, the footbridge
+      Water.tsx         the sea, the stream down the mountain, the buoys, things that float
+      Landmarks.tsx     the mesa with the train tunnel, the footbridge, the river crossings
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

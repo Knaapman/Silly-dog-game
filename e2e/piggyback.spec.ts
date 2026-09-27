@@ -9,9 +9,9 @@ test('piggyback: ride a friend, get thrown off, stack a tower', async ({ page })
   await game.join('kb2');
 
   // drop the dog on the goat's back
-  await game.teleport(1, 18, 1, 8);
+  await game.teleport(1, 12, 1, -4);
   await game.seconds(1);
-  await game.teleport(0, 18, 2.2, 8);
+  await game.teleport(0, 12, 2.2, -4);
   await game.seconds(1);
   let rider = await game.player(0);
   expect(rider.ridingOn).toBe(1);
@@ -40,11 +40,11 @@ test('piggyback: ride a friend, get thrown off, stack a tower', async ({ page })
   await game.pad(0, 0, 0.2);
   await game.seconds(1.5);
   const padSlot = await page.evaluate(() => (window as any).__silly.useGame.getState().players.find((p: any) => p.source === 'pad0').slot);
-  await game.teleport(1, 22, 1, 16);
+  await game.teleport(1, 16, 1, 4);
   await game.seconds(1);
-  await game.teleport(0, 22, 2.2, 16);
+  await game.teleport(0, 16, 2.2, 4);
   await game.seconds(1);
-  await game.teleport(padSlot, 22, 3.4, 16);
+  await game.teleport(padSlot, 16, 3.4, 4);
   await game.seconds(1);
   expect((await game.player(0)).ridingOn).toBe(1);
   expect((await game.player(padSlot)).ridingOn).toBe(0);

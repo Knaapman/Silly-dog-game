@@ -4,8 +4,9 @@ import * as THREE from 'three';
 import { playCrumble, playPoof } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
-import { distXZ, ICE, isOnSnow, SKI_JUMP, SNOW, SNOW_HILL, SNOWBALLS, SNOWMEN, type Vec3 } from '../layout';
-import { lambert, speckleTexture } from '../materials';
+import { distXZ, ICE, isOnSnow, SKI_JUMP, SNOW, SNOWBALLS, SNOWMEN, WINTER, type Vec3 } from '../layout';
+import { groundHeight } from '../terrain';
+import { lambert } from '../materials';
 import { allocPropId, camera, registerProp, type PropEntry, type Surface } from '../runtime';
 import { useGame } from '../store';
 import { Breakable, type Piece } from './Breakable';
@@ -14,31 +15,14 @@ import { useSurface } from './surface';
 import { after, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
-function SnowHill() {
-  const [hx, hz] = SNOW_HILL.center;
-  const capAngle = Math.acos((SNOW_HILL.sphereRadius - SNOW_HILL.height) / SNOW_HILL.sphereRadius);
-  const col = useRef<RapierCollider>(null);
-  const surface = useMemo<Surface>(() => ({ snow: true }), []);
-  useSurface(col, surface);
-  const mat = useMemo(() => new THREE.MeshLambertMaterial({ map: speckleTexture('snowhill', '#ffffff', ['#e3f0ff', '#d6e8fb'], 6) }), []);
-  return (
-    <RigidBody type="fixed" colliders={false} position={[hx, SNOW_HILL.height - SNOW_HILL.sphereRadius, hz]}>
-      <BallCollider ref={col} args={[SNOW_HILL.sphereRadius]} />
-      <mesh receiveShadow castShadow material={mat}>
-        <sphereGeometry args={[SNOW_HILL.sphereRadius, 48, 16, 0, Math.PI * 2, 0, capAngle]} />
-      </mesh>
-    </RigidBody>
-  );
-}
-
 function IcePond() {
   const [ix, iz] = ICE.center;
   const col = useRef<RapierCollider>(null);
   const surface = useMemo<Surface>(() => ({ slippery: 0.7 }), []);
   useSurface(col, surface);
-  useHint([ix, 0.5, iz], 'walk', 3);
+  useHint([ix, WINTER.level + 0.5, iz], 'walk', 3);
   return (
-    <group position={[ix, 0, iz]}>
+    <group position={[ix, WINTER.level, iz]}>
       <RigidBody type="fixed" colliders={false}>
         <CylinderCollider ref={col} args={[0.03, ICE.radius]} position={[0, 0.03, 0]} friction={0.02} />
       </RigidBody>
@@ -65,7 +49,7 @@ const SNOWMAN_PIECES: Piece[] = [
 
 function Snowman({ at, scarf }: { at: [number, number]; scarf: string }) {
   return (
-    <Breakable position={[at[0], 0, at[1]]} radius={0.7} height={2.6} pieces={SNOWMAN_PIECES} dust={['#ffffff', '#e3f0ff']} respawnMs={12000}>
+    <Breakable position={[at[0], WINTER.level, at[1]]} radius={0.7} height={2.6} pieces={SNOWMAN_PIECES} dust={['#ffffff', '#e3f0ff']} respawnMs={12000}>
       <mesh castShadow position={[0, 0.6, 0]} material={lambert('#ffffff')}>
         <sphereGeometry args={[0.65, 16, 12]} />
       </mesh>
@@ -174,17 +158,17 @@ function SnowBall({ home }: { home: Vec3 }) {
     const t = rb.translation();
     const v = rb.linvel();
     const speed = Math.hypot(v.x, v.z);
-    if (isOnSnow(t.x, t.z) && speed > 1.2 && t.y < radius.current + 0.3 && radius.current < SNOWBALL_MAX) {
+    if (isOnSnow(t.x, t.z) && speed > 1.2 && t.y - groundHeight(t.x, t.z) < radius.current + 0.3 && radius.current < SNOWBALL_MAX) {
       radius.current = Math.min(SNOWBALL_MAX, radius.current + speed * Math.min(delta, 0.05) * 0.03);
       col.current?.setRadius(radius.current);
       if (entryRef.current) {
         entryRef.current.radius = radius.current;
         entryRef.current.heavy = radius.current > 1.2;
       }
-      if (Math.random() < 0.3) emit('puff', [t.x, 0.1, t.z], { count: 1, color: '#ffffff', size: 0.25, speed: 1, up: 1 });
+      if (Math.random() < 0.3) emit('puff', [t.x, t.y - radius.current + 0.1, t.z], { count: 1, color: '#ffffff', size: 0.25, speed: 1, up: 1 });
     }
     if (mesh.current) mesh.current.scale.setScalar(radius.current / SNOWBALL_START);
-    if (t.y < -5) respawn();
+    if (t.y < -5 || (t.y < WINTER.level - 12 && !isOnSnow(t.x, t.z) && speed < 0.5)) respawn();
   });
 
   return (
@@ -208,7 +192,7 @@ function Snowfall() {
     const x = f.x + (Math.random() - 0.5) * 34;
     const z = f.z + (Math.random() - 0.5) * 26;
     if (!isOnSnow(x, z)) return;
-    emit('confetti', [x, 12, z], { count: 2, color: '#ffffff', speed: 0.4, up: 0, gravity: 1.1, drag: 1.2, life: 6 });
+    emit('confetti', [x, WINTER.level + 12, z], { count: 2, color: '#ffffff', speed: 0.4, up: 0, gravity: 1.1, drag: 1.2, life: 6 });
   });
   return null;
 }
@@ -217,14 +201,13 @@ export function Winter() {
   const scarves = ['#ff4d5e', '#3b82f6', '#22c55e', '#a855f7'];
   return (
     <group>
-      <SnowHill />
       <IcePond />
       <SlideTower
         base={SKI_JUMP.base}
         height={SKI_JUMP.height}
         rampAngle={Math.PI}
-        rampLength={9}
-        slideAngle={-Math.PI / 2}
+        rampLength={7}
+        slideAngle={0}
         slideLength={8}
         kicker
         colors={{ tower: '#bde0ff', ramp: '#ffffff', slide: '#e3f0ff', rail: '#3b82f6' }}

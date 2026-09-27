@@ -14,10 +14,11 @@ import {
   playWhoosh
 } from '../audio';
 import { gameNow } from '../clock';
-import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF } from '../config';
+import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { bonkStars, emit, ring } from '../fx';
 import { rumble } from '../input';
 import { distXZ, isOnGrass } from '../layout';
+import { groundHeight } from '../terrain';
 import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PlayerRuntime, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
@@ -35,12 +36,12 @@ function throwFriend(f: FrameCtx) {
   const friend = s.heldFriend != null ? players.get(s.heldFriend) : null;
   releaseFriend(f);
   if (!friend) return;
-  const lim = WORLD_HALF - 3;
   tmp.c.set(
-    Math.max(-lim, Math.min(lim, s.pos.x + tmp.fwd.x * FRIEND_THROW)),
+    Math.max(-WORLD_HALF_X + 3, Math.min(WORLD_HALF_X - 3, s.pos.x + tmp.fwd.x * FRIEND_THROW)),
     0,
-    Math.max(-lim, Math.min(lim, s.pos.z + tmp.fwd.z * FRIEND_THROW))
+    Math.max(-WORLD_HALF_Z + 3, Math.min(WORLD_HALF_Z - 3, s.pos.z + tmp.fwd.z * FRIEND_THROW))
   );
+  tmp.c.y = groundHeight(tmp.c.x, tmp.c.z);
   friend.launchTo(tmp.c, Math.max(s.pos.y, friend.position.y) + 3.5);
   earnSticker('throw');
   playThrow(s.pos);
@@ -125,7 +126,7 @@ export function tongue(f: FrameCtx) {
         }
         playSlurp(s.pos);
         rumble(source, 0.1, 0.3, 60);
-      } else if (s.grounded && s.groundY < 0.5 && isOnGrass(t.x, t.z)) {
+      } else if (s.grounded && s.groundY - groundHeight(t.x, t.z) < 0.5 && isOnGrass(t.x, t.z)) {
         // Nothing to lick, but there's always grass: munch!
         s.lickMiss = 0.32;
         playChomp(s.pos);

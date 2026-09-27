@@ -9,8 +9,8 @@ test('lick a friend: grab, drag, throw; and jump to wriggle free', async ({ page
 
   // the dog faces east with the goat just in front of it (open grass east of the plaza)
   const face = async () => {
-    await game.teleport(1, 23.6, 1, 4);
-    await game.hopTo(0, [20, 4], [22, 4]);
+    await game.teleport(1, 8.6, 1, -6);
+    await game.hopTo(0, [5, -6], [7, -6]);
   };
   await face();
   await game.tap('KeyQ');

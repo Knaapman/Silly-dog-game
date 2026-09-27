@@ -82,7 +82,7 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   roar: [[TREX.position[0], TREX.position[2]]],
   balloon: BALLOONS.map((b) => [b[0], b[2]] as P),
   hat: [HAT_RACK.center],
-  swim: [[LAKE.center[0], LAKE.center[1] - LAKE.radius + 1.5]],
+  swim: [[LAKE.center[0] + 4, LAKE.center[1] - 4]],
   snowball: SNOWBALLS.map((s) => [s[0], s[2]] as P),
   windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]]
 };

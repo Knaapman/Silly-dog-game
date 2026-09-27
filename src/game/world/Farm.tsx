@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { playSpin, playWhoosh } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit } from '../fx';
-import { BARN, LAUNCH_PADS, MELON_PATCH, MUD, PASTURE, SILO, WINDMILL, type Vec3 } from '../layout';
+import { BARN, FARM_PROPS, LAUNCH_PADS, MELON_PATCH, MUD, PASTURE, SILO, TRACTOR, WINDMILL, type Vec3 } from '../layout';
 import { barnTexture, lambert } from '../materials';
 import { registerStatic, shakeCamera } from '../runtime';
 import { useGame } from '../store';
@@ -277,15 +277,6 @@ function MelonPatch() {
   );
 }
 
-const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [
-  { kind: 'hay', position: [-40.5, 0.62, -14.5], rotation: [0, 0, Math.PI / 2] },
-  { kind: 'hay', position: [-42.9, 0.62, -14.8], rotation: [0, 0.3, Math.PI / 2] },
-  { kind: 'hay', position: [-38.5, 0.55, -9] },
-  { kind: 'barrel', position: [-44, 0.5, -3.5] },
-  { kind: 'barrel', position: [-45.2, 0.5, -4.3], color: '#3b82f6' },
-  { kind: 'barrel', position: [-52, 0.5, -3], color: '#22c55e' }
-];
-
 export function Farm() {
   return (
     <group>
@@ -296,7 +287,7 @@ export function Farm() {
       <Cows />
       <Chickens />
       <MelonPatch />
-      <Tractor position={[-43, 0, -19]} />
+      <Tractor position={TRACTOR} />
       <LaunchPad pad={LAUNCH_PADS[0]} />
       {FARM_PROPS.map((p, i) => (
         <Prop key={i} kind={p.kind} position={p.position} rotation={p.rotation} color={p.color} />

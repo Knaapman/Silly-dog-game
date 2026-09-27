@@ -28,7 +28,7 @@ const check = (game: Game) =>
     s.runtime.players.forEach((p: any) => {
       const { x, y, z } = p.position;
       if (![x, y, z].every(ok)) bad.push(`player ${p.slot} position ${x},${y},${z}`);
-      else if (Math.abs(x) > 72 || Math.abs(z) > 72 || y < -12 || y > 80) bad.push(`player ${p.slot} out of the world at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
+      else if (Math.abs(x) > 82 || Math.abs(z) > 68 || y < -12 || y > 80) bad.push(`player ${p.slot} out of the world at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
       if (!ok(p.size) || p.size < 0.5 || p.size > 3) bad.push(`player ${p.slot} size ${p.size}`);
     });
     s.runtime.props.forEach((p: any) => {
@@ -45,7 +45,7 @@ async function critterProblems(game: Game) {
   return game.page.evaluate(() => {
     const out: string[] = [];
     const { parkCats, flocks } = (window as any).__silly.chase;
-    const bad = (x: number, y: number, z: number) => !Number.isFinite(x + y + z) || Math.abs(x) > 62 || Math.abs(z) > 62 || y < -2 || y > 40;
+    const bad = (x: number, y: number, z: number) => !Number.isFinite(x + y + z) || Math.abs(x) > 82 || Math.abs(z) > 68 || y < -2 || y > 40;
     parkCats.forEach((c: any, i: number) => bad(c.position.x, c.position.y, c.position.z) && out.push(`cat ${i} at ${c.position.toArray()} (${c.mode})`));
     flocks.forEach((f: any, i: number) => bad(f.center.x, f.center.y, f.center.z) && out.push(`flock ${i} at ${f.center.toArray()}`));
     return out;
