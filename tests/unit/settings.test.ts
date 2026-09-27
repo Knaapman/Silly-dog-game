@@ -33,12 +33,14 @@ describe('graphics auto-detect', () => {
 
 describe('settings', () => {
   it('ignores broken or unknown saved values', async () => {
-    const { settings } = await loadSettings('{"speed":7,"magic":2,"rumble":"yes","quality":"extreme"}');
+    const { settings } = await loadSettings('{"speed":7,"magic":2,"rumble":"yes","quality":"extreme","chase":"hard"}');
     const s = settings();
     expect(s.speed).toBe(1);
     expect(s.magic).toBe(2);
     expect(s.rumble).toBe(true);
     expect(s.quality).toBe('auto');
+    expect(s.chase).toBe('auto');
+    expect((await loadSettings('{"chase":2}')).settings().chase).toBe(2);
   });
 
   it('survives unreadable storage', async () => {

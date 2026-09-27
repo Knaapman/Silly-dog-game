@@ -14,7 +14,10 @@ around the park. Run at one (or bark) and it bolts. It runs a little slower than
 going always catches it, and a napping cat can be sneaked up on. Tag it and it yowls, poofs, and races up the nearest
 tree onto a branch, hissing down at you. Bark under the tree (or headbutt the trunk, or jump at it) and it tumbles
 out, dizzy, and the chase starts again. The four cat faces under the stars light up as you tag each one; tag all four
-for a cheer and a new round. Flocks of pigeons, sparrows, bluebirds and canaries peck about on the grass (and on the
+for a cheer, and the cats fall in behind you and follow you round the park in a line for a while before trotting home.
+How hard the cats are to catch is a grown-ups setting (easy / normal / tricky), or **auto**: every child gets their own
+level, which creeps up after quick catches and down when a cat gets away, so two children on one sofa each get a cat
+they can just about catch. Only real children startle a cat; the buddy trotting about doesn't spoil sneaking up on one. Flocks of pigeons, sparrows, bluebirds and canaries peck about on the grass (and on the
 fountain and the ship). Run at them or bark and they burst into the air, circle round and land somewhere else, so you
 can chase them all over the park. Jump into a flock as it takes off to bonk a bird, and leave a poop lying about and
 they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
@@ -57,7 +60,7 @@ tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
   before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
-  rumble on/off, surprises on/off, the buddy on/off, and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just

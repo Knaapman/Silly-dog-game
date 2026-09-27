@@ -21,6 +21,8 @@ export type Settings = {
   surprises: boolean;
   /** A computer buddy keeps a child playing alone company. */
   buddy: boolean;
+  /** How hard the park cats are to catch; 'auto' adapts to each child as they play. */
+  chase: Level | 'auto';
   /** 'auto' picks from the graphics card. */
   quality: Quality | 'auto';
 };
@@ -31,7 +33,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, quality: 'auto' };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto' };
 
 const KEY = 'settings:v1';
 
@@ -46,6 +48,7 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     rumble: typeof raw?.rumble === 'boolean' ? raw.rumble : DEFAULT_SETTINGS.rumble,
     surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
     buddy: typeof raw?.buddy === 'boolean' ? raw.buddy : DEFAULT_SETTINGS.buddy,
+    chase: raw?.chase === 'auto' ? 'auto' : level(raw?.chase, 1) === raw?.chase ? (raw.chase as Level) : DEFAULT_SETTINGS.chase,
     quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality
   };
 }
@@ -67,8 +70,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, rumble, surprises, buddy, quality } = get();
-    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, quality });
+    const { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality } = get();
+    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality });
   },
   setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));

@@ -2,7 +2,7 @@ import { BallCollider, RigidBody, type RapierCollider, type RapierRigidBody } fr
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playCatSound, playRustle } from '../audio';
-import { CAT_COUNT, flocks, parkCats, treeShakeListeners, useChase, type CatMode, type CatRuntime } from '../chase';
+import { CAT_COUNT, chaseParams, flocks, parkCats, treeShakeListeners, useChase, type CatMode, type CatRuntime } from '../chase';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { MOVE, WORLD_HALF } from '../config';
 import { emit, poof } from '../fx';
@@ -16,14 +16,17 @@ import { useGame } from '../store';
 
 // Park cats: the thing to chase. They nap, groom and stalk the birds. Come close (or bark) and
 // they bolt, a little slower than you and slower still once they're tired, so a child who keeps
-// going always catches one. Tag it and it yowls and flees up the nearest tree; bark under the
-// tree (or headbutt it) and down it tumbles, dizzy, and off it runs again.
+// going always catches one (how much slower: the grown-ups' setting, or each child's own skill,
+// see chase.ts). Tag it and it yowls and flees up the nearest tree; bark under the tree (or
+// headbutt it) and down it tumbles, dizzy, and off it runs again. Tag all four and they follow
+// you round the park in a line for a while. Only real children startle a cat: the buddy running
+// about doesn't spoil sneaking up on one (but a fleeing cat keeps away from the buddy too).
 
 const R = 0.42;
 /** The model is drawn at this size (big enough to spot from the camera). */
 const SIZE = 1.45;
-/** How close counts as tagged (generous: little hands, big sticks). */
-const TAG_RANGE = 1.5;
+/** In the conga line, how far behind the one in front each cat trots. */
+const CONGA_GAP = 1.7;
 const PALETTES = [
   { fur: '#f59e3b', stripe: '#c2621a', light: '#ffe3c2' }, // ginger tabby
   { fur: '#34343c', stripe: '#1f1f25', light: '#ffffff' }, // black with white socks
@@ -78,7 +81,7 @@ function Cat({ index }: { index: number }) {
   const id = useMemo(() => allocPropId(), []);
   const pal = PALETTES[index % PALETTES.length];
   const home = useMemo(() => new THREE.Vector3(CAT_HOMES[index][0], R + 0.2, CAT_HOMES[index][1]), [index]);
-  const rt = useMemo<CatRuntime>(() => ({ index, position: home.clone(), mode: 'idle', tree: -1 }), [index, home]);
+  const rt = useMemo<CatRuntime>(() => ({ index, position: home.clone(), mode: 'idle', tree: -1, getBody: () => body.current }), [index, home]);
   const s = useRef({
     mode: 'idle' as CatMode,
     idle: 'sit' as Idle,
@@ -105,9 +108,20 @@ function Cat({ index }: { index: number }) {
     stalk: -1,
     pounceAt: 0,
     fallT: 0,
+    /** Tumbling out of a tree (the sticker is for that, not for any old fall). */
+    fromTree: false,
     flip: 0,
     arch: 0,
-    lookAt: null as THREE.Vector3 | null
+    /** The child chasing us, when they startled us, and how long they've kept it up. */
+    chaser: -1,
+    chaseStart: 0,
+    chasedFor: 0,
+    congaMeow: 0,
+    /** After the conga the cats wander off in peace: no tagging or startling until then. */
+    truceUntil: 0,
+    /** Walking into something (another cat, say): step round it this way for a moment. */
+    sidestep: 0,
+    sidestepUntil: 0
   });
   const entryRef = useRef<PropEntry | null>(null);
   const resetToken = useGame((st) => st.resetToken);
@@ -134,6 +148,7 @@ function Cat({ index }: { index: number }) {
     setMode('fall');
     c.fallT = 0;
     c.gentle = false;
+    c.fromTree = false;
     c.shakenBy = null;
     c.tagBy = slot;
     c.flip = 1;
@@ -216,9 +231,12 @@ function Cat({ index }: { index: number }) {
     }
     if (entry.heldBy != null && c.mode !== 'held') setMode('held');
 
-    // who's about
+    // who's about: anyone (the buddy too) to keep away from and look at; a real child to be
+    // startled by, tagged by, and chased by
     let near: PlayerRuntime | null = null;
     let nearD = Infinity;
+    let child: PlayerRuntime | null = null;
+    let childD = Infinity;
     let tagger: PlayerRuntime | null = null;
     let awayX = 0;
     let awayZ = 0;
@@ -233,14 +251,20 @@ function Cat({ index }: { index: number }) {
         awayX += (t.x - p.position.x) / (d * d);
         awayZ += (t.z - p.position.z) / (d * d);
       }
-      if (!p.bot && d < TAG_RANGE * Math.max(1, p.size) && Math.abs(p.position.y - t.y) < 1.4) tagger = p;
+      if (p.bot) return;
+      if (d < childD) {
+        childD = d;
+        child = p;
+      }
+      if (d < chaseParams(p.slot).tag * Math.max(1, p.size) && Math.abs(p.position.y - t.y) < 1.4) tagger = p;
     });
     const nearest = near as PlayerRuntime | null;
+    const kid = child as PlayerRuntime | null;
     let heard: THREE.Vector3 | null = null;
     let heardSlot = -1;
     for (const n of noises) {
-      // (up a tree it hears barks from the ground below)
-      if (n.time > c.lastNoise && now - n.time < 300 && distXZ(n.position.x, n.position.z, t.x, t.z) < 9) {
+      // (up a tree it hears barks from the ground below; the buddy's noises don't count)
+      if (n.time > c.lastNoise && now - n.time < 300 && !players.get(n.slot)?.bot && distXZ(n.position.x, n.position.z, t.x, t.z) < 9) {
         c.lastNoise = n.time;
         heard = n.position;
         heardSlot = n.slot;
@@ -248,7 +272,17 @@ function Cat({ index }: { index: number }) {
     }
     const onGround = Math.abs(v.y) < 0.8 && now - c.jumpAt > 350;
     const playerSpeed = MOVE.speed * SPEED_FACTOR[settings().speed];
+    const { congaUntil, congaLeader } = useChase.getState();
+    const conga = now < congaUntil;
+    /** A chase is over (caught, or got away): tell the difficulty how it went. A cat that got
+     * away only counts if the child really was after it, not if they just walked past. */
+    const endChase = (outcome: 'tagged' | 'escaped') => {
+      if (c.chaser >= 0 && (outcome === 'tagged' || c.chasedFor > 2)) useChase.getState().reportChase(c.chaser, outcome, (now - c.chaseStart) / 1000);
+      c.chaser = -1;
+      c.chasedFor = 0;
+    };
     const tag = (p: PlayerRuntime) => {
+      endChase('tagged');
       setMode('tagged');
       c.timer = 0.6;
       c.arch = 1;
@@ -264,23 +298,34 @@ function Cat({ index }: { index: number }) {
         up: 4
       });
       rumble(p.source as SourceId, 0.6, 0.6, 200);
-      useChase.getState().tag(index);
+      useChase.getState().tag(index, p.slot);
     };
 
     let speed = 0;
     let steer = false;
     let vy = v.y;
     const m = c.mode;
-    const canBeTagged = m === 'idle' || m === 'stalk' || m === 'alert' || m === 'flee' || m === 'dizzy';
+    const truce = now < c.truceUntil;
+    const canBeTagged = !truce && (m === 'idle' || m === 'stalk' || m === 'alert' || m === 'flee' || m === 'dizzy');
     const tg = tagger as PlayerRuntime | null;
-    if (canBeTagged && tg) {
+    if (conga && (m === 'idle' || m === 'stalk' || m === 'alert' || m === 'flee' || m === 'dizzy' || (m === 'toTree' && c.climbT < 0))) {
+      // all four tagged: everybody line up behind the winner!
+      ground();
+      setMode('conga');
+      c.congaMeow = now + 500 + index * 700;
+      c.chaser = -1;
+    } else if (canBeTagged && tg) {
       tag(tg);
     } else if (m === 'idle' || m === 'stalk') {
-      const fast = nearest ? Math.hypot(nearest.velocity.x, nearest.velocity.z) > 5 : false;
-      const range = c.idle === 'nap' && m === 'idle' ? 3.5 : fast ? 7.5 : 5.5;
-      if (heard || (nearest && nearD < range)) {
+      const prm = chaseParams(kid?.slot ?? -1);
+      const fast = kid ? Math.hypot(kid.velocity.x, kid.velocity.z) > 5 : false;
+      const range = c.idle === 'nap' && m === 'idle' ? prm.notice[1] : prm.notice[0] * (fast ? 1.35 : 1);
+      if (!truce && (heard || (kid && childD < range))) {
         // eek! up in the air, back arched, then run
         setMode('alert');
+        c.chaser = heard ? heardSlot : kid!.slot;
+        c.chaseStart = now;
+        c.chasedFor = 0;
         c.timer = heard ? 0.5 : 0.3;
         c.arch = 1;
         c.jumpAt = now;
@@ -293,7 +338,7 @@ function Cat({ index }: { index: number }) {
           up: 2.5,
           size: 0.16
         });
-        const from = heard ?? nearest!.position;
+        const from = heard ?? kid!.position;
         c.facing = Math.atan2(t.x - from.x, t.z - from.z);
       } else if (m === 'stalk') {
         const f = flocks[c.stalk];
@@ -338,9 +383,16 @@ function Cat({ index }: { index: number }) {
             c.idle = 'sit';
             c.timer = 2 + Math.random() * 3;
           } else {
-            c.facing = Math.atan2(c.target.x - t.x, c.target.z - t.z);
-            speed = distXZ(t.x, t.z, home.x, home.z) > 14 ? 3 : 1.7;
+            c.facing = Math.atan2(c.target.x - t.x, c.target.z - t.z) + (now < c.sidestepUntil ? c.sidestep : 0);
+            speed = distXZ(t.x, t.z, home.x, home.z) > 14 || truce ? 3.5 : 1.7;
             steer = true;
+            // not getting anywhere (nose to nose with another cat): step round
+            c.stuckFor = Math.hypot(v.x, v.z) < speed * 0.4 && onGround ? c.stuckFor + dt : 0;
+            if (c.stuckFor > 0.5) {
+              c.stuckFor = 0;
+              c.sidestep = (Math.random() < 0.5 ? 1 : -1) * 1.3;
+              c.sidestepUntil = now + 800;
+            }
           }
         } else if (c.timer <= 0) {
           const r = Math.random();
@@ -386,10 +438,18 @@ function Cat({ index }: { index: number }) {
       const scared = Math.hypot(awayX, awayZ) > 1e-3;
       if (scared) c.facing = Math.atan2(awayX, awayZ) + Math.sin(time * 2.3) * 0.45;
       else if (c.boost <= 0) c.facing = Math.atan2(home.x - t.x, home.z - t.z);
-      speed = c.boost > 0 ? 11 : playerSpeed * (c.fleeFor < 3 ? 0.86 : 0.62);
+      // the child on our heels is the one we run from (their level)
+      if (kid && childD < 9) {
+        if (c.chaser < 0) c.chaseStart = now;
+        c.chaser = kid.slot;
+        c.chasedFor += dt;
+      }
+      const prm = chaseParams(c.chaser);
+      speed = c.boost > 0 ? 11 : playerSpeed * (c.fleeFor < 3 ? prm.speed[0] : prm.speed[1]);
       steer = true;
       c.calmFor = nearest && nearD < 11 ? 0 : c.calmFor + dt;
       if (c.calmFor > 2.5 && c.boost <= 0) {
+        endChase('escaped');
         setMode('idle');
         c.idle = 'sit';
         c.timer = 2.5;
@@ -405,7 +465,10 @@ function Cat({ index }: { index: number }) {
         c.facing += (Math.random() < 0.5 ? 1 : -1) * 1.1;
       }
     } else if (m === 'tagged') {
-      if (c.timer <= 0) {
+      if (c.timer <= 0 && conga) {
+        setMode('conga');
+        c.congaMeow = now + 500;
+      } else if (c.timer <= 0) {
         // off to the nearest free tree (not a palm), faster than anyone can run
         let best = -1;
         let bestD = 35;
@@ -482,14 +545,15 @@ function Cat({ index }: { index: number }) {
         c.arch = close ? 0.6 : 0;
       }
       const alone = !nearest || nearD > 14;
-      if (c.shakenBy != null || (alone && now - c.treeSince > 45000)) {
-        // down it comes: tumbling (shaken), or calmly (bored)
+      if (c.shakenBy != null || conga || (alone && now - c.treeSince > 45000)) {
+        // down it comes: tumbling (shaken), or calmly (bored, or the conga is starting)
         const gentle = c.shakenBy == null;
         const by = c.shakenBy;
         ground();
         setMode('fall');
         c.fallT = 0;
         c.gentle = gentle;
+        c.fromTree = !gentle;
         c.tagBy = null;
         c.shakenBy = gentle ? null : by;
         const a = nearest ? Math.atan2(t.x - nearest.position.x, t.z - nearest.position.z) : c.facing;
@@ -521,7 +585,8 @@ function Cat({ index }: { index: number }) {
           c.idle = 'sit';
           c.timer = 2;
         } else {
-          earnSticker('cattree');
+          if (c.fromTree) earnSticker('cattree');
+          c.fromTree = false;
           setMode('dizzy');
           c.timer = 1.8;
           playCatSound('meow', t);
@@ -545,10 +610,51 @@ function Cat({ index }: { index: number }) {
     } else if (m === 'held') {
       if (entry.heldBy == null) tumble(null);
       else if (Math.random() < dt * 1.2) playCatSound(Math.random() < 0.5 ? 'hiss' : 'meow', t);
+    } else if (m === 'conga') {
+      if (!conga) {
+        // that was fun; off home again, at a trot, and left alone on the way
+        setMode('idle');
+        c.idle = 'walk';
+        c.target.copy(home);
+        c.timer = 20;
+        c.truceUntil = now + 6000;
+      } else {
+        // the first cat follows the winner, every other cat the cat in front of it
+        let ahead: THREE.Vector3 | null = null;
+        for (let i = index - 1; i >= 0 && !ahead; i -= 1) if (parkCats[i]?.mode === 'conga') ahead = parkCats[i].position;
+        const leader = players.get(congaLeader);
+        if (!ahead && leader) ahead = leader.position;
+        if (ahead) {
+          const d = distXZ(ahead.x, ahead.z, t.x, t.z);
+          c.facing = Math.atan2(ahead.x - t.x, ahead.z - t.z);
+          speed = d > CONGA_GAP ? Math.min(playerSpeed * 1.1, (d - CONGA_GAP) * 4 + 1.5) : 0;
+          steer = d > CONGA_GAP + 3;
+          if (d > 28) {
+            // left far behind (a launcher, a flush): pop back into the line
+            poof([t.x, t.y, t.z], pal.fur, 8);
+            rb.setTranslation({ x: ahead.x - Math.sin(c.facing) * CONGA_GAP, y: ahead.y + 1, z: ahead.z - Math.cos(c.facing) * CONGA_GAP }, true);
+            rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          }
+        }
+        if (now > c.congaMeow) {
+          c.congaMeow = now + 2500 + Math.random() * 2500;
+          playCatSound('meow', t);
+          emit('heart', [t.x, t.y + 0.8, t.z], { count: 2, color: ['#ff4d8d', '#ff8fb5'], speed: 1, up: 1.5 });
+        }
+      }
     }
 
     // move (the modes that walk on their own feet)
-    if (c.mode === 'idle' || c.mode === 'stalk' || c.mode === 'alert' || c.mode === 'flee' || c.mode === 'dizzy' || c.mode === 'toTree' || c.mode === 'tagged') {
+    if (
+      c.mode === 'idle' ||
+      c.mode === 'stalk' ||
+      c.mode === 'alert' ||
+      c.mode === 'flee' ||
+      c.mode === 'dizzy' ||
+      c.mode === 'toTree' ||
+      c.mode === 'tagged' ||
+      c.mode === 'conga'
+    ) {
       if (c.mode === 'toTree' && c.climbT >= 0) {
         // (placed by hand while climbing)
       } else {
@@ -602,7 +708,9 @@ function Cat({ index }: { index: number }) {
       const puff = 1 + c.arch * 0.9;
       seg.scale.set(puff, 1, puff);
       if (c.mode === 'tree')
-        seg.rotation.x = i === 0 ? 1.9 : 0.3 + Math.sin(time * 2 + i) * 0.35; // dangling down, swishing
+        seg.rotation.x = i === 0 ? -1.2 : 0.3 + Math.sin(time * 2 + i) * 0.35; // dangling down, swishing
+      else if (c.mode === 'conga')
+        seg.rotation.x = i === 0 ? 1.3 : 0.2 + Math.sin(time * 6 + i) * 0.3; // straight up: a happy cat
       else if (running) seg.rotation.x = i === 0 ? 1.2 : 0.1;
       else if (c.arch > 0.2) seg.rotation.x = i === 0 ? 0.1 : -0.3;
       else seg.rotation.x = i === 0 ? 0.5 : 0.5 + Math.sin(time * (crouch ? 9 : 2.5) + i) * (crouch ? 0.5 : 0.25);

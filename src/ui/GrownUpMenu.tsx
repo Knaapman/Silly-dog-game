@@ -118,6 +118,17 @@ function settingRows(autoLevel: Quality): ChoiceRow[] {
   return [
     { key: 'speed', icon: '🏃', label: 'Running speed', options: LEVELS('Calm', 'Normal', 'Zoomy') },
     { key: 'together', icon: '🤝', label: 'Stay together', options: LEVELS('Close', 'Normal', 'Far') },
+    {
+      key: 'chase',
+      icon: '🐈',
+      label: 'Catching the cats',
+      options: [
+        { value: 'auto', label: 'Auto' },
+        { value: 0 as Level, label: 'Easy' },
+        { value: 1 as Level, label: 'Normal' },
+        { value: 2 as Level, label: 'Tricky' }
+      ]
+    },
     { key: 'magic', icon: '✨', label: 'Magic food lasts', options: LEVELS('Short', 'Normal', 'Long') },
     { key: 'sprout', icon: '🌸', label: 'Poops turn into flowers', options: LEVELS('Soon', 'Normal', 'Late') },
     {
