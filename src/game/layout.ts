@@ -186,7 +186,8 @@ export const WINDMILL = { position: at3(Z.farm, -11, 0, 15) };
 export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
 export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
 export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
-export const MELON_PATCH: Vec2[] = [at(Z.farm, 8, 10), at(Z.farm, 10.5, 10), at(Z.farm, 13, 10), at(Z.farm, 8, 13), at(Z.farm, 10.5, 13), at(Z.farm, 13, 13)];
+/** The melon field, out on the grass west of the silo (clear of the railway embankment on the farm's east side). */
+export const MELON_PATCH: Vec2[] = [at(Z.farm, -20, -3), at(Z.farm, -17.5, -3), at(Z.farm, -15, -3), at(Z.farm, -20, -0.5), at(Z.farm, -17.5, -0.5), at(Z.farm, -15, -0.5)];
 export const TRACTOR = at3(Z.farm, -3, 0, -17);
 export const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [
   { kind: 'hay', position: at3(Z.farm, -0.5, 0.62, -12.5), rotation: [0, 0, Math.PI / 2] },
@@ -277,14 +278,36 @@ export const TRAIN = {
   station: { from: 12, to: 26 }
 };
 
-/** The track over the river: a low bridge (its deck carries the track over the channel). */
-export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, length: 14, width: 3.4 };
+/**
+ * Every bridge over water is high enough to float under: its underside is at least this far
+ * above the water (an animal standing on a river tube, ears and hat included, is 1.9 m).
+ */
+export const FLOAT_CLEARANCE = 2.1;
+
+/**
+ * Where the track crosses water it climbs onto a bridge, high enough to float (or swim) under:
+ * up a grassy embankment `ramp` metres long to `height`, level across the water, and down
+ * again. `from` and `to` are where each bridge's level top starts and ends: points on the
+ * track, in the direction the train runs. The ramps keep clear of the station, the tunnel
+ * and the footbridge over the west straight, where the track stays on the ground.
+ */
+export const TRACK_LIFTS = {
+  height: 2.5,
+  ramp: 14,
+  deckThickness: 0.4,
+  bridges: [
+    { name: 'river bridge', from: [29.2, -20.6] as Vec2, to: [15.4, -22] as Vec2, style: 'stone' as const },
+    { name: 'trestle', from: [-33.3, 49.8] as Vec2, to: [33.3, 49.6] as Vec2, style: 'wood' as const }
+  ]
+};
+/** The river bridge (on the first of those lifts): where the track crosses the river. */
+export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, width: 3.4 };
 /**
  * The path from the hub to the dino park crosses the river here, on an arched footbridge: the
  * river tubes float underneath (a rider standing on a tube is 1.1 m tall; the deck's underside
  * is at `height - deckThickness`).
  */
-export const RIVER_FOOTBRIDGE = { center: [25, -2] as Vec2, length: 12.4, width: 2.8, deck: 5.2, height: 1.95, deckThickness: 0.45 };
+export const RIVER_FOOTBRIDGE = { z: -2, west: 16, east: 32, deckFrom: 22.4, deckTo: 27.8, width: 2.8, height: 2.65, deckThickness: 0.45 };
 /** Stepping stones across the river on the way to the playground. */
 export const STEPPING_STONES = { from: [20.5, 30] as Vec2, to: [31.5, 30] as Vec2, count: 7, radius: 0.75 };
 
@@ -364,7 +387,7 @@ export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   { kind: 'cake', position: [PICNIC.center[0] + 0.6, 0.06, PICNIC.center[1] + 0.4] },
   { kind: 'cake', position: [PICNIC.center[0] - 0.4, 0.06, PICNIC.center[1] + 0.7] },
   // carrot patch on the farm
-  ...([[8, 5], [9.4, 5], [10.8, 5], [8, 6.6], [9.4, 6.6], [10.8, 6.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: at3(Z.farm, c[0], 0, c[1]) })),
+  ...([[7, 5], [8.4, 5], [9.8, 5], [7, 6.6], [8.4, 6.6], [9.8, 6.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: at3(Z.farm, c[0], 0, c[1]) })),
   // ice creams on the stall counters
   ...STALLS.flatMap((s) => [-0.6, 0.6].map((dx) => ({ kind: 'icecream' as const, position: [s.position[0] + dx, 1.2, s.position[2] + 0.4] as Vec3 }))),
   // the magic snack table on the west side of the plaza...
@@ -438,7 +461,7 @@ export const BALLOONS: Vec3[] = [
 // open grass, and on a few high spots you need a launcher for)
 
 export const CAT_HOMES: Vec2[] = [
-  [8, -18],
+  [15, -16],
   [-26, -4],
   [14, 41],
   [38, 8]

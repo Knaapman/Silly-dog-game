@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { playChuff, playToot } from '../audio';
 import { emit } from '../fx';
-import { GOLDEN_STARS, TRAIN } from '../layout';
+import { GOLDEN_STARS, TRACK_LIFTS, TRAIN } from '../layout';
 import { lambert } from '../materials';
 import { camera, debugInfo, players, type Surface } from '../runtime';
 import { Ramp, StaticBox, useHint } from './common';
@@ -11,18 +11,14 @@ import { GoldenStar } from './Stars';
 import { useSurface } from './surface';
 import { gameNow, useGameFrame } from '../clock';
 import { groundHeight } from '../terrain';
+import { LIFTS, TRACK_LENGTH, trackAt, trackLift } from '../track';
 
-// The track is a rounded rectangle round TRAIN.center; `trackAt(s)` gives position + heading at
-// distance s along it. The train runs east along the south straight (over the water), north up
-// the east straight past the station, west along the north straight through the tunnel, and
-// south down the west straight.
-
+const [TX, TZ] = TRAIN.center;
 const R = TRAIN.cornerRadius;
 const CX = TRAIN.halfX - R;
 const CZ = TRAIN.halfZ - R;
-const [TX, TZ] = TRAIN.center;
 const ARC = (Math.PI / 2) * R;
-const LENGTH = 4 * CX + 4 * CZ + 4 * ARC;
+const LENGTH = TRACK_LENGTH;
 const CAR_GAP = 4.6;
 const CARS = 4; // locomotive + 3 wagons
 /** The loco's front stops at the far end of the platform (it heads north up the east straight). */
@@ -30,72 +26,67 @@ const STOP_S = 2 * CX + ARC + (TZ + CZ - TRAIN.station.from);
 /** The platform: on the inside of the east straight. */
 const PLATFORM_X = TX + TRAIN.halfX - 2.4;
 
-type Segment = { kind: 'line'; from: [number, number]; dir: [number, number]; len: number } | { kind: 'arc'; center: [number, number]; a0: number; len: number };
+export { trackAt };
 
-const SEGMENTS: Segment[] = [
-  { kind: 'line', from: [TX - CX, TZ + TRAIN.halfZ], dir: [1, 0], len: 2 * CX },
-  { kind: 'arc', center: [TX + CX, TZ + CZ], a0: Math.PI / 2, len: ARC },
-  { kind: 'line', from: [TX + TRAIN.halfX, TZ + CZ], dir: [0, -1], len: 2 * CZ },
-  { kind: 'arc', center: [TX + CX, TZ - CZ], a0: 0, len: ARC },
-  { kind: 'line', from: [TX + CX, TZ - TRAIN.halfZ], dir: [-1, 0], len: 2 * CX },
-  { kind: 'arc', center: [TX - CX, TZ - CZ], a0: -Math.PI / 2, len: ARC },
-  { kind: 'line', from: [TX - TRAIN.halfX, TZ - CZ], dir: [0, 1], len: 2 * CZ },
-  { kind: 'arc', center: [TX - CX, TZ + CZ], a0: -Math.PI, len: ARC }
-];
-
-export function trackAt(s: number, out: { x: number; z: number; dx: number; dz: number }) {
-  let u = ((s % LENGTH) + LENGTH) % LENGTH;
-  for (const seg of SEGMENTS) {
-    if (u <= seg.len) {
-      if (seg.kind === 'line') {
-        out.x = seg.from[0] + seg.dir[0] * u;
-        out.z = seg.from[1] + seg.dir[1] * u;
-        out.dx = seg.dir[0];
-        out.dz = seg.dir[1];
-      } else {
-        const a = seg.a0 - u / R;
-        out.x = seg.center[0] + Math.cos(a) * R;
-        out.z = seg.center[1] + Math.sin(a) * R;
-        out.dx = Math.sin(a);
-        out.dz = -Math.cos(a);
-      }
-      return out;
-    }
-    u -= seg.len;
-  }
-  return out;
+/** A slab of bridge deck, tipped to follow the track (a StaticBox can only turn one way at a time). */
+function DeckPiece({ x, y, z, yaw, pitch, len, width, color }: { x: number; y: number; z: number; yaw: number; pitch: number; len: number; width: number; color: string }) {
+  const q = useMemo(() => new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ')), [pitch, yaw]);
+  return (
+    <RigidBody type="fixed" colliders={false} position={[x, y, z]} quaternion={q}>
+      <CuboidCollider args={[width / 2, TRACK_LIFTS.deckThickness / 2, len / 2]} />
+      <mesh castShadow receiveShadow material={lambert(color)}>
+        <boxGeometry args={[width, TRACK_LIFTS.deckThickness, len]} />
+      </mesh>
+    </RigidBody>
+  );
 }
 
 /**
- * Where the track runs over water (the south straight and the corners either side of it) it
- * rides on a trestle: a deck at ground level on posts down into the sea.
+ * The railway's bridges: wherever the raised track (see TRACK_LIFTS) runs over a drop in the
+ * ground (the river, the lagoon, the sea), a deck on posts carries it, high enough to float or
+ * swim underneath. Over the river it is a stone bridge with low parapets; along the sea, a
+ * wooden trestle.
  */
-function Trestle() {
+function Viaducts() {
   const pieces = useMemo(() => {
-    const out: { x: number; z: number; yaw: number; len: number; depth: number }[] = [];
+    const out: { x: number; y: number; z: number; yaw: number; pitch: number; len: number; drop: number; stone: boolean; post: boolean }[] = [];
     const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    const lift = { y: 0, grade: 0 };
     const STEP = 2.5;
-    for (let s = 0; s < LENGTH; s += STEP) {
-      trackAt(s + STEP / 2, p);
-      const depth = -groundHeight(p.x, p.z);
-      if (depth < 0.1) continue;
-      out.push({ x: p.x, z: p.z, yaw: Math.atan2(p.dx, p.dz), len: STEP + 0.1, depth });
+    for (const l of LIFTS) {
+      let n = 0;
+      for (let s = l.sFrom - TRACK_LIFTS.ramp; s < l.sFrom + l.span + TRACK_LIFTS.ramp; s += STEP) {
+        trackAt(s + STEP / 2, p);
+        trackLift(s + STEP / 2, lift);
+        const drop = lift.y - TRACK_LIFTS.deckThickness - groundHeight(p.x, p.z);
+        if (lift.y < 0.5 || drop < 0.1) continue;
+        out.push({ x: p.x, y: lift.y - TRACK_LIFTS.deckThickness / 2, z: p.z, yaw: Math.atan2(p.dx, p.dz), pitch: -Math.atan(lift.grade), len: STEP + 0.7, drop, stone: l.style === 'stone', post: n % 2 === 0 }); // overlapping, so the outside of a curve has no gaps
+        n += 1;
+      }
     }
     return out;
   }, []);
   return (
     <group>
-      {pieces.map((d, i) => (
-        <group key={i}>
-          <StaticBox position={[d.x, -0.2, d.z]} rotation={[0, d.yaw, 0]} size={[3.2, 0.4, d.len]} color="#8d6e63" />
-          {i % 2 === 0 &&
-            [-1.2, 1.2].map((side) => (
-              <mesh key={side} castShadow position={[d.x + Math.cos(d.yaw) * side, -0.3 - d.depth / 2, d.z - Math.sin(d.yaw) * side]} material={lambert('#6d4c41')}>
-                <cylinderGeometry args={[0.16, 0.18, d.depth + 0.6, 8]} />
-              </mesh>
-            ))}
-        </group>
-      ))}
+      {pieces.map((d, i) => {
+        const width = d.stone ? 3.6 : 3.2;
+        const bottom = d.y - TRACK_LIFTS.deckThickness / 2;
+        return (
+          <group key={i}>
+            <DeckPiece x={d.x} y={d.y} z={d.z} yaw={d.yaw} pitch={d.pitch} len={d.len} width={width} color={d.stone ? '#9e9689' : '#8d6e63'} />
+            {d.stone &&
+              [-1, 1].map((side) => (
+                <DeckPiece key={side} x={d.x + Math.cos(d.yaw) * side * (width / 2 + 0.15)} y={d.y + 0.45} z={d.z - Math.sin(d.yaw) * side * (width / 2 + 0.15)} yaw={d.yaw} pitch={d.pitch} len={d.len} width={0.3} color="#b0a89a" />
+              ))}
+            {d.post &&
+              (d.stone ? [0] : [-1.2, 1.2]).map((side) => (
+                <mesh key={side} castShadow position={[d.x + Math.cos(d.yaw) * side, bottom - (d.drop + 0.8) / 2, d.z - Math.sin(d.yaw) * side]} rotation={[0, d.yaw + Math.PI / 2, 0]} material={lambert(d.stone ? '#b0a89a' : '#6d4c41')}>
+                  {d.stone ? <boxGeometry args={[1.2, d.drop + 0.8, width - 0.4]} /> : <cylinderGeometry args={[0.16, 0.18, d.drop + 0.8, 8]} />}
+                </mesh>
+              ))}
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -107,21 +98,25 @@ function Track() {
   const railCount = Math.floor(LENGTH / 1) * 2;
   useLayoutEffect(() => {
     const o = new THREE.Object3D();
+    o.rotation.order = 'YXZ';
     const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    const lift = { y: 0, grade: 0 };
     for (let i = 0; i < tieCount; i += 1) {
       trackAt(i * 0.9, p);
-      o.position.set(p.x, 0.04, p.z);
-      o.rotation.set(0, Math.atan2(p.dx, p.dz), 0);
+      trackLift(i * 0.9, lift);
+      o.position.set(p.x, lift.y + 0.04, p.z);
+      o.rotation.set(-Math.atan(lift.grade), Math.atan2(p.dx, p.dz), 0);
       o.updateMatrix();
       ties.current?.setMatrixAt(i, o.matrix);
     }
     for (let i = 0; i < railCount / 2; i += 1) {
       trackAt(i + 0.5, p);
+      trackLift(i + 0.5, lift);
       const yaw = Math.atan2(p.dx, p.dz);
       [-0.72, 0.72].forEach((side, k) => {
         // side offset perpendicular to the heading
-        o.position.set(p.x + p.dz * side, 0.13, p.z - p.dx * side);
-        o.rotation.set(0, yaw, 0);
+        o.position.set(p.x + p.dz * side, lift.y + 0.13, p.z - p.dx * side);
+        o.rotation.set(-Math.atan(lift.grade), yaw, 0);
         o.updateMatrix();
         rails.current?.setMatrixAt(i * 2 + k, o.matrix);
       });
@@ -144,7 +139,7 @@ function Track() {
   );
 }
 
-type CarState = { x: number; z: number; dx: number; dz: number; yaw: number; w: number; speed: number };
+type CarState = { x: number; y: number; z: number; dx: number; dz: number; yaw: number; pitch: number; w: number; vy: number; speed: number };
 
 const CAR_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e'];
 
@@ -160,7 +155,7 @@ function Car({ index, cars, trainSpeed }: { index: number; cars: MutableRefObjec
         const c = cars.current[index];
         const rx = p.x - c.x;
         const rz = p.z - c.z;
-        return out.set(c.dx * trainSpeed.current + c.w * rz, 0, c.dz * trainSpeed.current - c.w * rx);
+        return out.set(c.dx * trainSpeed.current + c.w * rz, c.vy, c.dz * trainSpeed.current - c.w * rx);
       }
     }),
     [cars, index, trainSpeed]
@@ -169,15 +164,15 @@ function Car({ index, cars, trainSpeed }: { index: number; cars: MutableRefObjec
   useSurface(roof, surface);
   const start = useMemo(() => {
     const p = trackAt(STOP_S - index * CAR_GAP, { x: 0, z: 0, dx: 0, dz: 0 });
-    return { pos: [p.x, 0, p.z] as [number, number, number], yaw: Math.atan2(p.dx, p.dz) };
+    return { pos: [p.x, trackLift(STOP_S - index * CAR_GAP).y, p.z] as [number, number, number], yaw: Math.atan2(p.dx, p.dz) };
   }, [index]);
 
   useGameFrame(() => {
     const rb = body.current;
     const c = cars.current[index];
     if (!rb || !c) return;
-    rb.setNextKinematicTranslation({ x: c.x, y: 0, z: c.z });
-    rb.setNextKinematicRotation(q.setFromEuler(euler.set(0, c.yaw, 0)));
+    rb.setNextKinematicTranslation({ x: c.x, y: c.y, z: c.z });
+    rb.setNextKinematicRotation(q.setFromEuler(euler.set(c.pitch, c.yaw, 0, 'YXZ')));
   });
 
   const loco = index === 0;
@@ -267,10 +262,11 @@ function Station() {
 }
 
 export function Train() {
-  const cars = useRef<CarState[]>(Array.from({ length: CARS }, () => ({ x: 0, z: 0, dx: 0, dz: 1, yaw: 0, w: 0, speed: 0 })));
+  const cars = useRef<CarState[]>(Array.from({ length: CARS }, () => ({ x: 0, y: 0, z: 0, dx: 0, dz: 1, yaw: 0, pitch: 0, w: 0, vy: 0, speed: 0 })));
   const speed = useRef(0);
   const state = useRef({ s: STOP_S, dwell: 3, stopped: true, smoke: 0, tootCooldown: 0, bumpCooldown: new Map<number, number>() });
   const p = useMemo(() => ({ x: 0, z: 0, dx: 0, dz: 0 }), []);
+  const lift = useMemo(() => ({ y: 0, grade: 0 }), []);
   const starOffset = useMemo(() => new THREE.Vector3(), []);
   const starIndex = GOLDEN_STARS.indexOf('train');
 
@@ -300,6 +296,7 @@ export function Train() {
 
     cars.current.forEach((c, i) => {
       trackAt(st.s - i * CAR_GAP, p);
+      trackLift(st.s - i * CAR_GAP, lift);
       const yaw = Math.atan2(p.dx, p.dz);
       let dy = yaw - c.yaw;
       while (dy > Math.PI) dy -= Math.PI * 2;
@@ -310,6 +307,9 @@ export function Train() {
       c.dx = p.dx;
       c.dz = p.dz;
       c.yaw = yaw;
+      c.y = lift.y;
+      c.pitch = -Math.atan(lift.grade);
+      c.vy = lift.grade * speed.current;
     });
 
     const loco = cars.current[0];
@@ -317,7 +317,7 @@ export function Train() {
     st.smoke -= dt;
     if (near && st.smoke <= 0 && speed.current > 0.5) {
       st.smoke = 0.35;
-      emit('puff', [loco.x + loco.dx * 1.45, 3.3, loco.z + loco.dz * 1.45], { count: 2, color: ['#eceff1', '#cfd8dc'], size: 0.5, speed: 0.6, up: 2.5, gravity: -1.2, life: 1.6 });
+      emit('puff', [loco.x + loco.dx * 1.45, loco.y + 3.3, loco.z + loco.dz * 1.45], { count: 2, color: ['#eceff1', '#cfd8dc'], size: 0.5, speed: 0.6, up: 2.5, gravity: -1.2, life: 1.6 });
       playChuff([loco.x, 2, loco.z]);
     }
 
@@ -328,7 +328,7 @@ export function Train() {
       const fx = loco.x + loco.dx * 2.4;
       const fz = loco.z + loco.dz * 2.4;
       players.forEach((pl) => {
-        if (pl.position.y > 1.6 || (st.bumpCooldown.get(pl.slot) ?? 0) > now) return;
+        if (pl.position.y - loco.y > 1.6 || pl.position.y < loco.y - 1 || (st.bumpCooldown.get(pl.slot) ?? 0) > now) return;
         if (Math.hypot(pl.position.x - fx, pl.position.z - fz) > 1.7) return;
         const side = Math.sign((pl.position.x - loco.x) * loco.dz - (pl.position.z - loco.z) * loco.dx) || 1;
         pl.bump(new THREE.Vector3(loco.dz * side + loco.dx * 0.4, 0, -loco.dx * side + loco.dz * 0.4).normalize());
@@ -344,7 +344,7 @@ export function Train() {
   return (
     <group>
       <Track />
-      <Trestle />
+      <Viaducts />
       <Station />
       {Array.from({ length: CARS }, (_, i) => (
         <Car key={i} index={i} cars={cars} trainSpeed={speed} />
@@ -355,7 +355,7 @@ export function Train() {
           getPosition={(out) => {
             const c = cars.current[0];
             starOffset.set(-c.dx * 1.05, 0, -c.dz * 1.05);
-            out.set(c.x + starOffset.x, 3.85, c.z + starOffset.z);
+            out.set(c.x + starOffset.x, c.y + 3.85, c.z + starOffset.z);
           }}
         />
       )}

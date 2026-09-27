@@ -627,9 +627,19 @@ function Cat({ index }: { index: number }) {
         if (!ahead && leader) ahead = leader.position;
         if (ahead) {
           const d = distXZ(ahead.x, ahead.z, t.x, t.z);
-          c.facing = Math.atan2(ahead.x - t.x, ahead.z - t.z);
+          c.facing = Math.atan2(ahead.x - t.x, ahead.z - t.z) + (now < c.sidestepUntil ? c.sidestep : 0);
           speed = d > CONGA_GAP ? Math.min(playerSpeed * 1.1, (d - CONGA_GAP) * 4 + 1.5) : 0;
           steer = d > CONGA_GAP + 3;
+          // stuck against something (a ramp, a fence, a wall) on the way: hop over it, stepping
+          // to one side (a different side each time, in case it's too tall to hop)
+          c.stuckFor = speed > 2 && Math.hypot(v.x, v.z) < speed * 0.3 && onGround ? c.stuckFor + dt : 0;
+          if (c.stuckFor > 0.3) {
+            c.stuckFor = 0;
+            c.jumpAt = now;
+            vy = 7.5;
+            c.sidestep = (c.sidestep > 0 ? -1 : 1) * 1.2;
+            c.sidestepUntil = now + 700;
+          }
           if (d > 28) {
             // left far behind (a launcher, a flush): pop back into the line
             poof([t.x, t.y, t.z], pal.fur, 8);

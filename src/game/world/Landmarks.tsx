@@ -2,7 +2,7 @@ import { BallCollider, CuboidCollider, CylinderCollider, RigidBody } from '@reac
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { gameClock, useGameFrame } from '../clock';
-import { BOULDERS, FOOTBRIDGE, MESA, RIVER_FOOTBRIDGE, STEPPING_STONES, SUMMIT_FLAG, TRAIN_BRIDGE } from '../layout';
+import { BOULDERS, FOOTBRIDGE, MESA, RIVER_FOOTBRIDGE, STEPPING_STONES, SUMMIT_FLAG } from '../layout';
 import { lambert, speckleTexture } from '../materials';
 import { groundHeight } from '../terrain';
 import { Ramp, StaticBox, useHint } from './common';
@@ -10,9 +10,9 @@ import { useSeeThrough } from './seeThrough';
 
 // Landmarks in the open grass between the zones: the mesa at the mountain's foot with the train
 // tunnel through it (up the ramp from the mountainside, wave the flag, watch the train come out
-// underneath you), the footbridge over the west track, and the river crossings: the railway
-// bridge, the footbridge on the way to the dino park, and the stepping stones on the way to the
-// playground. (The hills and the mountain are part of the ground: see terrain.ts.)
+// underneath you), the footbridge over the west track, and the river crossings: the footbridge on
+// the way to the dino park and the stepping stones on the way to the playground. (The railway's
+// own bridges belong to the train: see Train.tsx.) (The hills and the mountain are part of the ground: see terrain.ts.)
 
 function grassMaterial(name: string) {
   return new THREE.MeshLambertMaterial({ map: speckleTexture(name, '#6cbd4c', ['#5faa42', '#7fcf5e', '#c9e59a'], 8) });
@@ -126,7 +126,7 @@ function Footbridge() {
   return (
     <group>
       {/* the ramp's end rests on the deck (level with it, it would leave a step that stops you) */}
-      <Ramp from={[rampFrom, 0, z]} to={[deckFrom - 0.4, height + 0.3, z]} width={width} color={wood} railColor={rail} />
+      <Ramp from={[rampFrom, 0, z]} to={[deckFrom - 0.4, height + 0.3, z]} width={width} color={wood} railColor={rail} solid="#8d7a6a" />
       <StaticBox position={[deckX, height - deckThickness / 2, z]} size={[deckLen, deckThickness, width]} color={wood} />
       {[-1, 1].map((side) => (
         <StaticBox key={side} position={[deckX, height + 0.35, z + side * (width / 2 + 0.1)]} size={[deckLen, 0.7, 0.2]} color={rail} />
@@ -144,49 +144,29 @@ function Footbridge() {
   );
 }
 
-/** The railway bridge: a deck carrying the track over the river, with low stone parapets. */
-function TrainBridge() {
-  const [x, z] = TRAIN_BRIDGE.center;
-  const { length, width } = TRAIN_BRIDGE;
-  const stone = lambert('#b0a89a');
-  return (
-    <group>
-      <StaticBox position={[x, -0.25, z]} size={[length, 0.5, width]} color="#9e9689" />
-      {[-1, 1].map((side) => (
-        <StaticBox key={side} position={[x, 0.25, z + side * (width / 2 + 0.15)]} size={[length, 0.5, 0.3]} color="#b0a89a" />
-      ))}
-      {[-1, 1].map((side) => (
-        <mesh key={side} castShadow position={[x + side * 3.5, -0.5, z]} material={stone}>
-          <boxGeometry args={[1.2, 1, width + 0.6]} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 /**
  * An arched footbridge over the river on the way to the dino park: up a ramp, over a chunky
- * deck high enough for the river tubes to float under, down the other side.
+ * deck high enough for the river tubes (and whoever is standing on them) to float under, down
+ * the other side.
  */
 function RiverFootbridge() {
-  const [x, z] = RIVER_FOOTBRIDGE.center;
-  const { length, width, deck, height, deckThickness } = RIVER_FOOTBRIDGE;
+  const { z, west, east, deckFrom, deckTo, width, height, deckThickness } = RIVER_FOOTBRIDGE;
   const wood = '#a1887f';
   const rail = '#6d4c41';
-  const west = x - length / 2;
-  const east = x + length / 2;
+  const deckLen = deckTo - deckFrom;
+  const x = (deckFrom + deckTo) / 2;
   // each ramp's end rests on the deck, a little above it (level with it, it leaves a step)
   return (
     <group>
-      <Ramp from={[west, 0, z]} to={[x - deck / 2 + 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} />
-      <Ramp from={[east, 0, z]} to={[x + deck / 2 - 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} />
-      <StaticBox position={[x, height - deckThickness / 2, z]} size={[deck, deckThickness, width]} color={wood} />
+      <Ramp from={[west, 0, z]} to={[deckFrom + 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} solid="#8d7a6a" />
+      <Ramp from={[east, 0, z]} to={[deckTo - 0.4, height + 0.05, z]} width={width} color={wood} railColor={rail} solid="#8d7a6a" />
+      <StaticBox position={[x, height - deckThickness / 2, z]} size={[deckLen, deckThickness, width]} color={wood} />
       {[-1, 1].map((side) => (
-        <StaticBox key={side} position={[x, height + 0.35, z + side * (width / 2 + 0.1)]} size={[deck, 0.7, 0.2]} color={rail} shadow={false} />
+        <StaticBox key={side} position={[x, height + 0.35, z + side * (width / 2 + 0.1)]} size={[deckLen, 0.7, 0.2]} color={rail} shadow={false} />
       ))}
-      {[-1, 1].map((end) =>
+      {[deckFrom, deckTo].map((px) =>
         [-1, 1].map((side) => (
-          <mesh key={`${end}${side}`} castShadow position={[x + (end * deck) / 2, (height - 0.6) / 2 - 0.3, z + side * (width / 2 - 0.2)]} material={lambert(rail)}>
+          <mesh key={`${px}${side}`} castShadow position={[px, (height - 0.6) / 2 - 0.3, z + side * (width / 2 - 0.2)]} material={lambert(rail)}>
             <cylinderGeometry args={[0.14, 0.16, height + 0.6, 8]} />
           </mesh>
         ))
@@ -248,7 +228,6 @@ export function Landmarks() {
       <Flag position={[SUMMIT_FLAG[0], groundHeight(SUMMIT_FLAG[0], SUMMIT_FLAG[1]) - 0.1, SUMMIT_FLAG[1]]} color="#3b82f6" />
       <Mesa />
       <Footbridge />
-      <TrainBridge />
       <RiverFootbridge />
       <SteppingStones />
     </>

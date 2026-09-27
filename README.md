@@ -116,9 +116,11 @@ menu or the album never also do something in the game.
 ## Things to discover
 
 The park is a ring of eight areas around a fountain plaza, with the mountain across the north and the sea along the
-south. Signposts with pictures point the way, and a **train** loops round the middle of it: over the river bridge, through
-the tunnel under the mesa, along a trestle out over the water, and it stops at the station on the east side (stand on a
-wagon to ride along). A footbridge over the west track lets you look down on it.
+south. Signposts with pictures point the way, and a **train** loops round the middle of it: up an embankment onto a stone
+bridge over the river, through the tunnel under the mesa, up onto a wooden trestle along the sea, and it stops at the
+station on the east side (stand on a wagon to ride along). A footbridge over the west track lets you look down on it.
+Every bridge over water is high enough to float or swim under: the river tubes pass under the arched footbridge, and you
+can wade up the river under the railway bridge or swim out of the lagoon under the trestle into the sea.
 
 | Area | What is there |
 |---|---|
@@ -241,6 +243,7 @@ src/
     layout.ts           where everything in the park lives
     terrain.ts          the lie of the land: groundHeight(x, z); the mountain, the river, the sea, and flats under everything that must stand level
     course.ts           a smooth line through points, measured along its length (the river tubes' course)
+    track.ts            the railway: where the track runs (trackAt), how high (up onto its bridges), nearest point
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode

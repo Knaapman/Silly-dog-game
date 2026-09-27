@@ -3,6 +3,7 @@ import { WORLD_HALF_X, WORLD_HALF_Z } from '../../src/game/config';
 import * as L from '../../src/game/layout';
 import { groundHeight, mountainWeight, riverAt, trackDist } from '../../src/game/terrain';
 import { makeCourse } from '../../src/game/course';
+import { LIFTS, TRACK_LENGTH, trackAt, trackHeight, trackNearest } from '../../src/game/track';
 
 // The park layout, checked for things standing where they shouldn't: on the train track, on a
 // path, in the river, on top of each other, on the mountain's slope, in the sea or in the
@@ -119,12 +120,13 @@ describe('park layout', () => {
     }
     expect(out).toEqual([]);
     // the crossings sit squarely over the channel, with their ends on the banks
-    const bank = L.RIVER_HALF_WIDTH + L.RIVER_BANK;
     expect(riverAt(L.TRAIN_BRIDGE.center[0], L.TRAIN_BRIDGE.center[1], river).d).toBeLessThan(1.5);
-    expect(L.TRAIN_BRIDGE.length / 2).toBeGreaterThan(bank + 1);
     expect(trackDist(L.TRAIN_BRIDGE.center[0], L.TRAIN_BRIDGE.center[1])).toBeLessThan(0.01);
-    expect(riverAt(L.RIVER_FOOTBRIDGE.center[0], L.RIVER_FOOTBRIDGE.center[1], river).d).toBeLessThan(1.5);
-    expect(L.RIVER_FOOTBRIDGE.length / 2).toBeGreaterThan(bank);
+    const fb = L.RIVER_FOOTBRIDGE;
+    expect(riverAt((fb.deckFrom + fb.deckTo) / 2, fb.z, river).d).toBeLessThan(1.5);
+    expect(groundHeight(fb.west, fb.z)).toBeGreaterThan(-0.02);
+    expect(groundHeight(fb.east, fb.z)).toBeGreaterThan(-0.02);
+    expect(trackDist(fb.east, fb.z)).toBeGreaterThan(1.3 + 0.5); // the train passes the east ramp's foot
     const mid: L.Vec2 = [(L.STEPPING_STONES.from[0] + L.STEPPING_STONES.to[0]) / 2, (L.STEPPING_STONES.from[1] + L.STEPPING_STONES.to[1]) / 2];
     expect(riverAt(mid[0], mid[1], river).d).toBeLessThan(1.5);
     expect(groundHeight(...L.STEPPING_STONES.from)).toBeGreaterThan(-0.2);
@@ -217,12 +219,46 @@ describe('park layout', () => {
     const first = course.at(0);
     expect(first.z - L.TUBE_RIDE.radius).toBeGreaterThan(L.TRAIN_BRIDGE.center[1] + L.TRAIN_BRIDGE.width / 2);
     expect(L.TUBE_RIDE.takeOutZ + L.TUBE_RIDE.radius + sway).toBeLessThan(L.STEPPING_STONES.from[1] - L.STEPPING_STONES.radius - 1);
-    // a rider standing on a tube (1.1 m, on a tube 0.27 m out of the water) fits under the footbridge
-    const underside = L.RIVER_FOOTBRIDGE.height - L.RIVER_FOOTBRIDGE.deckThickness;
-    expect(underside - (L.WATER_LEVEL + 0.27 + 1.1)).toBeGreaterThan(0.2);
-    // and the deck spans where the tubes go
-    const atBridge = course.at(course.sAtZ(L.RIVER_FOOTBRIDGE.center[1]));
-    expect(Math.abs(atBridge.x - L.RIVER_FOOTBRIDGE.center[0]) + L.TUBE_RIDE.radius + sway).toBeLessThan(L.RIVER_FOOTBRIDGE.deck / 2);
+    // the footbridge's deck spans where the tubes go, clear of its ramps' solid bases (which stand
+    // at the channel's edges, from the banks to where each ramp meets the deck)
+    const fb = L.RIVER_FOOTBRIDGE;
+    const atBridge = course.at(course.sAtZ(fb.z));
+    expect(atBridge.x - L.TUBE_RIDE.radius - sway).toBeGreaterThan(fb.deckFrom + 0.4 + 0.3);
+    expect(atBridge.x + L.TUBE_RIDE.radius + sway).toBeLessThan(fb.deckTo - 0.4 - 0.3);
+  });
+
+  it('every bridge over water is high enough to float under', () => {
+    // an animal standing on a tube, ears and hat and all, fits under the clearance
+    expect(L.FLOAT_CLEARANCE).toBeGreaterThan(0.27 + 1.9 * 0.95);
+    const out: string[] = [];
+    // the arched footbridge: its deck clears the water, and leaves a wide channel between the
+    // solid bases of its ramps (they stand at the water's edges, like a stone bridge's abutments)
+    const fb = L.RIVER_FOOTBRIDGE;
+    if (fb.height - fb.deckThickness - L.WATER_LEVEL < L.FLOAT_CLEARANCE) out.push('the river footbridge deck is too low');
+    if (fb.deckTo - 0.4 - (fb.deckFrom + 0.4) < 4) out.push('the channel under the river footbridge is too narrow');
+    // the railway: wherever there is water under the track, the track is up on a bridge
+    const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    for (let s = 0; s < TRACK_LENGTH; s += 0.5) {
+      trackAt(s, p);
+      if (groundHeight(p.x, p.z) > L.WATER_LEVEL) continue;
+      const clearance = trackHeight(s) - L.TRACK_LIFTS.deckThickness - L.WATER_LEVEL;
+      if (clearance < L.FLOAT_CLEARANCE) out.push(`the track at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) is only ${clearance.toFixed(2)} m over the water`);
+    }
+    expect(out).toEqual([]);
+  });
+
+  it('the railway stays on the ground at the station, in the tunnel and under the west footbridge', () => {
+    const near = { d: 0, s: 0 };
+    const flat = (name: string, x: number, z: number, along: number) => {
+      const s0 = trackNearest(x, z, near).s;
+      for (let s = s0 - along; s <= s0 + along; s += 0.5) expect(trackHeight(s), `${name} at ${s.toFixed(1)}`).toBeLessThan(0.1);
+    };
+    const east = L.TRAIN.center[0] + L.TRAIN.halfX;
+    flat('station', east, (L.TRAIN.station.from + L.TRAIN.station.to) / 2, (L.TRAIN.station.to - L.TRAIN.station.from) / 2 + 3.5);
+    flat('tunnel', L.MESA.center[0], L.MESA.center[1], L.MESA.halfLength + 1);
+    flat('west footbridge', L.TRAIN.center[0] - L.TRAIN.halfX, L.FOOTBRIDGE.z, L.FOOTBRIDGE.width / 2 + 0.2);
+    // (and the lifts are where the layout says)
+    expect(LIFTS.map((l) => l.name)).toEqual(['river bridge', 'trestle']);
   });
 
   it('the sleds start on the mountain top and run clear down to the hill that throws you off', () => {
