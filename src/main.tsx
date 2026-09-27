@@ -9,6 +9,7 @@ import { setupInstall } from './game/install';
 import { TEST_MODE, TEST_SEED } from './game/testMode';
 import * as runtime from './game/runtime';
 import * as chase from './game/chase';
+import * as terrain from './game/terrain';
 import { usePhotos } from './game/photo';
 import { perf } from './game/perf';
 import { useProgress } from './game/progress';
@@ -24,7 +25,7 @@ if (TEST_MODE) Math.random = seededRandom(TEST_SEED);
 if (import.meta.env.DEV || TEST_MODE) {
   // Handy for poking at the game from the browser console / automated checks.
   const w = window as unknown as { __silly?: Record<string, unknown> };
-  w.__silly = { ...w.__silly, runtime, chase, useGame, useSettings, useProgress, usePhotos, useStickers, events, guide, buddyControl, perf, input, clock };
+  w.__silly = { ...w.__silly, runtime, chase, terrain, useGame, useSettings, useProgress, usePhotos, useStickers, events, guide, buddyControl, perf, input, clock };
 }
 
 setupInstall();

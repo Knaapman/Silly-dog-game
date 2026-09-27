@@ -8,6 +8,7 @@ import { lambert } from '../materials';
 import { allocPropId, players, registerProp, spawners, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { groundHeight } from '../terrain';
 
 function lerpAngle(a: number, b: number, t: number) {
   let d = b - a;
@@ -42,7 +43,7 @@ function Cow({ index }: { index: number }) {
   const tail = useRef<THREE.Group>(null);
   const id = useMemo(() => allocPropId(), []);
   const home = useMemo(
-    () => new THREE.Vector3(PASTURE.center[0] - 3 + index * 3, COW_RADIUS + 0.1, PASTURE.center[1] + (index % 2 ? 1.5 : -1.5)),
+    () => new THREE.Vector3(PASTURE.center[0] - 3 + index * 3, groundHeight(PASTURE.center[0] - 3 + index * 3, PASTURE.center[1] + (index % 2 ? 1.5 : -1.5)) + COW_RADIUS + 0.1, PASTURE.center[1] + (index % 2 ? 1.5 : -1.5)),
     [index]
   );
   const s = useRef({ mode: 'graze' as 'graze' | 'walk' | 'tipped' | 'held', timer: 2 + index, facing: index * 2, target: home.clone(), walk: 0, mooIn: 4 + index * 3 });

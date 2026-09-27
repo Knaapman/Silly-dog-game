@@ -9,6 +9,7 @@ import { distXZ, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
+import { groundHeight } from '../terrain';
 import { settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
@@ -197,14 +198,14 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     // the child stood on, never into thin air)
     if (b.rodeSince < 0) b.rodeSince = now;
     if (now - b.rodeSince > 5000) {
-      const spot = kid.position.y > UP_HIGH ? footstep(b.trail, kid, 1.2, 3.5) : null;
+      const spot = kid.position.y - groundHeight(kid.position.x, kid.position.z) > UP_HIGH ? footstep(b.trail, kid, 1.2, 3.5) : null;
       if (spot) {
         const d = Math.max(0.01, distXZ(spot.x, spot.z, me.position.x, me.position.z));
         const k = Math.min(1, d / 3.5) / d;
         x = (spot.x - me.position.x) * k;
         z = (spot.z - me.position.z) * k;
       }
-      if (spot || kid.position.y <= UP_HIGH) press.jump = true;
+      if (spot || kid.position.y - groundHeight(kid.position.x, kid.position.z) <= UP_HIGH) press.jump = true;
     }
   } else if (riddenByKid) {
     // giddy-up: the child steers with the stick
@@ -217,10 +218,13 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     // flying (a launcher, a boing): no jumping about, or it spoils the flight
     if (me.isLaunched()) b.pending = b.pending.filter((p) => p.action !== 'jump');
     const d = distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z);
-    const kidHigh = kid.position.y > UP_HIGH;
+    // heights above the ground: a hill you can walk up doesn't count as "up somewhere"
+    const kidUp = kid.position.y - groundHeight(kid.position.x, kid.position.z);
+    const meUp = me.position.y - groundHeight(me.position.x, me.position.z);
+    const kidHigh = kidUp > UP_HIGH;
 
     // the child is up (or down) somewhere walking won't get us: after a moment, a big boing
-    const dy = kid.position.y - me.position.y;
+    const dy = kidUp - meUp;
     const settled = kidStanding && !b.via && !me.isLaunched();
     const kidAbove = settled && dy > OUT_OF_REACH;
     const outOfReach = (kidAbove && me.velocity.y < 0.5) || (settled && dy < -OUT_OF_REACH && b.stuckFor > 0.3);
@@ -371,7 +375,7 @@ function catchUp(me: PlayerRuntime, kid: PlayerRuntime, trail: THREE.Vector3[]) 
   const body = me.getBody();
   if (!body) return;
   poof([me.position.x, me.position.y, me.position.z], '#ffffff', 10);
-  if (kid.position.y > UP_HIGH) {
+  if (kid.position.y - groundHeight(kid.position.x, kid.position.z) > UP_HIGH) {
     // up on something: onto a spot the child stood on (or onto their back), not into thin air
     const at = landingSpot(trail, kid, scratch.b);
     body.setTranslation({ x: at.x, y: at.y + RADIUS + 0.6, z: at.z }, true);

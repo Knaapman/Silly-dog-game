@@ -76,11 +76,13 @@ export class Game {
     }, slot);
   }
 
+  /** Put an animal somewhere; `y` is the height above the ground there (the ground rolls). */
   async teleport(slot: number, x: number, y: number, z: number) {
     await this.page.evaluate(
       ([slot, x, y, z]) => {
-        const b = (window as any).__silly.runtime.players.get(slot).getBody();
-        b.setTranslation({ x, y, z }, true);
+        const s = (window as any).__silly;
+        const b = s.runtime.players.get(slot).getBody();
+        b.setTranslation({ x, y: y + s.terrain.groundHeight(x, z), z }, true);
         b.setLinvel({ x: 0, y: 0, z: 0 }, true);
       },
       [slot, x, y, z]
@@ -91,7 +93,7 @@ export class Game {
   async hopTo(slot: number, from: [number, number], to: [number, number]) {
     await this.teleport(slot, from[0], 1, from[1]);
     await this.seconds(0.5);
-    await this.page.evaluate(([slot, x, z]) => (window as any).__silly.runtime.players.get(slot).launchTo({ x, y: 0, z, clone() { return this; } }, 2.2), [slot, to[0], to[1]] as const);
+    await this.page.evaluate(([slot, x, z]) => (window as any).__silly.runtime.players.get(slot).launchTo({ x, y: (window as any).__silly.terrain.groundHeight(x, z), z, clone() { return this; } }, 2.2), [slot, to[0], to[1]] as const);
     for (let i = 0; i < 40; i += 1) {
       await this.seconds(0.1);
       const p = await this.player(slot);

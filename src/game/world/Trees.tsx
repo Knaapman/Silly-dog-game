@@ -7,6 +7,7 @@ import { TREES, type TreeKind, type Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { players, registerStatic, spawners } from '../runtime';
 import { treeShakeListeners } from '../chase';
+import { groundHeight } from '../terrain';
 import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
 
@@ -105,7 +106,7 @@ function TreeKindLayer({ kind, trees, wobble }: { kind: TreeKind; trees: { i: nu
   const write = (k: number, wx: number, wz: number) => {
     const tree = trees[k];
     tmp.root.compose(
-      new THREE.Vector3(tree.at[0], 0, tree.at[1]),
+      new THREE.Vector3(tree.at[0], groundHeight(tree.at[0], tree.at[1]), tree.at[1]),
       tmp.q.setFromEuler(tmp.e.set(0, tree.yaw, 0)),
       new THREE.Vector3(tree.scale, tree.scale, tree.scale)
     );
@@ -200,7 +201,7 @@ export function Trees() {
     const cleanups = TREES.map((tree, i) =>
       registerStatic({
         id: 5000 + i,
-        position: new THREE.Vector3(tree.at[0], 1, tree.at[1]),
+        position: new THREE.Vector3(tree.at[0], groundHeight(tree.at[0], tree.at[1]) + 1, tree.at[1]),
         radius: 0.6,
         onBonk: () => {
           wobble[i] = 1;
@@ -235,7 +236,7 @@ export function Trees() {
     <>
       <RigidBody type="fixed" colliders={false}>
         {TREES.map((t, i) => (
-          <CylinderCollider key={i} args={[1.4, t.kind === 'palm' ? 0.3 : 0.4]} position={[t.at[0], 1.4, t.at[1]]} />
+          <CylinderCollider key={i} args={[1.4, t.kind === 'palm' ? 0.3 : 0.4]} position={[t.at[0], groundHeight(t.at[0], t.at[1]) + 1.4, t.at[1]]} />
         ))}
       </RigidBody>
       {KINDS.map((kind) => {

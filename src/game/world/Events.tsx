@@ -11,6 +11,7 @@ import { lambert } from '../materials';
 import { camera, players, playersCentroid, registerFood, type PlayerRuntime } from '../runtime';
 import { settings } from '../settings';
 import { earnSticker } from '../stickers';
+import { groundHeight } from '../terrain';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 
@@ -66,7 +67,7 @@ function spotNearPlayers(dist: number, out: THREE.Vector3) {
     const a = Math.random() * Math.PI * 2;
     const x = THREE.MathUtils.clamp(out.x + Math.cos(a) * dist, -lim, lim);
     const z = THREE.MathUtils.clamp(out.z + Math.sin(a) * dist, -lim, lim);
-    if (!isInPond(x, z)) return out.set(x, 0, z);
+    if (!isInPond(x, z)) return out.set(x, groundHeight(x, z), z);
   }
   return out.set(0, 0, 8);
 }
@@ -246,7 +247,8 @@ function PresentBalloon() {
   const group = useRef<THREE.Group>(null);
   const balloon = useRef<THREE.Group>(null);
   const pos = useMemo(() => {
-    const at = spotNearPlayers(22, new THREE.Vector3()).setY(2.3);
+    const at = spotNearPlayers(22, new THREE.Vector3());
+    at.y += 2.3;
     eventSpot.present.copy(at);
     return at;
   }, []);
@@ -304,7 +306,7 @@ function PresentBalloon() {
         pos.x += (dx / d) * step;
         pos.z += (dz / d) * step;
       }
-      pos.y = 2.3 + Math.sin(gameClock.time * 1.6) * 0.25;
+      pos.y = groundHeight(pos.x, pos.z) + 2.3 + Math.sin(gameClock.time * 1.6) * 0.25;
       players.forEach((p) => {
         if (p.position.distanceTo(pos) < 1.35) burst(p);
       });

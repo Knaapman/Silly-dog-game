@@ -1,19 +1,69 @@
-import { CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
+import { CuboidCollider, CylinderCollider, HeightfieldCollider, RigidBody } from '@react-three/rapier';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { WORLD_HALF } from '../config';
+import { buildHeightGrid, groundHeight, TERRAIN } from '../terrain';
 import { distXZ, FLOOR_PATCHES, FOOTBRIDGE, HILLS, LAKE, MAZE, MESA, PATH_WIDTH, PATHS, PLAZA, SIGNS, SNOW, ZONES, type Vec2 } from '../layout';
 import { emojiSignTexture, grassTexture, lambert, speckleTexture, stripeTexture, tileTexture } from '../materials';
 import { GroundPatch, HedgeSegment } from './common';
 import { gameClock, useGameFrame } from '../clock';
 
+/**
+ * The ground: a heightfield for the physics and a matching grass mesh (see terrain.ts), over a
+ * big flat plane that runs off into the fog beyond the hedge.
+ */
 function Ground() {
   const material = useMemo(() => new THREE.MeshLambertMaterial({ map: grassTexture() }), []);
   const h = WORLD_HALF;
+  const { n, heights, geometry, scale } = useMemo(() => {
+    const { n, heights } = buildHeightGrid();
+    const { half, cell } = TERRAIN;
+    const size = n * cell;
+    // the mesh: one vertex per grid sample, the same heights the physics uses
+    const geometry = new THREE.BufferGeometry();
+    const pos = new Float32Array((n + 1) * (n + 1) * 3);
+    const uv = new Float32Array((n + 1) * (n + 1) * 2);
+    for (let iz = 0; iz <= n; iz += 1)
+      for (let ix = 0; ix <= n; ix += 1) {
+        const k = iz * (n + 1) + ix;
+        const x = -half + ix * cell;
+        const z = -half + iz * cell;
+        pos[k * 3] = x;
+        pos[k * 3 + 1] = heights[k];
+        pos[k * 3 + 2] = z;
+        // the same tiling as the big plane underneath, so the two match at the edge
+        uv[k * 2] = (x + 160) / 320;
+        uv[k * 2 + 1] = (160 - z) / 320;
+      }
+    const index = new Uint32Array(n * n * 6);
+    let q = 0;
+    for (let iz = 0; iz < n; iz += 1)
+      for (let ix = 0; ix < n; ix += 1) {
+        const a = iz * (n + 1) + ix;
+        const b = a + 1;
+        const c = a + (n + 1);
+        const d = c + 1;
+        index[q++] = a;
+        index[q++] = c;
+        index[q++] = b;
+        index[q++] = b;
+        index[q++] = c;
+        index[q++] = d;
+      }
+    geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geometry.setIndex(new THREE.BufferAttribute(index, 1));
+    geometry.computeVertexNormals();
+    // rapier wants the height matrix column-major: rows along z, columns along x
+    const colMajor = new Float32Array((n + 1) * (n + 1));
+    for (let iz = 0; iz <= n; iz += 1) for (let ix = 0; ix <= n; ix += 1) colMajor[ix * (n + 1) + iz] = heights[iz * (n + 1) + ix];
+    return { n, heights: Array.from(colMajor), geometry, scale: { x: size, y: 1, z: size } };
+  }, []);
   return (
     <RigidBody type="fixed" colliders={false} friction={1}>
-      <CuboidCollider args={[h + 20, 0.5, h + 20]} position={[0, -0.5, 0]} />
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} material={material}>
+      <HeightfieldCollider args={[n, n, heights, scale]} friction={1} />
+      <mesh receiveShadow geometry={geometry} material={material} />
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} material={material}>
         <planeGeometry args={[320, 320]} />
       </mesh>
       {/* Tall invisible walls so nothing escapes the park */}
@@ -21,6 +71,8 @@ function Ground() {
       <CuboidCollider args={[h + 2, 30, 0.5]} position={[0, 30, h + 1]} />
       <CuboidCollider args={[0.5, 30, h + 2]} position={[-h - 1, 30, 0]} />
       <CuboidCollider args={[0.5, 30, h + 2]} position={[h + 1, 30, 0]} />
+      {/* and a floor under it all, in case anything ever gets past the heightfield's edge */}
+      <CuboidCollider args={[h + 20, 0.5, h + 20]} position={[0, -1.5, 0]} />
     </RigidBody>
   );
 }
@@ -135,14 +187,14 @@ function Flowers() {
   const items = useMemo(() => {
     const rnd = seeded(7);
     const colors = ['#ff6f91', '#ffd23f', '#ffffff', '#b388ff', '#ff9e40', '#4fc3f7'];
-    const out: { x: number; z: number; s: number; color: string }[] = [];
+    const out: { x: number; z: number; y: number; s: number; color: string }[] = [];
     let guard = 0;
     while (out.length < 420 && guard < 12000) {
       guard += 1;
       const x = (rnd() - 0.5) * (WORLD_HALF * 2 - 3);
       const z = (rnd() - 0.5) * (WORLD_HALF * 2 - 3);
       if (BLOCKERS.some((b) => distXZ(x, z, b.c[0], b.c[1]) < b.r) || onTrack(x, z)) continue;
-      out.push({ x, z, s: 0.7 + rnd() * 0.6, color: colors[Math.floor(rnd() * colors.length)] });
+      out.push({ x, z, y: groundHeight(x, z), s: 0.7 + rnd() * 0.6, color: colors[Math.floor(rnd() * colors.length)] });
     }
     return out;
   }, []);
@@ -151,12 +203,12 @@ function Flowers() {
     const d = new THREE.Object3D();
     const c = new THREE.Color();
     items.forEach((f, i) => {
-      d.position.set(f.x, 0.28 * f.s, f.z);
+      d.position.set(f.x, f.y + 0.28 * f.s, f.z);
       d.scale.setScalar(f.s);
       d.updateMatrix();
       heads.current?.setMatrixAt(i, d.matrix);
       heads.current?.setColorAt(i, c.set(f.color));
-      d.position.set(f.x, 0.13 * f.s, f.z);
+      d.position.set(f.x, f.y + 0.13 * f.s, f.z);
       d.updateMatrix();
       stems.current?.setMatrixAt(i, d.matrix);
     });
@@ -192,7 +244,7 @@ function Signposts() {
         const target = ZONES[sign.zone];
         const yaw = Math.atan2(target[0] - sign.position[0], target[1] - sign.position[1]);
         return (
-          <group key={i} position={[sign.position[0], 0, sign.position[1]]}>
+          <group key={i} position={[sign.position[0], groundHeight(sign.position[0], sign.position[1]), sign.position[1]]}>
             <RigidBody type="fixed" colliders={false}>
               <CylinderCollider args={[1.3, 0.12]} position={[0, 1.3, 0]} />
             </RigidBody>

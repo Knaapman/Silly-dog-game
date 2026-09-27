@@ -6,6 +6,7 @@ import { playButton, playPop, playPoof } from '../audio';
 import { MOVE, PARTY_POINTS } from '../config';
 import { burstConfetti, emit, ring } from '../fx';
 import { BALLOONS, distXZ, HAT_BOX, RED_BUTTON, TRAMPOLINE_TOP, type Vec3 } from '../layout';
+import { groundHeight } from '../terrain';
 import { basic, lambert } from '../materials';
 import { players, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
@@ -106,7 +107,7 @@ export function Balloons() {
       const g = groups.current[i];
       const s = state[i];
       if (!g) return;
-      s.pos.set(x + Math.sin(t * 0.7 + i) * 0.15, y + Math.sin(t * 1.4 + i * 2) * 0.22, z);
+      s.pos.set(x + Math.sin(t * 0.7 + i) * 0.15, groundHeight(x, z) + y + Math.sin(t * 1.4 + i * 2) * 0.22, z);
       if (s.popped) {
         g.visible = false;
         if (now > s.respawnAt) {

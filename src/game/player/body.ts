@@ -41,7 +41,13 @@ export function powerAndSize(f: FrameCtx) {
 export function probeGround(f: FrameCtx, world: World, ray: Ray, excludeSensors: number) {
   const { s, rb, t, lv } = f;
   ray.origin = { x: t.x, y: t.y, z: t.z };
-  const hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
+  let hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
+  if (!hit) {
+    // a ray exactly on one of the ground heightfield's grid lines slips through it (it happens
+    // right after a teleport to a round number): ask again a centimetre over
+    ray.origin = { x: t.x + 0.0123, y: t.y, z: t.z + 0.0071 };
+    hit = world.castRay(ray, 40, true, excludeSensors, ANIMAL_GROUPS, undefined, rb as unknown as Parameters<World['castRay']>[6]);
+  }
   f.hit = hit;
   f.groundDist = hit ? hit.timeOfImpact : 99;
   s.groundY = t.y - f.groundDist;

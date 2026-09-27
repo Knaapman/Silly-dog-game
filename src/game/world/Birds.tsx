@@ -9,6 +9,7 @@ import { BIRD_FLOCKS, BIRD_SPOTS, distXZ } from '../layout';
 import { lambert } from '../materials';
 import { noises, players, props, propPosition } from '../runtime';
 import { earnSticker } from '../stickers';
+import { groundHeight } from '../terrain';
 import { useGame } from '../store';
 
 // Bird flocks: they peck about on the grass (and on a few high spots), burst into the air when
@@ -105,7 +106,7 @@ function Flock({ index }: { index: number }) {
   const rtRef = useRef<FlockRuntime | null>(null);
   const place = () => {
     const [x, y, z, r] = BIRD_SPOTS[f.current.spot];
-    settleAt(x, y, z, r, true);
+    settleAt(x, y + groundHeight(x, z), z, r, true);
     f.current.phase = 'landed';
     f.current.since = gameNow();
     if (rtRef.current) rtRef.current.landed = true;
@@ -133,7 +134,7 @@ function Flock({ index }: { index: number }) {
       const poop = found as THREE.Vector3 | null;
       if (poop) {
         st.poop = foundId;
-        st.to.set(poop.x, 0, poop.z);
+        st.to.set(poop.x, groundHeight(poop.x, poop.z), poop.z);
         st.spread = 1.6;
         return;
       }
@@ -159,7 +160,7 @@ function Flock({ index }: { index: number }) {
     const next = options.length ? options[Math.floor(Math.random() * options.length)] : (st.spot + 1) % BIRD_SPOTS.length;
     st.spot = next;
     const [x, y, z, r] = BIRD_SPOTS[next];
-    st.to.set(x, y, z);
+    st.to.set(x, y + groundHeight(x, z), z);
     st.spread = r;
   };
 

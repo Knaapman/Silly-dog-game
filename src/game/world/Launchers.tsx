@@ -9,6 +9,7 @@ import { launchSpots, players, props, propPosition, shakeCamera } from '../runti
 import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { groundHeight } from '../terrain';
 
 let chevronCache: THREE.Shape | null = null;
 function chevronShape() {
@@ -32,7 +33,8 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
   const sparkle = useRef(Math.random());
   const cooldown = useRef(new Map<number, number>());
   const target = useMemo(() => new THREE.Vector3(...pad.target), [pad]);
-  useHint([pad.position[0], 0.5, pad.position[2]], 'walk', 5);
+  const padY = groundHeight(pad.position[0], pad.position[2]);
+  useHint([pad.position[0], groundHeight(pad.position[0], pad.position[2]) + 0.5, pad.position[2]], 'walk', 5);
 
   useGameFrame((_, delta) => {
     chevrons.current?.children.forEach((c, i) => {
@@ -43,7 +45,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
     sparkle.current -= delta;
     if (sparkle.current <= 0) {
       sparkle.current = 0.25;
-      emit('star', [pad.position[0] + (Math.random() - 0.5) * 1.6, 0.2, pad.position[2] + (Math.random() - 0.5) * 1.6], {
+      emit('star', [pad.position[0] + (Math.random() - 0.5) * 1.6, padY + 0.2, pad.position[2] + (Math.random() - 0.5) * 1.6], {
         count: 1,
         color: ['#fff3a8', '#ffffff'],
         speed: 0.3,
@@ -56,7 +58,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
     const now = gameNow();
     players.forEach((p) => {
       if ((cooldown.current.get(p.slot) ?? 0) > now || p.isLaunched() || p.flopped) return;
-      if (distXZ(p.position.x, p.position.z, pad.position[0], pad.position[2]) > 1.3 || p.position.y > 1.6) return;
+      if (distXZ(p.position.x, p.position.z, pad.position[0], pad.position[2]) > 1.3 || p.position.y > padY + 1.6) return;
       cooldown.current.set(p.slot, now + 2500);
       launchSpots.set(p.slot, { x: pad.position[0], z: pad.position[2], at: now });
       p.launchTo(target, pad.apex);
@@ -67,7 +69,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
   });
 
   return (
-    <group position={[pad.position[0], 0.03, pad.position[2]]} rotation={[0, angle, 0]}>
+    <group position={[pad.position[0], padY + 0.03, pad.position[2]]} rotation={[0, angle, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} material={lambert('#ff8a1f')}>
         <circleGeometry args={[1.35, 32]} />
       </mesh>

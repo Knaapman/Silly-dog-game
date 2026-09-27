@@ -4,6 +4,7 @@ import { gameClock, gameNow, useGameFrame } from '../clock';
 import { GUIDE_TIME, guideDebug, guideTarget, useGuide } from '../guide';
 import { players } from '../runtime';
 import { stickerById } from '../stickers';
+import { groundHeight } from '../terrain';
 
 // The sticker guide in the park: a big arrow over every animal pointing the way, and a beam of
 // light where the sticker can be earned. The arrow goes away once you're there.
@@ -58,7 +59,7 @@ export function StickerGuide() {
       if (beam) {
         beam.visible = has;
         if (has) {
-          beam.position.set(target.x, 0, target.z);
+          beam.position.set(target.x, groundHeight(target.x, target.z), target.z);
           beam.rotation.y = t * 0.8;
           beam.scale.setScalar(1 + Math.sin(t * 3) * 0.06);
         }

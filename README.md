@@ -22,7 +22,8 @@ fountain and the ship). Run at them or bark and they burst into the air, circle 
 can chase them all over the park. Jump into a flock as it takes off to bonk a bird, and leave a poop lying about and
 they come to peck at it. Playing alone, the buddy helps: it runs round ahead of a fleeing cat to turn it back.
 
-Between the zones the grass isn't flat any more: three grassy hills to run up and jump off, a mesa on the east side
+Between the zones the grass isn't flat any more: the ground itself rolls (a heightfield: gentle mounds and three
+proper hills to run up and jump off, with every zone, path and set piece on its own level plateau), plus a mesa on the east side
 with the train tunnel running right through it (walk up the ramp on its north side or take the launch pad by the
 brontosaurus, then watch the train come out underneath you and wave the flag), and a wooden footbridge over the north
 track to look down on the train from.
@@ -226,6 +227,7 @@ src/
   game/
     config.ts           tuning: speeds, party points, players, species, hats
     layout.ts           where everything in the park lives
+    terrain.ts          the lie of the land: groundHeight(x, z), flat plateaus under everything that must stand level
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode

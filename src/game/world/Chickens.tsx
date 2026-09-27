@@ -8,6 +8,7 @@ import { lambert } from '../materials';
 import { allocPropId, noises, players, registerProp, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
+import { groundHeight } from '../terrain';
 
 type Mode = 'wander' | 'peck' | 'flee' | 'tumble' | 'dizzy' | 'held';
 
@@ -22,7 +23,9 @@ function Chicken({ index }: { index: number }) {
   const id = useMemo(() => allocPropId(), []);
   const home = useMemo(() => {
     const a = (index / CHICKEN_HOME.count) * Math.PI * 2;
-    return new THREE.Vector3(CHICKEN_HOME.center[0] + Math.cos(a) * 4, 0.5, CHICKEN_HOME.center[1] + Math.sin(a) * 4);
+    const x = CHICKEN_HOME.center[0] + Math.cos(a) * 4;
+    const z = CHICKEN_HOME.center[1] + Math.sin(a) * 4;
+    return new THREE.Vector3(x, groundHeight(x, z) + 0.5, z);
   }, [index]);
   const s = useRef({
     mode: 'wander' as Mode,

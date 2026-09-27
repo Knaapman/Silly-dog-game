@@ -4,6 +4,7 @@ import { playChomp, playPoof } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { PICNIC, SNACKS, type MagicKind, type SnackKind, type Vec3 } from '../layout';
+import { groundHeight } from '../terrain';
 import { lambert, tileTexture } from '../materials';
 import { players, registerFood, type PowerKind } from '../runtime';
 import { useGame } from '../store';
@@ -325,10 +326,10 @@ export function Food() {
       <PicnicBlanket />
       <CarrotRows />
       {SNACKS.map((s, i) => (
-        <Snack key={i} kind={s.kind} position={s.position} />
+        <Snack key={i} kind={s.kind} position={[s.position[0], s.position[1] + groundHeight(s.position[0], s.position[2]), s.position[2]]} />
       ))}
       {SNACKS.filter((s) => s.kind === 'kibble' || s.kind === 'mushroom').map((s, i) => (
-        <BowlHint key={i} position={s.position} />
+        <BowlHint key={i} position={[s.position[0], s.position[1] + groundHeight(s.position[0], s.position[2]), s.position[2]]} />
       ))}
     </group>
   );

@@ -12,6 +12,7 @@ import { lambert } from '../materials';
 import { allocPropId, noises, players, registerProp, statics, type PlayerRuntime, type PropEntry } from '../runtime';
 import { settings, SPEED_FACTOR } from '../settings';
 import { earnSticker } from '../stickers';
+import { groundHeight } from '../terrain';
 import { useGame } from '../store';
 
 // Park cats: the thing to chase. They nap, groom and stalk the birds. Come close (or bark) and
@@ -80,7 +81,7 @@ function Cat({ index }: { index: number }) {
   const branch = useRef<THREE.Mesh>(null);
   const id = useMemo(() => allocPropId(), []);
   const pal = PALETTES[index % PALETTES.length];
-  const home = useMemo(() => new THREE.Vector3(CAT_HOMES[index][0], R + 0.2, CAT_HOMES[index][1]), [index]);
+  const home = useMemo(() => new THREE.Vector3(CAT_HOMES[index][0], groundHeight(CAT_HOMES[index][0], CAT_HOMES[index][1]) + R + 0.2, CAT_HOMES[index][1]), [index]);
   const rt = useMemo<CatRuntime>(() => ({ index, position: home.clone(), mode: 'idle', tree: -1, getBody: () => body.current }), [index, home]);
   const s = useRef({
     mode: 'idle' as CatMode,
@@ -371,7 +372,7 @@ function Cat({ index }: { index: number }) {
         let bird = -1;
         if (now - c.pounceAt > 15000 && c.idle !== 'nap') {
           flocks.forEach((f, i) => {
-            if (f.landed && f.center.y < 0.5 && distXZ(f.center.x, f.center.z, t.x, t.z) < 14 && distXZ(f.center.x, f.center.z, home.x, home.z) < 22) bird = i;
+            if (f.landed && f.center.y - groundHeight(f.center.x, f.center.z) < 0.5 && distXZ(f.center.x, f.center.z, t.x, t.z) < 14 && distXZ(f.center.x, f.center.z, home.x, home.z) < 22) bird = i;
           });
         }
         if (bird >= 0) {

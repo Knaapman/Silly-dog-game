@@ -2,32 +2,17 @@ import { BallCollider, CuboidCollider, RigidBody } from '@react-three/rapier';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { gameClock, useGameFrame } from '../clock';
-import { FOOTBRIDGE, HILLS, MESA } from '../layout';
+import { FOOTBRIDGE, MESA } from '../layout';
 import { lambert, speckleTexture } from '../materials';
 import { Ramp, StaticBox, useHint } from './common';
 import { useSeeThrough } from './seeThrough';
 
-// Landmarks in the open grass between the zones: grassy hills to run up and jump off, a mesa
-// with the train tunnel through it (walk up the ramp or take the launch pad, wave the flag,
-// watch the train come out underneath you), and a footbridge over the north track.
+// Landmarks in the open grass between the zones: a mesa with the train tunnel through it (walk
+// up the ramp or take the launch pad, wave the flag, watch the train come out underneath you),
+// and a footbridge over the north track. (The hills are part of the ground: see terrain.ts.)
 
 function grassMaterial(name: string) {
   return new THREE.MeshLambertMaterial({ map: speckleTexture(name, '#6cbd4c', ['#5faa42', '#7fcf5e', '#c9e59a'], 8) });
-}
-
-/** A round grassy hill: the top of a big sphere, like the snow hill. */
-function Hill({ center, radius, height, index }: { center: [number, number]; radius: number; height: number; index: number }) {
-  const R = (radius * radius + height * height) / (2 * height);
-  const capAngle = Math.acos((R - height) / R);
-  const mat = useMemo(() => grassMaterial(`hill${index}`), [index]);
-  return (
-    <RigidBody type="fixed" colliders={false} position={[center[0], height - R, center[1]]}>
-      <BallCollider args={[R]} friction={1} />
-      <mesh receiveShadow castShadow material={mat}>
-        <sphereGeometry args={[R, 40, 14, 0, Math.PI * 2, 0, capAngle]} />
-      </mesh>
-    </RigidBody>
-  );
 }
 
 function Flag({ position }: { position: [number, number, number] }) {
@@ -156,9 +141,6 @@ function Footbridge() {
 export function Landmarks() {
   return (
     <>
-      {HILLS.map((h, i) => (
-        <Hill key={i} index={i} {...h} />
-      ))}
       <Mesa />
       <Footbridge />
     </>
