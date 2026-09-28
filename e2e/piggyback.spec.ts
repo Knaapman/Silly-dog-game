@@ -40,6 +40,9 @@ test('piggyback: ride a friend, get thrown off, stack a tower', async ({ page })
   await game.pad(0, 0, 0.2);
   await game.seconds(1.5);
   const padSlot = await page.evaluate(() => (window as any).__silly.useGame.getState().players.find((p: any) => p.source === 'pad0').slot);
+  // (joining with a button brings up the animals first: the same button again goes and plays)
+  await game.pad(0, 0, 0.1);
+  expect(await game.state<boolean>(`(g) => !!g.players.find((p) => p.slot === ${padSlot}).picking`)).toBe(false);
   await game.teleport(1, 16, 1, 4);
   await game.seconds(1);
   await game.teleport(0, 16, 2.2, 4);

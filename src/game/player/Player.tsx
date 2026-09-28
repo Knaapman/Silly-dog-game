@@ -11,7 +11,7 @@ import { lambert } from '../materials';
 import { players, props, type PlayerRuntime } from '../runtime';
 import { MAGIC_FACTOR, settings } from '../settings';
 import { isPaused, useGame, type PlayerInfo } from '../store';
-import { tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
+import { choosing, tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
 import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
@@ -204,6 +204,8 @@ export function Player({ info }: { info: PlayerInfo }) {
       v: { x: lv.x, y: lv.y, z: lv.z }
     };
 
+    // choosing an animal: the buttons pick, the animal waits
+    if (choosing(f)) f.input = NO_INPUT;
     // the body: size, what's underneath, timers, water, flopping
     powerAndSize(f);
     probeGround(f, world, ray, rapier.QueryFilterFlags.EXCLUDE_SENSORS);

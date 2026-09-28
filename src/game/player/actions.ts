@@ -10,13 +10,14 @@ import {
   playFireBreath,
   playPlop,
   playSlurp,
+  playTap,
   playThrow,
   playWhoosh
 } from '../audio';
 import { gameNow } from '../clock';
 import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { bonkStars, emit, ring } from '../fx';
-import { rumble } from '../input';
+import { rumble, type ActionName } from '../input';
 import { distXZ, isOnGrass } from '../layout';
 import { groundHeight } from '../terrain';
 import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PlayerRuntime, type PropEntry } from '../runtime';
@@ -335,10 +336,60 @@ export function poop(f: FrameCtx) {
   }
 }
 
-/** Select / Start on a controller: change animal, change hat. */
+/** Start on a controller: change hat. */
 export function looks(f: FrameCtx) {
-  if (f.input.pressed.species) useGame.getState().cycleSpecies(f.slot);
   if (f.input.pressed.hat) useGame.getState().nextHat(f.slot);
+}
+
+/** An open animal picker closes by itself when nobody touches it for this long (seconds). */
+const PICK_IDLE = 10;
+/** A picker that just opened ignores the "go" buttons this long, so a joining press doesn't close it straight away. */
+const PICK_GRACE = 0.5;
+const PICK_GO: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'hat'];
+
+/**
+ * Choosing an animal (Select opens the row of faces; joining with a button does too): left /
+ * right looks through the animals, and the animal changes as you go; Select shows the next one;
+ * any other button goes and plays. True while the faces are up: the animal waits meanwhile.
+ */
+export function choosing(f: FrameCtx): boolean {
+  const { s, input, slot } = f;
+  const game = useGame.getState();
+  const me = game.players.find((p) => p.slot === slot);
+  if (!me?.picking) {
+    if (s.picking && me) {
+      // chosen (here, or with a tap on the screen): the new animal says hello
+      playAnimalNoise(me.species, s.pos);
+      s.noiseTime = 0.5;
+      f.rt?.hop(7);
+      emit('confetti', [s.pos.x, s.pos.y + 1.2, s.pos.z], { count: 20, speed: 3, up: 5 });
+      rumble(f.source, 0.4, 0.4, 150);
+    }
+    s.picking = false;
+    if (!input.pressed.species || !me || me.bot) return false;
+    game.setPicking(slot, true);
+    playTap();
+    return true;
+  }
+  // one step per push of the stick (it has to come back towards the middle to go again)
+  const lean = input.x > 0.6 ? 1 : input.x < -0.6 ? -1 : Math.abs(input.x) < 0.3 ? 0 : s.pickDir;
+  if (!s.picking) {
+    s.picking = true;
+    s.pickAge = 0;
+    s.pickIdle = 0;
+    s.pickDir = lean;
+  }
+  s.pickAge += f.dt;
+  s.pickIdle += f.dt;
+  const step = lean !== 0 && lean !== s.pickDir ? lean : input.pressed.species ? 1 : 0;
+  s.pickDir = lean;
+  if (step) {
+    game.cycleSpecies(slot, step);
+    s.pickIdle = 0;
+  }
+  const go = s.pickAge > PICK_GRACE && PICK_GO.some((a) => input.pressed[a]);
+  if (go || s.pickIdle > PICK_IDLE) game.setPicking(slot, false);
+  return true;
 }
 
 /** Headbutt: a little dash that knocks props, friends and trees. */

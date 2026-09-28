@@ -50,7 +50,7 @@ export default function App() {
     onAnyKey((code) => {
       const game = useGame.getState();
       if (game.phase !== 'title' || game.menuOpen || IGNORED_TITLE_KEYS.has(code)) return;
-      game.start(ARROWS.has(code) ? 'kb2' : 'kb1');
+      game.start(ARROWS.has(code) ? 'kb2' : 'kb1', true);
       consumeKeyPresses();
     });
 
@@ -89,7 +89,7 @@ export default function App() {
         <TitleScreen
           onPlay={() => {
             unlockAudio();
-            start(touchUi ? 'touch' : 'kb1');
+            start(touchUi ? 'touch' : 'kb1', true);
           }}
         />
       )}

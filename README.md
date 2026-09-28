@@ -48,6 +48,13 @@ so friends can drop in and out at any time. All players share one camera that zo
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
 
+**Choosing your animal.** Joining with a button brings up a row of animal faces in your colour at the bottom of the
+screen: push the stick (or D-pad, or `A`/`D`, or the arrow keys) left or right and your animal changes as you go,
+then press any button to go and play (on a touch screen, tap a face). Animals still to be earned with stickers are dark
+shadows at the end of the row. The row goes away by itself after 10 seconds without a push. Each player number
+remembers its animal on this device, so whoever is usually player two gets their own animal back next time (not the
+goat). To change later: tap Select (`1` / `,`), or tap your badge at the top left.
+
 **Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
 and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
 lick it and throw it, or go to a see-saw and it climbs onto the far end so you can fling it. Fly off a launch pad,
@@ -64,7 +71,7 @@ Grown-ups can switch it off.
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
 | 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
 | 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
-| 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
+| 🔄 Choose your animal (again: next animal) | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
 | 📒 Sticker album | Click a stick (L3 / R3) | `B` | `Num 4` | Orange album button (top right) |
@@ -185,7 +192,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   friend stickers: the nearest friend). The arrow goes away once you're there, and the guide ends when the sticker is
   earned (or after two minutes; tap the sticker at the top of the screen to stop it). **B** closes the album.
 - **New animals** join as the album fills up: a 🐱 cat at 3 stickers, a 🦆 duck at 7, a 🐮 cow at 12 and a 🦄 unicorn at
-  18 (which leaves rainbow sparkles). Select / Change animal cycles through the ones you have.
+  18 (which leaves rainbow sparkles). They appear in the animal picker as soon as they have joined.
 - **Surprises**: about a minute into playing, and then every minute or two, something happens (its picture bounces
   under the stars at the top of the screen):
   - 🐔 a **golden chicken** runs around near you: catch it by touching or licking it (it gets tired after a while, so
@@ -249,6 +256,7 @@ src/
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
     testMode.ts         ?test=<seed>
     store.ts            reactive state for UI: players, party meter, stars, menu
+    animals.ts          each player number's animal, remembered for next time
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
     photo.ts            the camera: countdown, photos kept on this device
@@ -264,7 +272,7 @@ src/
     Scene.tsx           lights, sky, shared camera, input loop, party director
     player/             one animal: Player.tsx runs these steps in order every frame:
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
-      actions.ts        tongue (props, food, friends), noise, poop, animal/hat, headbutt
+      actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
       piggyback.ts, movement.ts, animate.ts
       frame.ts, state.ts, constants.ts, physics.ts
       AnimalModel.tsx, Hat.tsx
@@ -288,7 +296,7 @@ src/
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform
-  ui/                   HUD, title screen, touch controls, sticker album, controller tester, grown-ups menu
+  ui/                   HUD, animal picker, title screen, touch controls, sticker album, controller tester, grown-ups menu
                         (icons for kids, words for grown-ups)
 tests/unit/             vitest unit tests (fake gamepads, fake storage)
 e2e/                    Playwright browser tests in test mode

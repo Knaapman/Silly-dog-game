@@ -13,6 +13,7 @@ import { PHOTO_BEEPS, usePhotos } from '../game/photo';
 import { useStickers } from '../game/stickers';
 import { EVENT_ICON, RAINBOW_TIME, useEvents } from '../game/world/Events';
 import { AlbumIcon, GuideBadge, StickerPop } from './Stickers';
+import { AnimalPickers } from './AnimalPicker';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -42,7 +43,7 @@ function useNow(intervalMs: number) {
 
 function PlayerBadges() {
   const players = useGame((s) => s.players);
-  const cycleSpecies = useGame((s) => s.cycleSpecies);
+  const setPicking = useGame((s) => s.setPicking);
   const [padCount, setPadCount] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setPadCount(getConnectedPads().length), 1000);
@@ -72,12 +73,13 @@ function PlayerBadges() {
           <button
             key={slot}
             onClick={() => {
-              cycleSpecies(slot);
+              setPicking(slot, !p.picking);
               playTap();
             }}
             className="relative flex h-12 w-12 items-center justify-center rounded-full border-4 bg-white shadow-lg sm:h-14 sm:w-14 transition-transform active:scale-90"
             style={{ borderColor: p.color, boxShadow: `0 4px 0 ${p.color}` }}
-            title="Change animal"
+            title="Choose your animal"
+            data-testid={`player-badge-${slot}`}
           >
             <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
@@ -214,6 +216,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
           </button>
         </div>
       </div>
+      <AnimalPickers />
       <RainbowSky />
       <PartyFlash />
       <UnlockFlash />

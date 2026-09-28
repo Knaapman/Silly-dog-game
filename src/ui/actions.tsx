@@ -11,7 +11,7 @@ export const ACTION_UI: Record<ActionName, { color: string; shadow: string; icon
   noise: { color: '#fbbf24', shadow: '#b45309', icon: <span className="emoji">📣</span>, label: 'Animal noise' },
   flop: { color: '#a855f7', shadow: '#7e22ce', icon: <span className="emoji">🌀</span>, label: 'Flop' },
   poop: { color: '#8d5a36', shadow: '#5d3a22', icon: <span className="emoji">💩</span>, label: 'Poop' },
-  species: { color: '#14b8a6', shadow: '#0f766e', icon: <span className="emoji">🔄</span>, label: 'Change animal' },
+  species: { color: '#14b8a6', shadow: '#0f766e', icon: <span className="emoji">🔄</span>, label: 'Choose your animal' },
   hat: { color: '#ec4899', shadow: '#be185d', icon: <span className="emoji">🎩</span>, label: 'Change hat' }
 };
 

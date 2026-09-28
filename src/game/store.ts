@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { BASE_SPECIES, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
+import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
+import { favouriteSpecies, rememberSpecies } from './animals';
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
@@ -24,6 +25,8 @@ export type PlayerInfo = {
   asleep?: boolean;
   /** The computer buddy that keeps a child playing alone company. */
   bot?: boolean;
+  /** Choosing an animal: the row of animal faces is up and the animal waits. */
+  picking?: boolean;
 };
 
 type Phase = 'title' | 'play';
@@ -43,8 +46,9 @@ interface GameStore {
   resetToken: number;
   touchUi: boolean;
 
-  start: (source: SourceId) => void;
-  join: (source: SourceId) => number | null;
+  /** `pick`: a child pressed a button to join, so show them the animals to choose from. */
+  start: (source: SourceId, pick?: boolean) => void;
+  join: (source: SourceId, pick?: boolean) => number | null;
   leave: (slot: number) => void;
   /** Bring in / send off the computer buddy. */
   addBuddy: () => void;
@@ -53,6 +57,9 @@ interface GameStore {
   reattach: (slot: number, source: SourceId) => void;
   backToTitle: () => void;
   cycleSpecies: (slot: number, dir?: number) => void;
+  /** Be this animal (and be it again next time). */
+  setSpecies: (slot: number, species: Species) => void;
+  setPicking: (slot: number, picking: boolean) => void;
   nextHat: (slot: number) => void;
   randomHat: (slot: number) => void;
   setHat: (slot: number, hat: HatId) => void;
@@ -103,12 +110,12 @@ export const useGame = create<GameStore>((set, get) => {
     resetToken: 0,
     touchUi: false,
 
-    start: (source) => {
+    start: (source, pick = false) => {
       set({ phase: 'play' });
-      if (!get().players.some((p) => p.source === source)) get().join(source);
+      if (!get().players.some((p) => p.source === source)) get().join(source, pick);
     },
 
-    join: (source) => {
+    join: (source, pick = false) => {
       // a real friend arrives: the buddy makes room
       if (source !== 'bot' && get().players.some((p) => p.bot)) get().removeBuddy();
       const state = get();
@@ -120,12 +127,13 @@ export const useGame = create<GameStore>((set, get) => {
       const player: PlayerInfo = {
         slot,
         source,
-        species: BASE_SPECIES[slot % BASE_SPECIES.length],
+        species: favouriteSpecies(slot),
         hat: 'none',
         color: PLAYER_COLORS[slot],
         joinedAt: Date.now(),
         padId: padIdOf(source),
-        bot: source === 'bot'
+        bot: source === 'bot',
+        picking: pick && source !== 'bot'
       };
       set({ players: [...state.players, player].sort((a, b) => a.slot - b.slot) });
       return slot;
@@ -155,15 +163,23 @@ export const useGame = create<GameStore>((set, get) => {
 
     backToTitle: () => set({ phase: 'title', players: [], menuOpen: false, albumOpen: false }),
 
-    cycleSpecies: (slot, dir = 1) =>
-      set((state) => ({
-        players: state.players.map((p) => {
-          if (p.slot !== slot) return p;
-          const all = unlockedSpecies();
-          const i = Math.max(0, all.indexOf(p.species));
-          return { ...p, species: all[(i + dir + all.length) % all.length] };
-        })
-      })),
+    cycleSpecies: (slot, dir = 1) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p) return;
+      const all = unlockedSpecies();
+      const i = Math.max(0, all.indexOf(p.species));
+      get().setSpecies(slot, all[(i + dir + all.length) % all.length]);
+    },
+
+    setSpecies: (slot, species) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p || p.species === species) return;
+      if (!p.bot) rememberSpecies(slot, species);
+      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, species } : x)) }));
+    },
+
+    setPicking: (slot, picking) =>
+      set((state) => ({ players: state.players.map((p) => (p.slot === slot && !!p.picking !== picking && !p.bot ? { ...p, picking } : p)) })),
 
     nextHat: (slot) => {
       const hats = unlockedHats();

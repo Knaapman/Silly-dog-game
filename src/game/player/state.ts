@@ -31,6 +31,11 @@ export function createState(spawn: THREE.Vector3) {
     friendHoldTime: 0,
     lickMiss: 0,
     noiseTime: 0,
+    /** The animal picker, as this animal last saw it: open, for how long, idle for how long, which way the stick leans. */
+    picking: false,
+    pickAge: 0,
+    pickIdle: 0,
+    pickDir: 0,
     launched: 0,
     padCooldown: 0,
     launchAirborne: false,

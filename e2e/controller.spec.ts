@@ -38,6 +38,18 @@ test('HORI Pad Mini (Switch layout, not recognised by the browser): bottom butto
   await page.evaluate(() => (window as any).__addPad(0, '', 'HORIPAD S (Vendor: 0f0d Product: 00c1)'));
   await game.pad(0, 1, 0.1); // B (bottom) starts the game
   await game.seconds(2);
+  // joining with a button: first choose an animal. The stick looks through them, B picks.
+  expect(await game.state<boolean>('(g) => !!g.players[0].picking')).toBe(true);
+  await expect(page.getByTestId('animal-picker-0')).toBeVisible();
+  const stick = (x: number) => page.evaluate((x) => ((window as any).__pads[0].axes[0] = x), x);
+  await stick(1);
+  await game.seconds(0.1);
+  await stick(0);
+  await game.seconds(0.1);
+  expect(await game.state<string>('(g) => g.players[0].species')).toBe('goat');
+  await game.pad(0, 1, 0.1);
+  expect(await game.state<boolean>('(g) => !!g.players[0].picking')).toBe(false);
+  await game.seconds(2);
   const y0 = (await game.player()).y;
   await game.pad(0, 1, 0.1); // B again: jump
   expect(await game.maxY(0, 0.6)).toBeGreaterThan(y0 + 1);

@@ -215,7 +215,7 @@ function InputSystem() {
     if (game.phase === 'title') {
       // Keyboard starts are handled by App (any key works there); here: controllers and touch.
       const source = pressed.find((s) => s !== 'kb1' && s !== 'kb2');
-      if (source) game.start(source);
+      if (source) game.start(source, true);
       return;
     }
     for (const source of pressed) {
@@ -224,7 +224,7 @@ function InputSystem() {
       const padId = padIdOf(source);
       const napper = padId ? game.players.find((p) => p.asleep && p.padId === padId && !isSourceConnected(p.source)) : undefined;
       if (napper) game.reattach(napper.slot, source);
-      else game.join(source);
+      else game.join(source, true);
     }
     // Hold Start = grown-ups menu, hold Select = leave the game.
     for (const p of game.players) {

@@ -11,6 +11,11 @@ test('tablet: touch to play, drag to move, tap the big buttons (even while movin
   await page.getByLabel('Play').tap({ force: true }); // (it never stops breathing, so don't wait for it to be still)
   await game.seconds(1.5, true);
   expect(await game.state<string>('(g) => g.players[0]?.source')).toBe('touch');
+  // first: which animal? tap one
+  await page.getByTestId('animal-picker-0').locator('[data-species="pig"]').tap();
+  await game.seconds(0.5, true);
+  expect(await game.state<string>('(g) => g.players[0].species')).toBe('pig');
+  await expect(page.getByTestId('animal-picker-0')).toBeHidden();
   await expect(page.getByLabel('Jump')).toBeVisible();
   await game.teleport(0, 12, 1, -4);
   await game.seconds(0.5);
