@@ -84,6 +84,7 @@ add('fallen log', L.FALLEN_LOG[0], L.FALLEN_LOG[2], 2.6);
 add('mesa ramp foot', L.MESA.rampFrom[0], L.MESA.rampFrom[2], 1.5, { slopeOk: true });
 add('footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z, 1.5);
 L.SPAWN_POINTS.forEach((p, i) => add(`spawn ${i}`, p[0], p[2], 0.6));
+add('treasure chest', L.TREASURE_CHEST.position[0], L.TREASURE_CHEST.position[1], 1.1);
 L.SLED_RUN.starts.forEach((s, i) => add(`sled ${i}`, s[0], s[1], 1.2, { winter: true }));
 add('tube landing', L.TUBE_RIDE.landing[0], L.TUBE_RIDE.landing[1], 1.5, { onPathOk: true });
 add('jetty foot', L.TUBE_RIDE.jettyFrom + 1, L.TUBE_RIDE.jettyZ, 1.2, { wet: true }); // a jetty stands at the water's edge

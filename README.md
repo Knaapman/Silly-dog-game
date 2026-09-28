@@ -38,6 +38,30 @@ share a ring, or jump from one to another. **Sledding**: two sleds wait on the w
 one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
 you off the hill at the bottom. The path up the mountain has log steps now.
 
+**Every animal has a trick of its own**, on the buttons it already has (its picture sits in the corner of its face in
+the animal picker, and each trick has a sticker):
+
+| | Trick | How |
+|---|---|---|
+| 🐶 dog 👃 | sniffs out treasure | bark: a trail of golden sparkles runs off towards the nearest hidden treasure |
+| 🐐 goat 💥 | mighty headbutt | headbutt: balls, crates and friends fly almost twice as far |
+| 🐷 pig 💨 | fart jump | poop with an empty tummy: the toot throws the pig into the air (once more in the air) |
+| 🐑 sheep 🦘 | bouncy wool | land from high up (a double jump, a fall) and it bounces back up |
+| 🐱 cat 🌳 | climbs trees | walk into a tree trunk: up onto a branch; jump (or push the stick) to hop down. A park cat in that tree gets a fright and jumps down |
+| 🦆 duck 🪂 | glides and swims fast | hold jump while falling to float down; swims as fast as it runs |
+| 🐮 cow 📢 | shockwave moo | the moo knocks things over all around and makes friends hop |
+| 🦄 unicorn 🌈 | rainbow jump | a third jump in the air |
+
+The pig also zooms through mud instead of getting stuck in it.
+
+**The treasure hunt never runs out.** Five treasures are hidden round the park at a time, each in a different area:
+a coloured gem over a little mound with a red ✖ on it, tucked beside a fence, a rock or a building. They twinkle now and
+then, and when you get close you can hear them, "ting... ting.ting.ting", faster the closer you are. The five gems under
+the stars light up as you find them. Find all five: a party, one more gem goes into the **treasure chest** on the grass
+west of the plaza (it keeps every one, so the pile grows day by day), and five new treasures are hidden somewhere else.
+Where the hunt is up to is remembered on this device, so the next day doesn't start in the same places. The dog's bark
+points the way to the nearest one.
+
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
 
@@ -180,16 +204,17 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 44 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 54 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
-  chicken, jumping in a puddle, a tube ride, a sled ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
-  friend stickers: the nearest friend). The arrow goes away once you're there, and the guide ends when the sticker is
+  friend stickers: the nearest friend; for treasure: the nearest hidden treasure; for a trick: a place it works well,
+  like a tree for the cat). The arrow goes away once you're there, and the guide ends when the sticker is
   earned (or after two minutes; tap the sticker at the top of the screen to stop it). **B** closes the album.
 - **New animals** join as the album fills up: a 🐱 cat at 3 stickers, a 🦆 duck at 7, a 🐮 cow at 12 and a 🦄 unicorn at
   18 (which leaves rainbow sparkles). They appear in the animal picker as soon as they have joined.
@@ -256,6 +281,7 @@ src/
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
     testMode.ts         ?test=<seed>
     store.ts            reactive state for UI: players, party meter, stars, menu
+    hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area), found, the chest
     animals.ts          each player number's animal, remembered for next time
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
@@ -273,6 +299,7 @@ src/
     player/             one animal: Player.tsx runs these steps in order every frame:
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
       actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
+      tricks.ts         every animal's own trick (sniff, mighty headbutt, fart jump, bouncy wool, climbing, glide, shockwave moo, rainbow jump)
       piggyback.ts, movement.ts, animate.ts
       frame.ts, state.ts, constants.ts, physics.ts
       AnimalModel.tsx, Hat.tsx
@@ -289,6 +316,7 @@ src/
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Events.tsx        surprises: golden chicken, present balloon, rain and puddles
+      Treasures.tsx     the treasure hunt: hidden gems, the "ting" that gets faster, the chest by the plaza
       Cats.tsx          the park cats: nap, flee, get tagged, up a tree, barked down
       Birds.tsx         bird flocks: peck, scatter, fly to a new spot, peck at poops
       Buddy.tsx         the computer buddy for a child playing alone (its "brain" makes controller input)

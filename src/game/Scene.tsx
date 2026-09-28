@@ -31,6 +31,7 @@ import { LaunchPad } from './world/Launchers';
 import { Playground } from './world/Playground';
 import { Sports } from './world/Sports';
 import { GoldenStars } from './world/Stars';
+import { Treasures } from './world/Treasures';
 import { Sky, Terrain } from './world/Terrain';
 import { Balloons } from './world/Toys';
 import { Train } from './world/Train';
@@ -388,6 +389,7 @@ export function Scene() {
         ))}
         <Balloons />
         <GoldenStars />
+        <Treasures />
         <ParkEvents />
         <Players />
       </Physics>

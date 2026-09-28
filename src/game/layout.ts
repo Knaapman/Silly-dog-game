@@ -467,6 +467,29 @@ export const CAT_HOMES: Vec2[] = [
   [38, 8]
 ];
 
+/**
+ * Where treasure can be hidden: tucked beside something (a fence, a rock, a building), on open
+ * ground with nothing overhead, off the railway and out of the water. Found by scanning the
+ * park's physics for clear spots with something 1-2 m away; each round of the treasure hunt
+ * hides one treasure in each of five different areas.
+ */
+export const TREASURE_SPOTS: { zone: keyof typeof ZONES; at: Vec2 }[] = (
+  [
+    ['hub', [[3, 14], [5, -18], [15, 4]]],
+    ['carnival', [[-67, -26], [-33, -30], [-65, -42]]],
+    ['forest', [[-41, -4], [-73, 22], [-39, 16]]],
+    ['farm', [[-39, 46], [-65, 50]]],
+    ['beach', [[-19, 44], [-9, 24]]],
+    ['playground', [[55, 22], [39, 50], [39, 28], [71, 22]]],
+    ['dino', [[53, -18], [71, 12], [53, 16]]],
+    ['sports', [[51, -36], [71, -60], [43, -60], [39, -42]]],
+    ['winter', [[11, -56], [33, -50], [-5, -48], [7, -44]]]
+  ] as [keyof typeof ZONES, Vec2[]][]
+).flatMap(([zone, list]) => list.map((at) => ({ zone, at })));
+
+/** The treasure chest west of the plaza: one gem for every treasure hunt round ever finished. `yaw` turns it to face the plaza. */
+export const TREASURE_CHEST = { position: [-21, 8] as Vec2, yaw: Math.PI / 2 };
+
 /** Where bird flocks land: [x, height above the ground, z, spread radius]. */
 export const BIRD_SPOTS: [number, number, number, number][] = [
   [-12, 0, 14, 2.2],

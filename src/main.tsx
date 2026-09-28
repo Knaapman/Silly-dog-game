@@ -16,6 +16,7 @@ import { perf } from './game/perf';
 import { useProgress } from './game/progress';
 import { useSettings } from './game/settings';
 import { useStickers } from './game/stickers';
+import { useHunt } from './game/hunt';
 import * as events from './game/world/Events';
 import * as guide from './game/guide';
 import { buddyControl } from './game/world/Buddy';
@@ -26,7 +27,7 @@ if (TEST_MODE) Math.random = seededRandom(TEST_SEED);
 if (import.meta.env.DEV || TEST_MODE) {
   // Handy for poking at the game from the browser console / automated checks.
   const w = window as unknown as { __silly?: Record<string, unknown> };
-  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, events, guide, buddyControl, perf, input, clock };
+  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, useHunt, events, guide, buddyControl, perf, input, clock };
 }
 
 setupInstall();

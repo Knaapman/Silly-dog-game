@@ -864,6 +864,15 @@ export function playCheep(position?: AudioPosition) {
   v.finish();
 }
 
+/** A hidden treasure nearby: a little glassy "ting" (higher the closer you are). */
+export function playTwinkle(position?: AudioPosition, pitch = 1) {
+  const v = voice('world', { position, gain: 0.9 });
+  if (!v) return;
+  v.tone({ type: 'triangle', from: 1760 * pitch, dur: 0.22, gain: 0.07 });
+  v.tone({ type: 'sine', from: 2637 * pitch, at: 0.06, dur: 0.28, gain: 0.05 });
+  v.finish();
+}
+
 export function playGeyser(position?: AudioPosition) {
   const v = voice('world', { position });
   if (!v) return;

@@ -28,8 +28,10 @@ import {
   BRONTO,
   distXZ,
   SLED_RUN,
+  TREES,
   TUBE_RIDE
 } from './layout';
+import { nearestTreasure } from './hunt';
 import { flocks, parkCats } from './chase';
 import { players } from './runtime';
 import { useStickers, type StickerId } from './stickers';
@@ -88,8 +90,17 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   snowball: SNOWBALLS.map((s) => [s[0], s[2]] as P),
   windmill: [[WINDMILL.position[0] + 3, WINDMILL.position[2]]],
   tube: [[TUBE_RIDE.jettyFrom + 3, TUBE_RIDE.jettyZ]],
-  sled: SLED_RUN.starts
+  sled: SLED_RUN.starts,
+  // the animals' tricks: somewhere each one works well (you need to be that animal, of course)
+  climb: TREES.map((t) => t.at),
+  glide: [[SLIDE_TOWER.base[0], SLIDE_TOWER.base[2]]],
+  sheepbounce: TRAMPOLINES.map((t) => [t.position[0], t.position[2]] as P),
+  goatbonk: [[SOCCER.kickoff[0], SOCCER.kickoff[2]]],
+  moo: [[BOWLING.pins[0][0], BOWLING.pins[0][1] - 3]]
 };
+
+/** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */
+const TREASURE_STICKERS: StickerId[] = ['treasure', 'hunt', 'sniff'];
 
 /** Stickers found by chasing: the guide leads to the nearest cat or flock of birds. */
 const CAT_STICKERS: StickerId[] = ['cattag', 'cattree', 'allcats'];
@@ -99,7 +110,7 @@ const BIRD_STICKERS: StickerId[] = ['birds', 'birdbonk'];
 export function hasGuide(id: StickerId) {
   // friends: lead to the nearest friend (the see-saw has a place of its own)
   const toFriend = FRIEND_STICKERS.includes(id) && id !== 'seesaw';
-  return toFriend || id === 'star' || id === 'allstars' || CAT_STICKERS.includes(id) || BIRD_STICKERS.includes(id) || !!PLACES[id];
+  return toFriend || id === 'star' || id === 'allstars' || TREASURE_STICKERS.includes(id) || CAT_STICKERS.includes(id) || BIRD_STICKERS.includes(id) || !!PLACES[id];
 }
 
 const nearest = (from: THREE.Vector3, places: P[], out: THREE.Vector3) => {
@@ -131,6 +142,7 @@ export function guideTarget(id: StickerId, from: THREE.Vector3, fromSlot: number
     });
     return best < Infinity;
   }
+  if (TREASURE_STICKERS.includes(id)) return nearestTreasure(from, out);
   if (CAT_STICKERS.includes(id)) {
     // a cat up a tree for that one, if there is one; any cat will do otherwise
     const inTree = parkCats.filter((c) => c.mode === 'tree');

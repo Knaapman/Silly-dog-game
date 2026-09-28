@@ -22,6 +22,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
+import { climb } from './tricks';
 import { earnSticker } from '../stickers';
 
 // One animal. The per-frame logic lives in the modules next to this file and runs in a
@@ -219,6 +220,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     looks(f);
     headbutt(f);
     // what happens to us, then where we go
+    climb(f);
     impulses(f);
     tugged(f);
     piggyback(f);

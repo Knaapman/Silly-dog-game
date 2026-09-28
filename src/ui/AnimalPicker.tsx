@@ -1,5 +1,5 @@
 import { playTap } from '../game/audio';
-import { PLAYER_SHAPES, SPECIES, SPECIES_EMOJI, type Species } from '../game/config';
+import { PLAYER_SHAPES, SPECIES, SPECIES_EMOJI, SPECIES_TRICK, type Species } from '../game/config';
 import { useGame, type PlayerInfo } from '../game/store';
 import { unlockedSpecies, useStickers } from '../game/stickers';
 import { ACTION_UI } from './actions';
@@ -7,8 +7,9 @@ import { PlayerShapeIcon } from './PlayerShapeIcon';
 
 /**
  * Choosing an animal: a row of faces for each player who's choosing, in their colour and with
- * their shape. Their stick (or a tap on a face) picks, and their animal in the park changes along
- * with it. The animals still to be earned with stickers are dark shadows, like in the album.
+ * their shape; each face has a small picture of that animal's trick. Their stick (or a tap on a
+ * face) picks, and their animal in the park changes along with it. The animals still to be
+ * earned with stickers are dark shadows, like in the album.
  */
 export function AnimalPickers() {
   const players = useGame((s) => s.players);
@@ -51,7 +52,7 @@ function PickerRow({ player, open }: { player: PlayerInfo; open: Species[] }) {
               setPicking(player.slot, false);
               playTap();
             }}
-            className={`flex shrink-0 items-center justify-center rounded-full transition-transform duration-150 ${face} ${on ? 'z-10 scale-125 border-[3px] border-white shadow-lg' : 'active:scale-90'}`}
+            className={`relative flex shrink-0 items-center justify-center rounded-full transition-transform duration-150 ${face} ${on ? 'z-10 scale-125 border-[3px] border-white shadow-lg' : 'active:scale-90'}`}
             style={{ background: on ? player.color : undefined }}
             data-species={s}
             data-selected={on}
@@ -63,6 +64,8 @@ function PickerRow({ player, open }: { player: PlayerInfo; open: Species[] }) {
             >
               {SPECIES_EMOJI[s]}
             </span>
+            {/* its trick, small in the corner */}
+            {can && <span className="emoji absolute -bottom-1 -right-1 text-[min(3.2vw,1.05rem)] leading-none drop-shadow">{SPECIES_TRICK[s]}</span>}
           </button>
         );
       })}
