@@ -341,8 +341,63 @@ export const SLED_RUN = {
   /** How far a sled can be steered to either side of its start line. */
   laneHalfWidth: 3,
   kickX: -33,
-  landingX: -48
+  /** Star hoops floating over the run (both lanes can reach every one): through one = faster. */
+  hoops: [[-14, -53.5], [-20, -54.4], [-26, -52.6]] as Vec2[],
+  /** How far you fly off the hill: metres per m/s of speed at the kick, and extra for a jump right at the kick. */
+  flyPerSpeed: 1.3,
+  jumpBonus: 3.5,
+  /** Never lands further than this (the sky course starts a little further on). */
+  furthestX: -56,
+  /** Coloured lines in the grass where you land: green, yellow, red. */
+  markers: [-45, -48, -51],
+  /** The landing field, across (z). */
+  fieldZ: [-58.5, -48.5] as Vec2
 };
+
+// ---------------------------------------------------------------------------
+// The sky course: a climb into the sky in the north-west corner, behind the carnival. Stumps, a
+// spinning disc, a platform that slides to and fro, a bouncy cloud, wobbly planks on balloons,
+// and a cloud at the top with a bell and a rainbow pad back down. It climbs away from the camera,
+// so the high parts are never hidden behind the low ones. Heights are absolute (the ground rolls
+// a little there). Every step is one that a jump (or the bouncy cloud) makes: never more than
+// 1.2 m up, and at most 1.3 m across.
+
+export const SKY_COURSE = {
+  /** The start: a pad that takes you back up to the highest flag anyone has reached. */
+  pad: [-61, -45.5] as Vec2,
+  stumps: [
+    { at: [-63.5, -47.5] as Vec2, top: 1.2 },
+    { at: [-66, -48] as Vec2, top: 2.4 },
+    { at: [-68.5, -47.5] as Vec2, top: 3.6 }
+  ],
+  stumpRadius: 0.9,
+  /** The two wooden platforms (flags 1 and 2). */
+  platforms: [
+    { at: [-72, -47.5] as Vec2, top: 4.4, size: [3, 3] as Vec2 },
+    { at: [-74, -57.5] as Vec2, top: 6, size: [3, 3] as Vec2 }
+  ],
+  disc: { at: [-74, -52.5] as Vec2, top: 5.2, radius: 2.2, speed: 0.8 },
+  /** Slides along x between `from` and `to` (its centre), there and back in `period` seconds. */
+  slider: { z: -57.5, from: -71.1, to: -65.9, top: 6, size: 2.4, period: 6 },
+  bouncer: { at: [-63.3, -57.5] as Vec2, top: 6, radius: 1.2, bounce: 14 },
+  /** The cloud the bouncer throws you up to (flag 3). */
+  cloud: { at: [-63.5, -61] as Vec2, top: 9, size: [3, 3] as Vec2 },
+  planks: [
+    { at: [-67, -61] as Vec2, top: 9.6 },
+    { at: [-69.5, -61] as Vec2, top: 10.2 },
+    { at: [-72, -61] as Vec2, top: 10.8 }
+  ],
+  plankSize: [1.8, 1.3] as Vec2,
+  plankBob: 0.25,
+  /** The top cloud (flag 4): the bell, and the rainbow pad that flies you back down. */
+  top: { at: [-75.5, -60.5] as Vec2, top: 11.4, size: [3.6, 4] as Vec2 },
+  bell: [-74.4, -61.9] as Vec2,
+  rainbowPad: [-76.4, -59.3] as Vec2,
+  rainbowTarget: [-59.5, -52.5] as Vec2
+};
+
+/** The course's flags, in order: the two platforms, the cloud, the top. */
+export const SKY_FLAGS: { at: Vec2; top: number; size: Vec2 }[] = [...SKY_COURSE.platforms, SKY_COURSE.cloud, SKY_COURSE.top];
 
 // ---------------------------------------------------------------------------
 // Launch pads (glowing arrows)
@@ -486,6 +541,21 @@ export const TREASURE_SPOTS: { zone: keyof typeof ZONES; at: Vec2 }[] = (
     ['winter', [[11, -56], [33, -50], [-5, -48], [7, -44]]]
   ] as [keyof typeof ZONES, Vec2[]][]
 ).flatMap(([zone, list]) => list.map((at) => ({ zone, at })));
+
+/**
+ * Harder hiding places, somewhere up high or across the water (absolute surface height). Every
+ * other round, one of the five treasures goes to one of these: up the gangplank onto the ship's
+ * deck, up the ramp onto the mesa, a swim to the lighthouse island, the sky course's cloud,
+ * bouncing on a big mushroom, and the footbridge over the railway.
+ */
+export const TREASURE_HIGH_SPOTS: { at: Vec2; y: number }[] = [
+  { at: [-15.2, 38.3], y: 1.8 },
+  { at: [-18, -20], y: 5.2 },
+  { at: [-1.4, 48.6], y: 0.09 },
+  { at: [-63, -60.5], y: 9 },
+  { at: [-50, 1], y: 6.8 },
+  { at: [-34.5, 36], y: 4.6 }
+];
 
 /** The treasure chest west of the plaza: one gem for every treasure hunt round ever finished. `yaw` turns it to face the plaza. */
 export const TREASURE_CHEST = { position: [-21, 8] as Vec2, yaw: Math.PI / 2 };

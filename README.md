@@ -38,6 +38,20 @@ share a ring, or jump from one to another. **Sledding**: two sleds wait on the w
 one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
 you off the hill at the bottom. The path up the mountain has log steps now.
 
+**Sledding challenges.** Three rings of stars float over the sled run: steer through one (stick up and down) and
+the sled goes faster, and each one lets it go faster still. Off the hill, the faster you were going the further you
+fly, and a jump right at the top of the hill sends you further still. Where you land there are green, yellow and red
+lines in the grass, and a golden flag with a star marks the furthest flight ever (remembered on this device). A new
+record: a cheer and a party. Past the red line: a sticker.
+
+**The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
+tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
+that slides to and fro, a pink bouncy cloud that throws you up to a cloud, three wobbly planks hanging from balloons,
+and the top cloud, 11 m up, with a big bell to ring (a party, and a sticker) and a rainbow pad that flies you all the
+way back down. There are four flags on the way; the pad at the start flies you straight back up to the highest flag
+anyone has reached, so a fall (onto soft grass) only costs one bit. It climbs away from the camera, so you can always
+see the next bit. Every step is one a jump makes; the tricks help (the duck glides across, the unicorn's third jump).
+
 **Every animal has a trick of its own**, on the buttons it already has (its picture sits in the corner of its face in
 the animal picker, and each trick has a sticker):
 
@@ -59,8 +73,10 @@ a coloured gem over a little mound with a red ✖ on it, tucked beside a fence, 
 then, and when you get close you can hear them, "ting... ting.ting.ting", faster the closer you are. The five gems under
 the stars light up as you find them. Find all five: a party, one more gem goes into the **treasure chest** on the grass
 west of the plaza (it keeps every one, so the pile grows day by day), and five new treasures are hidden somewhere else.
-Where the hunt is up to is remembered on this device, so the next day doesn't start in the same places. The dog's bark
-points the way to the nearest one.
+Where the hunt is up to is remembered on this device, so the next day doesn't start in the same places. Every other
+round, one of the five is somewhere harder: on the ship's deck, on top of the mesa, on the lighthouse island (swim!),
+on the sky course's cloud, on a bouncy mushroom, or on the footbridge over the railway; you can hear it ting when you
+walk underneath. The dog's bark points the way to the nearest one.
 
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
@@ -204,9 +220,10 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 54 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 57 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
-  chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
+  bell on top of the sky course, all three sled hoops in one run, flying past the red line...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower.
@@ -281,7 +298,9 @@ src/
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
     testMode.ts         ?test=<seed>
     store.ts            reactive state for UI: players, party meter, stars, menu
-    hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area), found, the chest
+    hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area; every other round one up high), found, the chest
+    skycourse.ts        how far up the sky course anyone has got (the flags)
+    sledding.ts         the furthest sled flight (the golden flag)
     animals.ts          each player number's animal, remembered for next time
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
@@ -307,7 +326,8 @@ src/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
       Water.tsx         the sea, the river's flow and the falls, the buoys, splashes, things that float
       Landmarks.tsx     the mesa with the train tunnel, the footbridges, the river crossings, boulders, the summit flag
-      Rides.tsx         river tubing (rings on a course down the river) and the sleds down the mountain
+      Rides.tsx         river tubing (rings on a course down the river), the sleds down the mountain, their star hoops and landing field
+      SkyCourse.tsx     the sky course: stumps, platforms, spinning disc, slider, bouncy cloud, planks, flags, bell, pads
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

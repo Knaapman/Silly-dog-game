@@ -27,6 +27,7 @@ import {
   WINDMILL,
   BRONTO,
   distXZ,
+  SKY_COURSE,
   SLED_RUN,
   TREES,
   TUBE_RIDE
@@ -96,7 +97,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   glide: [[SLIDE_TOWER.base[0], SLIDE_TOWER.base[2]]],
   sheepbounce: TRAMPOLINES.map((t) => [t.position[0], t.position[2]] as P),
   goatbonk: [[SOCCER.kickoff[0], SOCCER.kickoff[2]]],
-  moo: [[BOWLING.pins[0][0], BOWLING.pins[0][1] - 3]]
+  moo: [[BOWLING.pins[0][0], BOWLING.pins[0][1] - 3]],
+  course: [SKY_COURSE.pad]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

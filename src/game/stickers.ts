@@ -18,6 +18,7 @@ const SURPRISE = '#ec4899';
 const CHASE = '#ef4444';
 const TRICKS = '#65a30d';
 const TREASURE = '#f97316';
+const CHALLENGE = '#0ea5e9';
 
 export const STICKERS = [
   // the chase
@@ -82,7 +83,11 @@ export const STICKERS = [
   { id: 'unijump', icon: '🦄', badge: '🌈', color: TRICKS },
   // the treasure hunt
   { id: 'treasure', icon: '💎', color: TREASURE },
-  { id: 'hunt', icon: '💎', badge: '🌟', color: TREASURE }
+  { id: 'hunt', icon: '💎', badge: '🌟', color: TREASURE },
+  // challenges: the sky course, and the sled run's hoops and far landings
+  { id: 'course', icon: '☁️', badge: '🔔', color: CHALLENGE },
+  { id: 'hoops', icon: '🛷', badge: '⭐', color: CHALLENGE },
+  { id: 'farfly', icon: '🛷', badge: '🚩', color: CHALLENGE }
 ] as const satisfies readonly Sticker[];
 
 export type StickerId = (typeof STICKERS)[number]['id'];

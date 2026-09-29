@@ -1,15 +1,20 @@
 import { CylinderCollider, RigidBody, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useMemo, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
-import { playPoof, playSlideWhistle, playSplash } from '../audio';
-import { gameClock, useGameFrame } from '../clock';
+import { playBoing, playCheer, playCollect, playPoof, playSlideWhistle, playSplash } from '../audio';
+import { after, gameClock, gameNow, useGameFrame } from '../clock';
+import { PARTY_POINTS } from '../config';
 import { makeCourse, type CoursePoint } from '../course';
-import { emit, poof, ring } from '../fx';
-import { getInput } from '../input';
+import { burstConfetti, emit, poof, ring } from '../fx';
+import { getInput, rumble } from '../input';
 import { distXZ, SLED_RUN, TUBE_RIDE, WATER_LEVEL } from '../layout';
 import { lambert, stripeTexture } from '../materials';
 import { debugInfo, players, type PlayerRuntime, type Surface } from '../runtime';
 import { earnSticker } from '../stickers';
+import { useSledding } from '../sledding';
+import { useGame } from '../store';
+import { ballistic } from '../player/physics';
+import { getStarGeometry, getStarMaterial } from './Stars';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
 import { useSurface } from './surface';
@@ -217,12 +222,29 @@ export function TubeRide() {
 
 const SLED_GRAVITY = 12;
 const SLED_FRICTION = 1;
-const SLED_MAX = 12;
+/** Top speed; every hoop you go through this run adds one. */
+const SLED_MAX = 10;
+/** A jump pressed this long before the kick counts as jumping off the hill (ms). */
+const KICK_JUMP = 450;
+/** When each hoop was last gone through (game ms), for its flash. */
+const hoopFlash = SLED_RUN.hoops.map(() => -1e9);
 /** Downhill is west (-x): an animal on a sled faces that way. */
 const SLED_FACING = -Math.PI / 2;
 
 type SledMode = 'park' | 'ride' | 'away';
-type SledState = { mode: SledMode; x: number; z: number; y: number; v: number; pitch: number; rider: number | null; timer: number };
+type SledState = {
+  mode: SledMode;
+  x: number;
+  z: number;
+  y: number;
+  v: number;
+  pitch: number;
+  rider: number | null;
+  timer: number;
+  /** This run: which hoops you went through, and when jump was last pressed. */
+  hoops: boolean[];
+  jumpAt: number;
+};
 
 function SledModel() {
   const wood = lambert('#ff4d5e');
@@ -257,7 +279,8 @@ function SledModel() {
 function Sled({ index }: { index: number }) {
   const [sx, sz] = SLED_RUN.starts[index];
   const group = useRef<THREE.Group>(null);
-  const st = useRef<SledState>({ mode: 'park', x: sx, z: sz, y: groundHeight(sx, sz), v: 0, pitch: 0, rider: null, timer: 0 });
+  const st = useRef<SledState>({ mode: 'park', x: sx, z: sz, y: groundHeight(sx, sz), v: 0, pitch: 0, rider: null, timer: 0, hoops: SLED_RUN.hoops.map(() => false), jumpAt: -1e9 });
+  const fly = useMemo(() => new THREE.Vector3(), []);
   const seat = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
   ((debugInfo.sleds ??= []) as SledState[])[index] = st.current;
@@ -294,6 +317,8 @@ function Sled({ index }: { index: number }) {
         s.rider = p.slot;
         s.mode = 'ride';
         s.v = 5;
+        s.hoops = SLED_RUN.hoops.map(() => false);
+        s.jumpAt = -1e9;
         playSlideWhistle('down', p.position);
       });
     } else {
@@ -303,9 +328,24 @@ function Sled({ index }: { index: number }) {
       } else {
         // faster downhill, slower uphill, a little friction; steer to the sides with the stick
         const slope = (groundHeight(s.x + 0.6, s.z) - groundHeight(s.x - 0.6, s.z)) / 1.2;
-        s.v = Math.max(0, Math.min(SLED_MAX, s.v + (SLED_GRAVITY * slope - SLED_FRICTION) * dt));
-        const steer = p.bot ? 0 : getInput(p.source as Parameters<typeof getInput>[0]).z;
+        const through = s.hoops.filter(Boolean).length;
+        s.v = Math.max(0, Math.min(SLED_MAX + through, s.v + (SLED_GRAVITY * slope - SLED_FRICTION) * dt));
+        const input = p.bot ? null : getInput(p.source as Parameters<typeof getInput>[0]);
+        const steer = input?.z ?? 0;
+        if (input?.pressed.jump) s.jumpAt = gameNow();
+        const prevX = s.x;
         s.x -= s.v * dt;
+        // through a star hoop: ting! and a push
+        SLED_RUN.hoops.forEach(([hx, hz], i) => {
+          if (s.hoops[i] || prevX < hx || s.x > hx || Math.abs(s.z - hz) > 1) return;
+          s.hoops[i] = true;
+          s.v = Math.min(SLED_MAX + through + 1, s.v + 2);
+          hoopFlash[i] = gameNow();
+          const hy = groundHeight(hx, hz) + HOOP_HEIGHT;
+          emit('star', [hx, hy, hz], { count: 24, color: ['#ffd23f', '#fff3a8', '#ffffff'], speed: 5, up: 3 });
+          playCollect([hx, hy, hz]);
+          rumble(p.source as Parameters<typeof rumble>[0], 0.4, 0.6, 150);
+        });
         s.z = THREE.MathUtils.clamp(s.z + steer * 3 * dt, sz - SLED_RUN.laneHalfWidth, sz + SLED_RUN.laneHalfWidth);
         s.y = groundHeight(s.x, s.z);
         s.pitch = Math.atan(slope);
@@ -313,13 +353,26 @@ function Sled({ index }: { index: number }) {
         p.hold(seat, false, SLED_FACING);
         if (s.v > 4 && Math.random() < dt * 20) emit('puff', [s.x + 0.8, s.y + 0.1, s.z], { count: 1, color: s.y > 7 ? '#ffffff' : '#e8e0d0', size: 0.3, speed: 0.6, up: 0.8, life: 0.8 });
         if (s.x <= SLED_RUN.kickX) {
-          // up the hill and WHEEE, off you fly
+          // up the hill and WHEEE, off you fly: the faster you were going, the further (and
+          // further still with a jump right at the top)
+          const jumped = gameNow() - s.jumpAt < KICK_JUMP;
+          const x = Math.max(SLED_RUN.furthestX, SLED_RUN.kickX - SLED_RUN.flyPerSpeed * s.v - (jumped ? SLED_RUN.jumpBonus : 0));
           p.hold(null);
-          target.set(SLED_RUN.landingX, 0, s.z);
+          target.set(x, 0, s.z);
           target.y = groundHeight(target.x, target.z);
-          p.launchTo(target, s.y + 5);
+          const apex = s.y + 5 + (jumped ? 1.5 : 0);
+          p.launchTo(target, apex);
           earnSticker('sled');
+          if (s.hoops.every(Boolean)) earnSticker('hoops');
           emit('confetti', seat, { count: 24, speed: 4, up: 5 });
+          if (jumped) {
+            emit('star', seat, { count: 30, color: ['#ffd23f', '#ffffff', '#ff8fd8'], speed: 6, up: 4 });
+            playBoing(seat, 1.3);
+          }
+          // where it lands: a new record moves the golden flag
+          const flight = ballistic(seat, target, apex, fly);
+          const slot = p.slot;
+          after(flight, () => landed(x, target.z, slot));
           away(s);
         } else if (s.v < 0.3 && s.x < sx - 3) {
           // stuck (it can't happen on the run, but just in case): hop off
@@ -344,12 +397,117 @@ function Sled({ index }: { index: number }) {
   );
 }
 
+/** A sled flight landed at x: past the red line is the far-flying sticker, a record moves the golden flag. */
+function landed(x: number, z: number, slot: number) {
+  const record = useSledding.getState().land(x, gameNow());
+  const y = groundHeight(x, z);
+  ring([x, y + 0.08, z], { color: '#ffffff', radius: 2.2, duration: 0.5 });
+  const markers = SLED_RUN.markers;
+  if (x <= markers[markers.length - 1]) earnSticker('farfly');
+  if (!record) return;
+  const [fz0] = SLED_RUN.fieldZ;
+  burstConfetti([x, groundHeight(x, fz0) + 2.5, fz0], 60);
+  playCheer();
+  useGame.getState().addParty(PARTY_POINTS.goal);
+  const p = players.get(slot);
+  p?.hop(8);
+}
+
+/** Height of the hoops' middle above the ground (where a rider on a sled is). */
+const HOOP_HEIGHT = 1.15;
+const HOOP_RADIUS = 1.25;
+
+/** Three rings of stars floating over the sled run: steer through them. */
+function SledHoops() {
+  const rings = useRef<(THREE.Group | null)[]>([]);
+  useGameFrame(() => {
+    const now = gameNow();
+    rings.current.forEach((g, i) => {
+      if (!g) return;
+      const since = (now - hoopFlash[i]) / 1000;
+      const pop = since < 0.5 ? 1 + Math.sin(since * Math.PI * 2) * 0.35 * (1 - since * 2) : 1;
+      g.scale.setScalar(pop);
+      g.rotation.z = gameClock.time * 0.8 + i;
+    });
+  });
+  return (
+    <>
+      {SLED_RUN.hoops.map(([x, z], i) => (
+        // half turned towards the camera (facing straight up the run, it would be seen edge-on)
+        <group key={i} position={[x, groundHeight(x, z) + HOOP_HEIGHT, z]} rotation={[0, Math.PI / 4, 0]}>
+          <group ref={(g) => { rings.current[i] = g; }}>
+            <mesh material={lambert('#ffd23f')}>
+              <torusGeometry args={[HOOP_RADIUS, 0.09, 8, 36]} />
+            </mesh>
+            {Array.from({ length: 8 }, (_, k) => {
+              const a = (k / 8) * Math.PI * 2;
+              return (
+                <mesh key={k} position={[Math.cos(a) * HOOP_RADIUS, Math.sin(a) * HOOP_RADIUS, 0]} geometry={getStarGeometry()} material={getStarMaterial()} scale={0.32} />
+              );
+            })}
+          </group>
+        </group>
+      ))}
+    </>
+  );
+}
+
+/** The landing field: green, yellow and red lines across the grass, and a golden flag at the record. */
+function LandingField() {
+  const best = useSledding((s) => s.best);
+  const [z0, z1] = SLED_RUN.fieldZ;
+  const colors = ['#22c55e', '#ffd23f', '#ef4444'];
+  const flag = useRef<THREE.Mesh>(null);
+  useGameFrame(() => {
+    if (flag.current) flag.current.rotation.y = Math.sin(gameClock.time * 3) * 0.3;
+  });
+  return (
+    <>
+      {SLED_RUN.markers.map((x, i) => (
+        <group key={x}>
+          {/* a line of little painted dashes (they follow the ground) */}
+          {Array.from({ length: Math.round(z1 - z0) + 1 }, (_, k) => {
+            const z = z0 + k;
+            return (
+              <mesh key={k} position={[x, groundHeight(x, z) + 0.03, z]} rotation={[-Math.PI / 2, 0, 0]} material={lambert(colors[i])}>
+                <planeGeometry args={[0.3, 0.7]} />
+              </mesh>
+            );
+          })}
+          {/* and a flag at the end nearest the camera */}
+          <group position={[x, groundHeight(x, z1 + 0.6), z1 + 0.6]}>
+            <mesh position={[0, 0.7, 0]} material={lambert('#e2e8f0')}>
+              <cylinderGeometry args={[0.04, 0.04, 1.4, 6]} />
+            </mesh>
+            <mesh position={[0.28, 1.22, 0]} material={lambert(colors[i])}>
+              <boxGeometry args={[0.55, 0.35, 0.03]} />
+            </mesh>
+          </group>
+        </group>
+      ))}
+      {best != null && (
+        <group position={[best, groundHeight(best, z0 - 0.6), z0 - 0.6]}>
+          <mesh position={[0, 1.1, 0]} material={lambert('#e2e8f0')}>
+            <cylinderGeometry args={[0.05, 0.05, 2.2, 6]} />
+          </mesh>
+          <mesh ref={flag} position={[0.35, 1.9, 0]} material={lambert('#ffd23f')}>
+            <boxGeometry args={[0.7, 0.45, 0.04]} />
+          </mesh>
+          <mesh position={[0, 2.3, 0]} geometry={getStarGeometry()} material={getStarMaterial()} scale={0.4} />
+        </group>
+      )}
+    </>
+  );
+}
+
 export function Sleds() {
   return (
     <>
       {SLED_RUN.starts.map((_, i) => (
         <Sled key={i} index={i} />
       ))}
+      <SledHoops />
+      <LandingField />
     </>
   );
 }

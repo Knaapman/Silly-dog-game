@@ -22,6 +22,7 @@ import { isPartyTime, isPaused, useGame } from './store';
 import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Carnival } from './world/Carnival';
+import { SkyCourse } from './world/SkyCourse';
 import { DinoPark } from './world/DinoPark';
 import { Farm } from './world/Farm';
 import { Forest } from './world/Forest';
@@ -372,6 +373,7 @@ export function Scene() {
         <Sleds />
         <Hub />
         <Carnival />
+        <SkyCourse />
         <Sports />
         <DinoPark />
         <Playground />

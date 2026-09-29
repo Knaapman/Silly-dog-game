@@ -6,7 +6,7 @@ import { Game } from './game';
 
 const hunt = (game: Game) => game.page.evaluate(() => {
   const h = (window as any).__silly.useHunt.getState();
-  return { round: h.round as number, found: [...h.found] as boolean[], chest: h.chest as number, spots: h.spots.map((s: number[]) => [...s]) as [number, number][] };
+  return { round: h.round as number, found: [...h.found] as boolean[], chest: h.chest as number, spots: h.spots.map((s: number[]) => [...s]) as number[][] };
 });
 const stickers = (game: Game) => game.page.evaluate(() => [...(window as any).__silly.useStickers.getState().got] as string[]);
 
@@ -68,6 +68,42 @@ test('every hiding place is open ground an animal can stand on', async ({ page }
     // pushed off the spot by something solid, or standing on top of something
     if (Math.hypot(p.x - x, p.z - z) > 1 || p.y - g > 1.2) bad.push(`${x},${z}: ended at ${p.x.toFixed(1)},${(p.y - g).toFixed(1)},${p.z.toFixed(1)}`);
   }
+  // and the harder ones, up high or across the water (the mushroom cap bounces you: just stay on it)
+  const high = await page.evaluate(() => (window as any).__silly.layout.TREASURE_HIGH_SPOTS as { at: [number, number]; y: number }[]);
+  for (const { at: [x, z], y } of high) {
+    await page.evaluate(([x, y, z]) => {
+      const b = (window as any).__silly.runtime.players.get(0).getBody();
+      b.setTranslation({ x, y: y + 0.6, z }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }, [x, y, z] as const);
+    await game.seconds(1.2);
+    const p = await game.player();
+    if (Math.hypot(p.x - x, p.z - z) > 1 || p.y < y) bad.push(`high ${x},${z}: ended at ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`);
+  }
   expect(bad, bad.join('\n')).toEqual([]);
+  game.expectNoErrors();
+});
+
+test('every other round, one treasure is somewhere harder: up there it can be found too', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useHunt.getState().setRound(1));
+  const h = await hunt(game);
+  const i = h.spots.findIndex((s) => s.length === 3);
+  expect(i).toBeGreaterThanOrEqual(0);
+  const [x, z, y] = h.spots[i] as unknown as [number, number, number];
+  // walking about underneath doesn't find it...
+  await game.teleport(0, x + 0.5, 1, z);
+  await game.seconds(0.8);
+  if (y > 2) expect((await hunt(game)).found[i]).toBe(false);
+  // ...getting up there does
+  await page.evaluate(([x, y, z]) => {
+    const b = (window as any).__silly.runtime.players.get(0).getBody();
+    b.setTranslation({ x, y: y + 0.6, z }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  }, [x, y, z] as const);
+  await game.seconds(0.8, true);
+  expect((await hunt(game)).found[i]).toBe(true);
   game.expectNoErrors();
 });

@@ -85,6 +85,13 @@ add('mesa ramp foot', L.MESA.rampFrom[0], L.MESA.rampFrom[2], 1.5, { slopeOk: tr
 add('footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z, 1.5);
 L.SPAWN_POINTS.forEach((p, i) => add(`spawn ${i}`, p[0], p[2], 0.6));
 add('treasure chest', L.TREASURE_CHEST.position[0], L.TREASURE_CHEST.position[1], 1.1);
+{
+  const C = L.SKY_COURSE;
+  C.stumps.forEach((s, i) => add(`sky course stump ${i}`, s.at[0], s.at[1], C.stumpRadius));
+  L.SKY_FLAGS.forEach((f, i) => add(`sky course flag ${i}`, f.at[0], f.at[1], Math.hypot(f.size[0], f.size[1]) / 2, { floats: i > 1 }));
+  add('sky course disc', C.disc.at[0], C.disc.at[1], C.disc.radius);
+  add('sky course pad', C.pad[0], C.pad[1], 1.35);
+}
 L.SLED_RUN.starts.forEach((s, i) => add(`sled ${i}`, s[0], s[1], 1.2, { winter: true }));
 add('tube landing', L.TUBE_RIDE.landing[0], L.TUBE_RIDE.landing[1], 1.5, { onPathOk: true });
 add('jetty foot', L.TUBE_RIDE.jettyFrom + 1, L.TUBE_RIDE.jettyZ, 1.2, { wet: true }); // a jetty stands at the water's edge
@@ -263,7 +270,7 @@ describe('park layout', () => {
   });
 
   it('the sleds start on the mountain top and run clear down to the hill that throws you off', () => {
-    const { starts, laneHalfWidth, kickX, landingX } = L.SLED_RUN;
+    const { starts, laneHalfWidth, kickX, furthestX, flyPerSpeed } = L.SLED_RUN;
     const blocking = spots.filter((s) => !s.floats && !['hill', 'sled', 'summit'].includes(s.name.split(' ')[0]));
     for (const [sx, sz] of starts) {
       expect(mountainWeight(sx, sz)).toBe(1);
@@ -272,7 +279,9 @@ describe('park layout', () => {
       expect(inLane, `in the lane of the sled at z ${sz}`).toEqual([]);
       // the run goes up the hill where you're thrown off, and the landing is clear grass
       for (let z = sz - laneHalfWidth; z <= sz + laneHalfWidth; z += 1) expect(groundHeight(kickX, z)).toBeGreaterThan(groundHeight(kickX + 4, z));
-      const nearLanding = blocking.filter((s) => Math.abs(s.x - landingX) < 3 + s.r && Math.abs(s.z - sz) < laneHalfWidth + 2 + s.r).map((s) => s.name);
+      // the whole landing field, from the shortest flight (no hoops, no jump) to the furthest
+      const nearest = kickX - flyPerSpeed * 9;
+      const nearLanding = blocking.filter((s) => s.x < nearest + 1 + s.r && s.x > furthestX - 2 - s.r && Math.abs(s.z - sz) < laneHalfWidth + 2 + s.r).map((s) => s.name);
       expect(nearLanding, `at the landing of the sled at z ${sz}`).toEqual([]);
     }
   });
