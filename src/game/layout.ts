@@ -89,6 +89,8 @@ export const STALLS: { position: Vec3; colors: [string, string] }[] = [
   { position: at3(Z.carnival, -9, 0, 11), colors: ['#ff4d5e', '#ffffff'] },
   { position: at3(Z.carnival, 9, 0, 13), colors: ['#3b82f6', '#ffffff'] }
 ];
+/** The bumper cars: a floor with a low rail round it (a gap on the south side to walk in), and four cars. */
+export const BUMPER = { center: at(Z.carnival, 2, 5), size: [10, 9] as Vec2, gate: 2.4, cars: 4 };
 export const BUNTING_POLES: Vec2[] = [at(Z.carnival, -20, 12), at(Z.carnival, -8, 14), at(Z.carnival, 6, 14), at(Z.carnival, 14, 9), at(Z.carnival, 14, -4)];
 
 // ---------------------------------------------------------------------------
@@ -194,6 +196,8 @@ export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
 export const TRACTOR = { home: at(Z.farm, 6, -0.5), yaw: Math.PI / 2 };
 export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
 export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
+/** The chicken coop: a fenced pen east of the pasture, the gate in its north side (towards the chickens' yard). */
+export const CHICKEN_COOP = { center: at(Z.farm, 9, 12), size: 5.5, gate: 2.4, fence: 1.1 };
 /** The melon field, out on the grass west of the silo (clear of the railway embankment on the farm's east side). */
 export const MELON_PATCH: Vec2[] = [at(Z.farm, -20, -3), at(Z.farm, -17.5, -3), at(Z.farm, -15, -3), at(Z.farm, -20, -0.5), at(Z.farm, -17.5, -0.5), at(Z.farm, -15, -0.5)];
 export const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [

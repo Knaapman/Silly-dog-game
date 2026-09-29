@@ -24,6 +24,7 @@ import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Carnival } from './world/Carnival';
 import { SkyCourse } from './world/SkyCourse';
+import { BumperCars } from './world/BumperCars';
 import { DinoPark } from './world/DinoPark';
 import { Farm } from './world/Farm';
 import { Forest } from './world/Forest';
@@ -376,6 +377,7 @@ export function Scene() {
         <Hub />
         <Carnival />
         <SkyCourse />
+        <BumperCars />
         <Sports />
         <DinoPark />
         <Playground />

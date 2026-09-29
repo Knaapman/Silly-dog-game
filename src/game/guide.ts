@@ -26,6 +26,8 @@ import {
   VOLCANO,
   WINDMILL,
   BRONTO,
+  CHICKEN_COOP,
+  BUMPER,
   distXZ,
   SKY_COURSE,
   TRACTOR,
@@ -104,6 +106,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   moo: [[BOWLING.pins[0][0], BOWLING.pins[0][1] - 3]],
   tractor: [TRACTOR.home],
   zipline: [ZIPLINE.from],
+  chickens: [[CHICKEN_COOP.center[0], CHICKEN_COOP.center[1] - CHICKEN_COOP.size / 2 - 3]],
+  bumper: [[BUMPER.center[0], BUMPER.center[1] + BUMPER.size[1] / 2 + 1]],
   trailer: [TRACTOR.home],
   course: [SKY_COURSE.pad]
 };

@@ -51,6 +51,16 @@ with a boing, scatters the cats, and stops dead at walls, trees, hedges and the 
 through anything). The noise button is the horn; jump to hop out. Left somewhere, it trundles home by itself after a
 while (well: it pops back).
 
+**Bumper cars** 🚗 in the middle of the carnival: walk in through the gap in the rail and into a car, push the stick
+and zoom. Crash into the other cars (someone in them or not) and the rail: boing, a spin, sparks from the pole. Jump to
+hop out. Playing alone, the buddy jumps into a car too while you drive and chases you round.
+
+**The chicken round-up** 🐔: the farm's chickens run from anyone who comes close (and from barks). Chase them into the
+coop east of the pasture: the gate faces their yard, and a chicken running near the gate darts in. Once in, they stay
+in. The sign by the coop has a dot for each chicken, lit when it's in; all eight in is a party (and a sticker). After
+a while the gate opens and they trot back out to their yard, ready to be rounded up again. It works alone, and it's
+easier with friends coming at them from both sides.
+
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handle and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). The handle slides back up for the next one.
@@ -231,11 +241,11 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 60 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 62 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Five stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -313,6 +323,7 @@ src/
     hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area; every other round one up high), found, the chest
     skycourse.ts        how far up the sky course anyone has got (the flags)
     sledding.ts         the furthest sled flight (the golden flag)
+    coop.ts             the chicken round-up: which chickens are in the coop
     animals.ts          each player number's animal, remembered for next time
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
@@ -342,6 +353,8 @@ src/
       SkyCourse.tsx     the sky course: stumps, platforms, spinning disc, slider, bouncy cloud, planks, flags, bell, pads
       Tractor.tsx       the farm tractor and its trailer (driven with the stick; checks it never ends up inside anything)
       Zipline.tsx       the zipline from the mountain top to the lagoon
+      BumperCars.tsx    the bumper cars at the carnival
+      Chickens.tsx      the farm's chickens, and the coop they get rounded up into
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

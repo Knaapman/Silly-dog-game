@@ -67,6 +67,9 @@ add('windmill', L.WINDMILL.position[0], L.WINDMILL.position[2], 2);
 add('mud', L.MUD.center[0], L.MUD.center[1], L.MUD.radius);
 // the tractor where it's parked, and its trailer behind it
 add('tractor', L.TRACTOR.home[0], L.TRACTOR.home[1], 1.8);
+// the bumper car floor (a rectangle: covered with a few circles)
+for (const fx of [-1, 0, 1]) for (const fz of [-1, 0, 1]) add(`bumper cars ${fx * 3 + fz + 4}`, L.BUMPER.center[0] + (fx * L.BUMPER.size[0]) / 3, L.BUMPER.center[1] + (fz * L.BUMPER.size[1]) / 3, Math.hypot(L.BUMPER.size[0], L.BUMPER.size[1]) / 6);
+add('chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], (L.CHICKEN_COOP.size / 2) * 1.2);
 add('zipline platform', L.ZIPLINE.from[0], L.ZIPLINE.from[1], 2.1, { winter: true });
 add('trailer', L.TRACTOR.home[0] - Math.sin(L.TRACTOR.yaw) * 3.6, L.TRACTOR.home[1] - Math.cos(L.TRACTOR.yaw) * 3.6, 1.7);
 L.FARM_PROPS.forEach((p, i) => add(`farm prop ${i} (${p.kind})`, p.position[0], p.position[2], 0.8));
