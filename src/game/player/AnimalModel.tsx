@@ -1,6 +1,7 @@
 import type { ThreeElements } from '@react-three/fiber';
 import type { MutableRefObject, ReactNode } from 'react';
 import * as THREE from 'three';
+import type { Coat } from '../coats';
 import type { HatId, Species } from '../config';
 import { lambert } from '../materials';
 import { Hat } from './Hat';
@@ -33,8 +34,6 @@ type SpeciesSpec = {
   hipX: number;
   hipZ: number;
   legRadius: number;
-  legColor: string;
-  hoofColor: string;
   head: [number, number, number];
   eyes: { x: number; y: number; z: number; r: number; iris: string; pupil: 'round' | 'goat' | 'cat' };
   hatAnchor: [number, number, number];
@@ -48,8 +47,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.15,
     hipZ: 0.3,
     legRadius: 0.075,
-    legColor: '#c98a4b',
-    hoofColor: '#f3dcc0',
     head: [0, 0.98, 0.5],
     eyes: { x: 0.11, y: 0.07, z: 0.2, r: 0.09, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.25, -0.02],
@@ -61,8 +58,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.14,
     hipZ: 0.3,
     legRadius: 0.06,
-    legColor: '#e8e1d4',
-    hoofColor: '#3a332c',
     head: [0, 1.08, 0.5],
     eyes: { x: 0.12, y: 0.08, z: 0.14, r: 0.085, iris: '#ffe066', pupil: 'goat' },
     hatAnchor: [0, 0.17, -0.05],
@@ -74,8 +69,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.18,
     hipZ: 0.26,
     legRadius: 0.085,
-    legColor: '#ff9fc0',
-    hoofColor: '#c45a80',
     head: [0, 0.76, 0.54],
     eyes: { x: 0.11, y: 0.08, z: 0.2, r: 0.075, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.26, -0.02],
@@ -87,8 +80,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.14,
     hipZ: 0.24,
     legRadius: 0.055,
-    legColor: '#2f2a28',
-    hoofColor: '#1a1716',
     head: [0, 0.92, 0.5],
     eyes: { x: 0.09, y: 0.06, z: 0.15, r: 0.075, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.24, -0.02],
@@ -100,8 +91,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.12,
     hipZ: 0.27,
     legRadius: 0.055,
-    legColor: '#f29b3a',
-    hoofColor: '#fff1e0',
     head: [0, 0.9, 0.46],
     eyes: { x: 0.1, y: 0.06, z: 0.19, r: 0.085, iris: '#c6f36b', pupil: 'cat' },
     hatAnchor: [0, 0.24, -0.02],
@@ -113,8 +102,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.13,
     hipZ: 0,
     legRadius: 0.045,
-    legColor: '#ff9f1c',
-    hoofColor: '#ff9f1c',
     head: [0, 0.98, 0.3],
     eyes: { x: 0.1, y: 0.06, z: 0.15, r: 0.075, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.21, -0.02],
@@ -126,8 +113,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.18,
     hipZ: 0.34,
     legRadius: 0.08,
-    legColor: '#fafafa',
-    hoofColor: '#3a332c',
     head: [0, 1.12, 0.6],
     eyes: { x: 0.13, y: 0.09, z: 0.14, r: 0.085, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.23, -0.05],
@@ -139,8 +124,6 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hipX: 0.14,
     hipZ: 0.32,
     legRadius: 0.06,
-    legColor: '#fffafc',
-    hoofColor: '#f5c542',
     head: [0, 1.24, 0.56],
     eyes: { x: 0.12, y: 0.08, z: 0.12, r: 0.085, iris: '#ffffff', pupil: 'round' },
     hatAnchor: [0, 0.2, -0.16],
@@ -148,12 +131,11 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
   }
 };
 
-const RAINBOW = ['#ff4d5e', '#ff9f1c', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'];
-
 type ModelProps = {
   species: Species;
   hat: HatId;
   color: string;
+  coat: Coat;
   rig: MutableRefObject<Rig>;
 };
 
@@ -213,7 +195,7 @@ function Eye({ spec, side, rig }: { spec: SpeciesSpec; side: 0 | 1; rig: Mutable
   );
 }
 
-function Legs({ spec, rig, length }: { spec: SpeciesSpec; rig: MutableRefObject<Rig>; length: number }) {
+function Legs({ spec, coat, rig, length }: { spec: SpeciesSpec; coat: Coat; rig: MutableRefObject<Rig>; length: number }) {
   const hips: [number, number, number][] = [
     [-spec.hipX, spec.hipY, spec.hipZ],
     [spec.hipX, spec.hipY, spec.hipZ],
@@ -230,10 +212,10 @@ function Legs({ spec, rig, length }: { spec: SpeciesSpec; rig: MutableRefObject<
             rig.current.legs[i] = g;
           }}
         >
-          <Mesh color={spec.legColor} position={[0, -length / 2, 0]}>
+          <Mesh color={coat.legs} position={[0, -length / 2, 0]}>
             <cylinderGeometry args={[spec.legRadius, spec.legRadius * 0.9, length, 8]} />
           </Mesh>
-          <Mesh color={spec.hoofColor} position={[0, -length + 0.03, 0.02]}>
+          <Mesh color={coat.feet} position={[0, -length + 0.03, 0.02]}>
             <sphereGeometry args={[spec.legRadius * 1.25, 8, 6]} />
           </Mesh>
         </group>
@@ -304,11 +286,9 @@ function HeadExtras({ spec, hat, rig, children }: { spec: SpeciesSpec; hat: HatI
   );
 }
 
-function Dog({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Dog({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.dog;
-  const fur = '#c98a4b';
-  const dark = '#6b4226';
-  const light = '#f3dcc0';
+  const { fur, mark: dark, light } = coat;
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -358,16 +338,15 @@ function Dog({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.2, 0.7, 0.1, 0.1], [-0.2, 0.62, -0.2, 0.12], [0, 0.88, -0.3, 0.09], [0.15, 0.55, 0.35, 0.08], [-0.12, 1.1, 0.55, 0.07]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.46} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.46} />
     </>
   );
 }
 
-function Goat({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Goat({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.goat;
-  const fur = '#f4efe6';
-  const accent = '#b9ad9c';
-  const horn = '#7d7266';
+  const { fur, mark: accent } = coat;
+  const horn = coat.extra ?? '#7d7266';
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -421,15 +400,14 @@ function Goat({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.2, 0.75, 0.1, 0.1], [-0.2, 0.7, -0.2, 0.12], [0, 0.97, -0.3, 0.09], [0.15, 0.62, 0.35, 0.08], [-0.1, 1.2, 0.55, 0.07]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.56} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.56} />
     </>
   );
 }
 
-function Pig({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Pig({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.pig;
-  const skin = '#ffa9c8';
-  const snout = '#ff86ae';
+  const { fur: skin, mark: snout } = coat;
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -437,7 +415,7 @@ function Pig({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <sphereGeometry args={[0.44, 18, 14]} />
         </Mesh>
         <Collar spec={spec} color={color} />
-        <Belly spec={spec} rig={rig} radius={0.37} color={'#ffbdd6'} />
+        <Belly spec={spec} rig={rig} radius={0.37} color={coat.light} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={skin}>
             <sphereGeometry args={[0.28, 16, 12]} />
@@ -472,15 +450,14 @@ function Pig({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.3, 0.6, 0.1, 0.13], [-0.28, 0.55, -0.2, 0.14], [0, 0.9, -0.2, 0.12], [0.15, 0.4, 0.4, 0.1], [-0.1, 0.96, 0.62, 0.08], [0.05, 0.85, 0.25, 0.1]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.3} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.3} />
     </>
   );
 }
 
-function Sheep({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Sheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.sheep;
-  const wool = '#fbfbf8';
-  const face = '#2f2a28';
+  const { fur: wool, mark: face } = coat;
   const puffs: [number, number, number, number][] = [
     [0, 0.72, 0, 0.32],
     [0.19, 0.66, 0.2, 0.23],
@@ -533,16 +510,14 @@ function Sheep({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.3, 0.7, 0.1, 0.12], [-0.3, 0.65, -0.2, 0.13], [0, 1.02, -0.2, 0.11], [0.16, 0.5, 0.4, 0.1], [-0.12, 0.95, 0.3, 0.1]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.42} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.42} />
     </>
   );
 }
 
-function Cat({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Cat({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.cat;
-  const fur = '#f29b3a';
-  const stripe = '#c8641c';
-  const light = '#fff1e0';
+  const { fur, mark: stripe, light } = coat;
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -605,15 +580,15 @@ function Cat({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.18, 0.6, 0.1, 0.09], [-0.18, 0.55, -0.2, 0.1], [0, 0.8, -0.25, 0.08], [0.12, 0.5, 0.3, 0.07], [-0.1, 1.02, 0.5, 0.06]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.4} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.4} />
     </>
   );
 }
 
-function Duck({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Duck({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.duck;
-  const feathers = '#ffd23f';
-  const bill = '#ff9f1c';
+  const { fur: feathers, mark: wing } = coat;
+  const bill = coat.extra ?? '#ff9f1c';
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -637,13 +612,13 @@ function Duck({ rig, hat, color }: Omit<ModelProps, 'species'>) {
               rig.current.ears[i] = g;
             }}
           >
-            <Mesh color="#f5c02a" scale={[0.35, 0.75, 1.1]} rotation={[0, 0, sx * 0.2]}>
+            <Mesh color={wing} scale={[0.35, 0.75, 1.1]} rotation={[0, 0, sx * 0.2]}>
               <sphereGeometry args={[0.2, 10, 8]} />
             </Mesh>
           </group>
         ))}
         <Collar spec={spec} color={color} />
-        <Belly spec={spec} rig={rig} radius={0.3} color={'#ffe27a'} />
+        <Belly spec={spec} rig={rig} radius={0.3} color={coat.light} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={feathers}>
             <sphereGeometry args={[0.23, 16, 12]} />
@@ -652,7 +627,7 @@ function Duck({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <Mesh color={bill} position={[0, -0.06, 0.24]} scale={[1, 0.35, 1]}>
             <boxGeometry args={[0.2, 0.12, 0.2]} />
           </Mesh>
-          <Mesh color="#e0801a" position={[0, -0.1, 0.22]} scale={[1, 0.3, 1]}>
+          <Mesh color={bill} position={[0, -0.1, 0.22]} scale={[1, 0.3, 1]}>
             <boxGeometry args={[0.18, 0.1, 0.18]} />
           </Mesh>
           <Mesh color={feathers} position={[0, 0.2, -0.02]} rotation={[-0.4, 0, 0]}>
@@ -671,10 +646,10 @@ function Duck({ rig, hat, color }: Omit<ModelProps, 'species'>) {
             rig.current.legs[i] = g;
           }}
         >
-          <Mesh color={spec.legColor} position={[0, -0.1, 0]}>
+          <Mesh color={coat.legs} position={[0, -0.1, 0]}>
             <cylinderGeometry args={[spec.legRadius, spec.legRadius, 0.2, 6]} />
           </Mesh>
-          <Mesh color={spec.hoofColor} position={[0, -0.21, 0.08]}>
+          <Mesh color={coat.feet} position={[0, -0.21, 0.08]}>
             <boxGeometry args={[0.16, 0.03, 0.22]} />
           </Mesh>
         </group>
@@ -683,11 +658,10 @@ function Duck({ rig, hat, color }: Omit<ModelProps, 'species'>) {
   );
 }
 
-function Cow({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Cow({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.cow;
-  const white = '#fafafa';
-  const spot = '#2b2b2b';
-  const snout = '#ffb3c7';
+  const { fur: white, mark: spot } = coat;
+  const snout = coat.extra ?? '#ffb3c7';
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -707,7 +681,7 @@ function Cow({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           </Mesh>
         ))}
         <Collar spec={spec} color={color} bell />
-        <Belly spec={spec} rig={rig} radius={0.32} color={'#ffd6e2'} />
+        <Belly spec={spec} rig={rig} radius={0.32} color={coat.light} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={white} rotation={[Math.PI / 2 - 0.2, 0, 0]}>
             <capsuleGeometry args={[0.2, 0.18, 6, 12]} />
@@ -753,14 +727,16 @@ function Cow({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </group>
         <MudSplotches rig={rig} spots={[[0.3, 0.8, 0.1, 0.12], [-0.3, 0.72, -0.2, 0.13], [0, 1.1, -0.3, 0.1], [0.18, 0.6, 0.4, 0.1], [-0.12, 1.2, 0.62, 0.08]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.6} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.6} />
     </>
   );
 }
 
-function Unicorn({ rig, hat, color }: Omit<ModelProps, 'species'>) {
+function Unicorn({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   const spec = SPECIES_SPECS.unicorn;
-  const white = '#fffafc';
+  const white = coat.fur;
+  const mane = coat.mane ?? [coat.mark];
+  const horn = coat.extra ?? '#f5c542';
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
@@ -772,18 +748,18 @@ function Unicorn({ rig, hat, color }: Omit<ModelProps, 'species'>) {
           <cylinderGeometry args={[0.14, 0.2, 0.46, 10]} />
         </Mesh>
         {/* rainbow mane down the neck */}
-        {RAINBOW.map((c, i) => (
-          <Mesh key={c} color={c} position={[0, 1.28 - i * 0.07, 0.44 - i * 0.07]}>
+        {mane.map((c, i) => (
+          <Mesh key={i} color={c} position={[0, 1.28 - i * 0.07, 0.44 - i * 0.07]}>
             <sphereGeometry args={[0.08, 8, 6]} />
           </Mesh>
         ))}
         <Collar spec={spec} color={color} />
-        <Belly spec={spec} rig={rig} radius={0.28} color={'#ffe3f1'} />
+        <Belly spec={spec} rig={rig} radius={0.28} color={coat.light} />
         <HeadExtras spec={spec} hat={hat} rig={rig}>
           <Mesh color={white} rotation={[Math.PI / 2 - 0.5, 0, 0]}>
             <capsuleGeometry args={[0.16, 0.24, 6, 12]} />
           </Mesh>
-          <Mesh color="#ffd1e6" position={[0, -0.12, 0.22]} scale={[1, 0.8, 1]}>
+          <Mesh color={coat.light} position={[0, -0.12, 0.22]} scale={[1, 0.8, 1]}>
             <sphereGeometry args={[0.13, 12, 10]} />
           </Mesh>
           {[-1, 1].map((sx) => (
@@ -792,7 +768,7 @@ function Unicorn({ rig, hat, color }: Omit<ModelProps, 'species'>) {
             </Mesh>
           ))}
           {/* the golden horn */}
-          <Mesh color="#f5c542" position={[0, 0.35, 0.05]} rotation={[0.15, 0, 0]}>
+          <Mesh color={horn} position={[0, 0.35, 0.05]} rotation={[0.15, 0, 0]}>
             <coneGeometry args={[0.07, 0.5, 10]} />
           </Mesh>
           {[0, 1, 2].map((i) => (
@@ -816,37 +792,37 @@ function Unicorn({ rig, hat, color }: Omit<ModelProps, 'species'>) {
         </HeadExtras>
         {/* rainbow tail */}
         <group position={[0, 0.95, -0.58]} ref={(g) => { rig.current.tail = g; }}>
-          {RAINBOW.map((c, i) => (
-            <Mesh key={c} color={c} position={[0, -i * 0.07, -0.04 - i * 0.035]}>
+          {mane.map((c, i) => (
+            <Mesh key={i} color={c} position={[0, -i * 0.07, -0.04 - i * 0.035]}>
               <sphereGeometry args={[0.075 - i * 0.004, 8, 6]} />
             </Mesh>
           ))}
         </group>
         <MudSplotches rig={rig} spots={[[0.26, 0.8, 0.1, 0.11], [-0.26, 0.72, -0.2, 0.12], [0, 1.08, -0.3, 0.1], [0.16, 0.62, 0.38, 0.09], [-0.1, 1.3, 0.6, 0.07]]} />
       </group>
-      <Legs spec={spec} rig={rig} length={0.62} />
+      <Legs spec={spec} coat={coat} rig={rig} length={0.62} />
     </>
   );
 }
 
-export function AnimalModel({ species, hat, color, rig }: ModelProps) {
+export function AnimalModel({ species, hat, color, coat, rig }: ModelProps) {
   rig.current.eyeRadius = SPECIES_SPECS[species].eyes.r;
   switch (species) {
     case 'dog':
-      return <Dog rig={rig} hat={hat} color={color} />;
+      return <Dog rig={rig} hat={hat} color={color} coat={coat} />;
     case 'goat':
-      return <Goat rig={rig} hat={hat} color={color} />;
+      return <Goat rig={rig} hat={hat} color={color} coat={coat} />;
     case 'pig':
-      return <Pig rig={rig} hat={hat} color={color} />;
+      return <Pig rig={rig} hat={hat} color={color} coat={coat} />;
     case 'sheep':
-      return <Sheep rig={rig} hat={hat} color={color} />;
+      return <Sheep rig={rig} hat={hat} color={color} coat={coat} />;
     case 'cat':
-      return <Cat rig={rig} hat={hat} color={color} />;
+      return <Cat rig={rig} hat={hat} color={color} coat={coat} />;
     case 'duck':
-      return <Duck rig={rig} hat={hat} color={color} />;
+      return <Duck rig={rig} hat={hat} color={color} coat={coat} />;
     case 'cow':
-      return <Cow rig={rig} hat={hat} color={color} />;
+      return <Cow rig={rig} hat={hat} color={color} coat={coat} />;
     case 'unicorn':
-      return <Unicorn rig={rig} hat={hat} color={color} />;
+      return <Unicorn rig={rig} hat={hat} color={color} coat={coat} />;
   }
 }

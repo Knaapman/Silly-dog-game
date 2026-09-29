@@ -118,6 +118,8 @@ function Cat({ index }: { index: number }) {
     chaseStart: 0,
     chasedFor: 0,
     congaMeow: 0,
+    /** Hops over something in the way since this cat last caught up with the line. */
+    congaHops: 0,
     /** After the conga the cats wander off in peace: no tagging or startling until then. */
     truceUntil: 0,
     /** Walking into something (another cat, say): step round it this way for a moment. */
@@ -639,9 +641,13 @@ function Cat({ index }: { index: number }) {
             vy = 7.5;
             c.sidestep = (c.sidestep > 0 ? -1 : 1) * 1.2;
             c.sidestepUntil = now + 700;
+            c.congaHops += 1;
           }
-          if (d > 28) {
-            // left far behind (a launcher, a flush): pop back into the line
+          if (d < CONGA_GAP + 1) c.congaHops = 0;
+          if (d > 28 || c.congaHops >= 2) {
+            // left far behind (a launcher, a flush), or still stuck after a couple of hops: pop
+            // back into the line
+            c.congaHops = 0;
             poof([t.x, t.y, t.z], pal.fur, 8);
             rb.setTranslation({ x: ahead.x - Math.sin(c.facing) * CONGA_GAP, y: ahead.y + 1, z: ahead.z - Math.cos(c.facing) * CONGA_GAP }, true);
             rb.setLinvel({ x: 0, y: 0, z: 0 }, true);

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { playBurp, playHatTada, playPoof, playPower } from '../audio';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { ANIMAL_GROUPS } from '../collision';
+import { coatOf } from '../coats';
 import { BELLY_MAX, PARTY_POINTS, PLAYER_SHAPES } from '../config';
 import { emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
@@ -30,7 +31,7 @@ import { earnSticker } from '../stickers';
 // scene objects, and the hooks that let the rest of the game talk to the animal.
 
 export function Player({ info }: { info: PlayerInfo }) {
-  const { slot, source, species, hat, color } = info;
+  const { slot, source, species, coat, hat, color } = info;
   const asleep = !!info.asleep;
   const { world, rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null);
@@ -262,7 +263,7 @@ export function Player({ info }: { info: PlayerInfo }) {
           <group ref={squashGroup}>
             <group ref={flipGroup} position={[0, 0.6, 0]}>
               <group position={[0, -0.6, 0]} scale={MODEL_SCALE}>
-                <AnimalModel key={species} species={species} hat={hat} color={color} rig={rig} />
+                <AnimalModel key={species} species={species} coat={coatOf(species, coat)} hat={hat} color={color} rig={rig} />
               </group>
             </group>
           </group>

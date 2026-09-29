@@ -24,7 +24,7 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
     seen.push(await species(game));
   }
   expect(seen).toEqual(['dog', 'goat', 'pig', 'sheep', 'dog']);
-  await expect(picker.locator('[data-selected="true"]')).toHaveAttribute('data-species', 'dog');
+  await expect(picker.locator('[data-species][data-selected="true"]')).toHaveAttribute('data-species', 'dog');
   // the ones still to earn are there, but can't be picked yet
   await expect(picker.locator('[data-species="cat"]')).toBeDisabled();
 
@@ -105,5 +105,85 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
   for (const key of ['KeyR', 'Slash']) await game.tap(key);
   await game.seconds(0.5);
   await game.screenshot('test-results/new-animals.png');
+  game.expectNoErrors();
+});
+
+test('every animal comes in coats: stick up and down, remembered per animal', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  const coat = (slot = 0) => game.state<number>(`(g) => g.players.find((p) => p.slot === ${slot}).coat`);
+  expect(await coat()).toBe(0);
+
+  await game.tap('Digit1');
+  const coats = page.getByTestId('coat-picker-0');
+  await expect(coats).toBeVisible();
+  await expect(coats.locator('[data-coat]')).toHaveCount(5);
+  // down for the next coat, up for the one before (one step per push), round and round
+  await game.tap('KeyS');
+  expect(await coat()).toBe(1);
+  await game.hold('KeyS', 0.6);
+  expect(await coat()).toBe(2);
+  await game.tap('KeyW');
+  expect(await coat()).toBe(1);
+  await game.tap('KeyW');
+  await game.tap('KeyW');
+  expect(await coat()).toBe(4);
+  await game.tap('KeyS');
+  expect(await coat()).toBe(0);
+  await game.tap('KeyS');
+  expect(await species(game)).toBe('dog');
+  await expect(coats.locator('[data-selected="true"]')).toHaveAttribute('data-coat', '1');
+  await game.screenshot('test-results/coat-picker.png');
+
+  // another animal starts in its usual coat; back to the dog, and it's the black dog again
+  await game.tap('KeyD');
+  expect(await species(game)).toBe('goat');
+  expect(await coat()).toBe(0);
+  await game.tap('KeyS');
+  await game.tap('KeyS');
+  await game.tap('KeyS');
+  await game.tap('KeyA');
+  expect(await species(game)).toBe('dog');
+  expect(await coat()).toBe(1);
+  // a tap on a blob works too
+  await coats.locator('[data-coat="3"]').click();
+  expect(await coat()).toBe(3);
+  await game.seconds(0.6);
+  await game.tap('Space');
+  await game.seconds(0.2, true);
+  expect(await picking(game)).toBe(false);
+
+  // next time: the blue dog (and the purple goat is waiting)
+  await page.evaluate(() => (window as any).__silly.useGame.getState().leave(0));
+  await game.seconds(0.5);
+  await game.join('kb1');
+  expect(await species(game)).toBe('dog');
+  expect(await coat()).toBe(3);
+  await page.evaluate(() => (window as any).__silly.useGame.getState().setSpecies(0, 'goat'));
+  expect(await coat()).toBe(3);
+
+  // the whole wardrobe, for a look
+  await earn(game, ['goal', 'strike', 'bell', 'poop', 'toot', 'full', 'flower', 'flush', 'geyser', 'pad', 'cannon', 'volcano', 'seesaw', 'bellyflop', 'giant', 'rocket', 'fire', 'ride']);
+  await game.join('kb2');
+  await game.join('touch');
+  await game.seconds(1);
+  const lineup: [string, number][] = [
+    ['unicorn', 3],
+    ['cow', 3],
+    ['pig', 4],
+    ['cat', 3]
+  ];
+  for (let slot = 0; slot < 3; slot += 1) {
+    const [sp, c] = lineup[slot];
+    await page.evaluate(([s, sp, c]) => {
+      const g = (window as any).__silly.useGame.getState();
+      g.setSpecies(s, sp);
+      g.setCoat(s, c);
+    }, [slot, sp, c] as const);
+    await game.teleport(slot, 10 + slot * 2.2, 1, -6);
+  }
+  await game.seconds(1.5);
+  await game.screenshot('test-results/coats.png');
   game.expectNoErrors();
 });

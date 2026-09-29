@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
-import { favouriteSpecies, rememberSpecies } from './animals';
+import { favouriteCoat, favouriteSpecies, rememberCoat, rememberSpecies } from './animals';
+import { COAT_COUNT } from './coats';
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
@@ -16,6 +17,8 @@ export type PlayerInfo = {
   slot: number;
   source: SourceId;
   species: Species;
+  /** Which of the animal's coats (colours) it wears; see coats.ts. */
+  coat: number;
   hat: HatId;
   color: string;
   joinedAt: number;
@@ -60,6 +63,9 @@ interface GameStore {
   /** Be this animal (and be it again next time). */
   setSpecies: (slot: number, species: Species) => void;
   setPicking: (slot: number, picking: boolean) => void;
+  /** Wear this coat (and wear it again next time on this animal). */
+  setCoat: (slot: number, coat: number) => void;
+  cycleCoat: (slot: number, dir?: number) => void;
   nextHat: (slot: number) => void;
   randomHat: (slot: number) => void;
   setHat: (slot: number, hat: HatId) => void;
@@ -124,10 +130,12 @@ export const useGame = create<GameStore>((set, get) => {
       const used = new Set(state.players.map((p) => p.slot));
       let slot = 0;
       while (used.has(slot)) slot += 1;
+      const species = favouriteSpecies(slot);
       const player: PlayerInfo = {
         slot,
         source,
-        species: favouriteSpecies(slot),
+        species,
+        coat: source === 'bot' ? 0 : favouriteCoat(slot, species),
         hat: 'none',
         color: PLAYER_COLORS[slot],
         joinedAt: Date.now(),
@@ -150,7 +158,7 @@ export const useGame = create<GameStore>((set, get) => {
       const kid = state.players.find((p) => !p.bot);
       const all = unlockedSpecies();
       const species = all.find((s) => s !== kid?.species && s !== 'dog') ?? all[0];
-      set((s) => ({ players: s.players.map((p) => (p.slot === slot ? { ...p, species } : p)) }));
+      set((s) => ({ players: s.players.map((p) => (p.slot === slot ? { ...p, species, coat: 0 } : p)) }));
     },
 
     removeBuddy: () => set((state) => ({ players: state.players.filter((p) => !p.bot) })),
@@ -175,7 +183,21 @@ export const useGame = create<GameStore>((set, get) => {
       const p = get().players.find((x) => x.slot === slot);
       if (!p || p.species === species) return;
       if (!p.bot) rememberSpecies(slot, species);
-      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, species } : x)) }));
+      const coat = p.bot ? 0 : favouriteCoat(slot, species);
+      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, species, coat } : x)) }));
+    },
+
+    setCoat: (slot, coat) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p || p.coat === coat) return;
+      if (!p.bot) rememberCoat(slot, p.species, coat);
+      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, coat } : x)) }));
+    },
+
+    cycleCoat: (slot, dir = 1) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p) return;
+      get().setCoat(slot, (p.coat + dir + COAT_COUNT) % COAT_COUNT);
     },
 
     setPicking: (slot, picking) =>

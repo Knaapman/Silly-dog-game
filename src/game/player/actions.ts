@@ -364,8 +364,8 @@ const PICK_GO: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 
 
 /**
  * Choosing an animal (Select opens the row of faces; joining with a button does too): left /
- * right looks through the animals, and the animal changes as you go; Select shows the next one;
- * any other button goes and plays. True while the faces are up: the animal waits meanwhile.
+ * right looks through the animals, and the animal changes as you go; up / down through its
+ * coats; Select shows the next animal; any other button goes and plays. True while the faces are up: the animal waits meanwhile.
  */
 export function choosing(f: FrameCtx): boolean {
   const { s, input, slot } = f;
@@ -386,8 +386,11 @@ export function choosing(f: FrameCtx): boolean {
     playTap();
     return true;
   }
-  // one step per push of the stick (it has to come back towards the middle to go again)
-  const lean = input.x > 0.6 ? 1 : input.x < -0.6 ? -1 : Math.abs(input.x) < 0.3 ? 0 : s.pickDir;
+  // one step per push of the stick (it has to come back towards the middle to go again):
+  // sideways for the animal (±1), up and down for its coat (±2)
+  const ax = Math.abs(input.x);
+  const az = Math.abs(input.z);
+  const lean = ax > 0.6 && ax >= az ? Math.sign(input.x) : az > 0.6 ? 2 * Math.sign(input.z) : Math.max(ax, az) < 0.3 ? 0 : s.pickDir;
   if (!s.picking) {
     s.picking = true;
     s.pickAge = 0;
@@ -399,7 +402,8 @@ export function choosing(f: FrameCtx): boolean {
   const step = lean !== 0 && lean !== s.pickDir ? lean : input.pressed.species ? 1 : 0;
   s.pickDir = lean;
   if (step) {
-    game.cycleSpecies(slot, step);
+    if (Math.abs(step) === 2) game.cycleCoat(slot, step / 2);
+    else game.cycleSpecies(slot, step);
     s.pickIdle = 0;
   }
   const go = s.pickAge > PICK_GRACE && PICK_GO.some((a) => input.pressed[a]);

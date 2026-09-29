@@ -19,6 +19,7 @@ import {
   SLIDE_TOWER,
   SNACKS,
   SNOWBALLS,
+  SNOWMAN_BUILD,
   SOCCER,
   TOILET,
   TRAMPOLINES,
@@ -109,7 +110,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   chickens: [[CHICKEN_COOP.center[0], CHICKEN_COOP.center[1] - CHICKEN_COOP.size / 2 - 3]],
   bumper: [[BUMPER.center[0], BUMPER.center[1] + BUMPER.size[1] / 2 + 1]],
   trailer: [TRACTOR.home],
-  course: [SKY_COURSE.pad]
+  course: [SKY_COURSE.pad],
+  snowman: [[SNOWMAN_BUILD.center[0] - 2.5, SNOWMAN_BUILD.center[1] + 1.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

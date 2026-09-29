@@ -34,6 +34,7 @@ L.CAT_HOMES.forEach((c, i) => add(`cat home ${i}`, c[0], c[1], 1));
 L.BIRD_SPOTS.forEach((b, i) => add(`bird spot ${i}`, b[0], b[2], b[3], { onPathOk: true, floats: b[1] > 0, slopeOk: true, winter: mountainWeight(b[0], b[2]) === 1 }));
 L.SNOWMEN.forEach((s, i) => add(`snowman ${i}`, s[0], s[1], 0.9, { winter: true }));
 L.SNOWBALLS.forEach((s, i) => add(`snowball ${i}`, s[0], s[2], 0.5, { winter: true }));
+add('snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], 2.2, { winter: true });
 add('ice pond', L.ICE.center[0], L.ICE.center[1], L.ICE.radius, { winter: true });
 add('ski jump', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2], 2.2, { winter: true });
 add('ski jump ramp foot', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2] - 1.6 - 7, 1.2, { winter: true });

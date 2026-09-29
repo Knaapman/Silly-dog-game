@@ -61,6 +61,14 @@ in. The sign by the coop has a dot for each chicken, lit when it's in; all eight
 a while the gate opens and they trot back out to their yard, ready to be rounded up again. It works alone, and it's
 easier with friends coming at them from both sides.
 
+**Build a snowman** ⛄ on the mountain top: there's a blue ring in the snow east of the ice pond, with a see-through
+snowman standing in it to show what to build. Snowballs grow as they roll through the snow (quickest: grab one with
+your tongue and run about with it, or push it along). Roll a big one into the ring and it's the bottom; roll a
+middle-sized one against it and it hops up on top; then a small one for the head. The last one on: coal eyes, a
+carrot nose, a smile, stick arms, a top hat and a scarf, a cheer and a party (and a sticker). A headbutt while it's
+being built only makes it wobble; once it's finished, one headbutt knocks it flying, ready to build another. There
+are three snowballs, so friends can each roll one.
+
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handle and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). The handle slides back up for the next one.
@@ -112,9 +120,12 @@ badge, so colour-blind kids can tell who is who.
 **Choosing your animal.** Joining with a button brings up a row of animal faces in your colour at the bottom of the
 screen: push the stick (or D-pad, or `A`/`D`, or the arrow keys) left or right and your animal changes as you go,
 then press any button to go and play (on a touch screen, tap a face). Animals still to be earned with stickers are dark
-shadows at the end of the row. The row goes away by itself after 10 seconds without a push. Each player number
-remembers its animal on this device, so whoever is usually player two gets their own animal back next time (not the
-goat). To change later: tap Select (`1` / `,`), or tap your badge at the top left.
+shadows at the end of the row. Under the faces are five blobs of paint: every animal comes in five **coats** (its usual
+one, two more from real life, and two silly ones: a blue dog, a black sheep, a purple cow, a night-sky unicorn...).
+Push the stick up or down (or `W`/`S`) to try them on, or tap a blob. The row goes away by itself after 10 seconds
+without a push. Each player number remembers its animal and the coat it wore on each animal on this device, so whoever
+is usually player two gets their own animal back next time (not the goat), in the same colour. To change later: tap
+Select (`1` / `,`), or tap your badge at the top left.
 
 **Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
 and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
@@ -198,7 +209,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
-| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them |
+| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build |
 | 🚜 Farm (south-west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
 | 🍄 Forest (west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
 
@@ -241,11 +252,11 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 62 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 63 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Five stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -324,7 +335,9 @@ src/
     skycourse.ts        how far up the sky course anyone has got (the flags)
     sledding.ts         the furthest sled flight (the golden flag)
     coop.ts             the chicken round-up: which chickens are in the coop
-    animals.ts          each player number's animal, remembered for next time
+    snowman.ts          the snowman being built: its pieces, how big a snowball has to be, where they go
+    animals.ts          each player number's animal (and coat on each animal), remembered for next time
+    coats.ts            the five coats (colours) of every animal
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
     photo.ts            the camera: countdown, photos kept on this device
