@@ -28,6 +28,8 @@ import {
   BRONTO,
   distXZ,
   SKY_COURSE,
+  TRACTOR,
+  ZIPLINE,
   SLED_RUN,
   TREES,
   TUBE_RIDE
@@ -42,7 +44,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer'];
+/** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -98,6 +102,9 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   sheepbounce: TRAMPOLINES.map((t) => [t.position[0], t.position[2]] as P),
   goatbonk: [[SOCCER.kickoff[0], SOCCER.kickoff[2]]],
   moo: [[BOWLING.pins[0][0], BOWLING.pins[0][1] - 3]],
+  tractor: [TRACTOR.home],
+  zipline: [ZIPLINE.from],
+  trailer: [TRACTOR.home],
   course: [SKY_COURSE.pad]
 };
 
@@ -111,7 +118,7 @@ const BIRD_STICKERS: StickerId[] = ['birds', 'birdbonk'];
 /** Is there somewhere to go for this sticker (right now)? */
 export function hasGuide(id: StickerId) {
   // friends: lead to the nearest friend (the see-saw has a place of its own)
-  const toFriend = FRIEND_STICKERS.includes(id) && id !== 'seesaw';
+  const toFriend = FRIEND_STICKERS.includes(id) && !FRIEND_PLACES.includes(id);
   return toFriend || id === 'star' || id === 'allstars' || TREASURE_STICKERS.includes(id) || CAT_STICKERS.includes(id) || BIRD_STICKERS.includes(id) || !!PLACES[id];
 }
 
@@ -132,7 +139,7 @@ const nearest = (from: THREE.Vector3, places: P[], out: THREE.Vector3) => {
  * nearest friend, the nearest star still to find. Returns false when there's nowhere to go.
  */
 export function guideTarget(id: StickerId, from: THREE.Vector3, fromSlot: number, out: THREE.Vector3) {
-  if (FRIEND_STICKERS.includes(id) && id !== 'seesaw') {
+  if (FRIEND_STICKERS.includes(id) && !FRIEND_PLACES.includes(id)) {
     let best = Infinity;
     players.forEach((p) => {
       if (p.slot === fromSlot || p.asleep) return;

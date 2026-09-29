@@ -173,6 +173,12 @@ export const SNOW_HILL = { center: at(Z.winter, -10, -3), radius: 8, height: 4 }
 export const SKI_JUMP = { base: at3(Z.winter, 18, WINTER.level, 2), height: 4.5 };
 export const ICE = { center: at(Z.winter, 0, 6), radius: 4.5 };
 export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.winter, 21, -6), at(Z.winter, -14, 8)];
+/**
+ * The zipline: from a platform on the south rim of the mountain top, right over the park, down
+ * to a pole in the lagoon. `platform`: how high the platform stands; `cable`: the cable's height
+ * above the platform. The end is `endHeight` above the water, so you drop in with a splash.
+ */
+export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, to: [-4, 38] as Vec2, endHeight: 4 };
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
 export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7)];
@@ -184,11 +190,12 @@ export const BARN = { center: at(Z.farm, -7, -7), width: 10, depth: 8, wallHeigh
 export const SILO = { center: at(Z.farm, -11.5, 4), radius: 2.2, height: 9 };
 export const WINDMILL = { position: at3(Z.farm, -11, 0, 15) };
 export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
+/** The farm tractor (and its trailer): parked east of the barn, facing the way out (+x). */
+export const TRACTOR = { home: at(Z.farm, 6, -0.5), yaw: Math.PI / 2 };
 export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
 export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
 /** The melon field, out on the grass west of the silo (clear of the railway embankment on the farm's east side). */
 export const MELON_PATCH: Vec2[] = [at(Z.farm, -20, -3), at(Z.farm, -17.5, -3), at(Z.farm, -15, -3), at(Z.farm, -20, -0.5), at(Z.farm, -17.5, -0.5), at(Z.farm, -15, -0.5)];
-export const TRACTOR = at3(Z.farm, -3, 0, -17);
 export const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [
   { kind: 'hay', position: at3(Z.farm, -0.5, 0.62, -12.5), rotation: [0, 0, Math.PI / 2] },
   { kind: 'hay', position: at3(Z.farm, -2.9, 0.62, -12.8), rotation: [0, 0.3, Math.PI / 2] },

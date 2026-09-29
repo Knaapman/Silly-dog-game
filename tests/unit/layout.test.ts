@@ -65,7 +65,10 @@ add('barn', L.BARN.center[0], L.BARN.center[1], 4);
 add('silo', L.SILO.center[0], L.SILO.center[1], L.SILO.radius + 0.2);
 add('windmill', L.WINDMILL.position[0], L.WINDMILL.position[2], 2);
 add('mud', L.MUD.center[0], L.MUD.center[1], L.MUD.radius);
-add('tractor', L.TRACTOR[0], L.TRACTOR[2], 2);
+// the tractor where it's parked, and its trailer behind it
+add('tractor', L.TRACTOR.home[0], L.TRACTOR.home[1], 1.8);
+add('zipline platform', L.ZIPLINE.from[0], L.ZIPLINE.from[1], 2.1, { winter: true });
+add('trailer', L.TRACTOR.home[0] - Math.sin(L.TRACTOR.yaw) * 3.6, L.TRACTOR.home[1] - Math.cos(L.TRACTOR.yaw) * 3.6, 1.7);
 L.FARM_PROPS.forEach((p, i) => add(`farm prop ${i} (${p.kind})`, p.position[0], p.position[2], 0.8));
 L.MELON_PATCH.forEach((m, i) => add(`melon ${i}`, m[0], m[1], 0.7));
 L.LAMP_POSTS.forEach((p, i) => add(`lamp post ${i}`, p[0], p[1], 0.3));

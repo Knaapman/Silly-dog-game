@@ -87,7 +87,11 @@ export const STICKERS = [
   // challenges: the sky course, and the sled run's hoops and far landings
   { id: 'course', icon: '☁️', badge: '🔔', color: CHALLENGE },
   { id: 'hoops', icon: '🛷', badge: '⭐', color: CHALLENGE },
-  { id: 'farfly', icon: '🛷', badge: '🚩', color: CHALLENGE }
+  { id: 'farfly', icon: '🛷', badge: '🚩', color: CHALLENGE },
+  // things to drive and ride
+  { id: 'tractor', icon: '🚜', color: CHALLENGE },
+  { id: 'trailer', icon: '🚜', badge: '👫', color: CHALLENGE },
+  { id: 'zipline', icon: '🚡', color: CHALLENGE }
 ] as const satisfies readonly Sticker[];
 
 export type StickerId = (typeof STICKERS)[number]['id'];

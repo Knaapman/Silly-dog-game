@@ -1,6 +1,7 @@
 import { Birds } from './world/Birds';
 import { Landmarks } from './world/Landmarks';
 import { Sleds, TubeRide } from './world/Rides';
+import { Zipline } from './world/Zipline';
 import { Cats } from './world/Cats';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Physics, useRapier } from '@react-three/rapier';
@@ -371,6 +372,7 @@ export function Scene() {
         <Landmarks />
         <TubeRide />
         <Sleds />
+        <Zipline />
         <Hub />
         <Carnival />
         <SkyCourse />

@@ -4,12 +4,13 @@ import * as THREE from 'three';
 import { playSpin, playWhoosh } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit } from '../fx';
-import { BARN, FARM_PROPS, LAUNCH_PADS, MELON_PATCH, MUD, PASTURE, SILO, TRACTOR, WINDMILL, type Vec3 } from '../layout';
+import { Tractor } from './Tractor';
+import { BARN, FARM_PROPS, LAUNCH_PADS, MELON_PATCH, MUD, PASTURE, SILO, WINDMILL, type Vec3 } from '../layout';
 import { barnTexture, lambert } from '../materials';
 import { registerStatic, shakeCamera } from '../runtime';
 import { useGame } from '../store';
 import { Chickens } from './Chickens';
-import { StaticBox, useHint } from './common';
+import { useHint } from './common';
 import { Cows } from './Critters';
 import { LaunchPad } from './Launchers';
 import { Prop } from './Prop';
@@ -237,26 +238,6 @@ function Fence() {
   );
 }
 
-function Tractor({ position }: { position: Vec3 }) {
-  return (
-    <group position={position} rotation={[0, 0.6, 0]}>
-      <StaticBox position={[0, 1.1, 0]} size={[1.6, 1.0, 2.6]} color="#e53935" />
-      <StaticBox position={[0, 2.0, -0.5]} size={[1.4, 1.0, 1.2]} color="#e53935" />
-      <mesh position={[0, 2.2, -0.5]} material={lambert('#bde0ff')}>
-        <boxGeometry args={[1.42, 0.5, 1.0]} />
-      </mesh>
-      {[[-0.95, 0.9, -0.7, 0.9], [0.95, 0.9, -0.7, 0.9], [-0.9, 0.55, 1.0, 0.55], [0.9, 0.55, 1.0, 0.55]].map(([x, y, z, r], i) => (
-        <mesh key={i} castShadow position={[x, y, z]} rotation={[0, 0, Math.PI / 2]} material={lambert('#263238')}>
-          <cylinderGeometry args={[r, r, 0.4, 16]} />
-        </mesh>
-      ))}
-      <mesh position={[0.4, 2.2, 0.9]} material={lambert('#37474f')}>
-        <cylinderGeometry args={[0.08, 0.08, 1, 8]} />
-      </mesh>
-    </group>
-  );
-}
-
 function MelonPatch() {
   return (
     <group>
@@ -287,7 +268,7 @@ export function Farm() {
       <Cows />
       <Chickens />
       <MelonPatch />
-      <Tractor position={TRACTOR} />
+      <Tractor />
       <LaunchPad pad={LAUNCH_PADS[0]} />
       {FARM_PROPS.map((p, i) => (
         <Prop key={i} kind={p.kind} position={p.position} rotation={p.rotation} color={p.color} />

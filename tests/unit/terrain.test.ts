@@ -36,7 +36,6 @@ describe('terrain', () => {
       ['picnic', L.PICNIC.center[0], L.PICNIC.center[1]],
       ['crate tower', L.CRATE_TOWER.base[0], L.CRATE_TOWER.base[2]],
       ['high striker', L.HIGH_STRIKER.position[0], L.HIGH_STRIKER.position[2]],
-      ['tractor', L.TRACTOR[0], L.TRACTOR[2]],
       ['fallen log', L.FALLEN_LOG[0], L.FALLEN_LOG[2]],
       ['gangplank foot', L.SHIP.center[0], L.SHIP.center[1] - L.SHIP.width / 2 - 6],
       ['footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z],

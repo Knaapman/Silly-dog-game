@@ -831,6 +831,26 @@ export function playChuff(position?: AudioPosition) {
   v.finish();
 }
 
+/** The tractor's horn: "meep meep". */
+export function playHonk(position?: AudioPosition) {
+  const v = voice('action', { position });
+  if (!v) return;
+  for (let i = 0; i < 2; i += 1) {
+    v.tone({ type: 'square', from: 440, at: i * 0.2, dur: 0.15, gain: 0.08, filter: { type: 'lowpass', freq: 1800 } });
+    v.tone({ type: 'square', from: 554, at: i * 0.2, dur: 0.15, gain: 0.06, filter: { type: 'lowpass', freq: 1800 } });
+  }
+  v.finish();
+}
+
+/** One "putt" of the tractor's engine (played faster the faster it goes). */
+export function playPutt(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 0.6 });
+  if (!v) return;
+  v.tone({ type: 'square', from: 70, to: 55, dur: 0.07, gain: 0.07, filter: { type: 'lowpass', freq: 400 } });
+  v.noise({ dur: 0.05, gain: 0.03, filter: { type: 'lowpass', freq: 600 } });
+  v.finish();
+}
+
 export function playBell(position?: AudioPosition) {
   const v = voice('reward', { position });
   if (!v) return;

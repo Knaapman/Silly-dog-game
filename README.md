@@ -44,6 +44,17 @@ fly, and a jump right at the top of the hill sends you further still. Where you 
 lines in the grass, and a golden flag with a star marks the furthest flight ever (remembered on this device). A new
 record: a cheer and a party. Past the red line: a sticker.
 
+**The tractor** 🚜 is parked at the farm, with a trailer. Walk up to its seat to drive: push the stick where you want
+to go and it turns and trundles that way (put-put, puffs from the chimney). Friends climb in the trailer and get
+bumped along (or jump out). It shoves balls, crates and bowling pins out of the way, bumps any animal in front of it
+with a boing, scatters the cats, and stops dead at walls, trees, hedges and the water's edge (it never drives
+through anything). The noise button is the horn; jump to hop out. Left somewhere, it trundles home by itself after a
+while (well: it pops back).
+
+**The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
+handle and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
+the lagoon with a splash. Jump to let go sooner (wherever you are!). The handle slides back up for the next one.
+
 **The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
 tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
 that slides to and fro, a pink bouncy cloud that throws you up to a cloud, three wobbly planks hanging from balloons,
@@ -220,13 +231,14 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 57 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 60 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
-  bell on top of the sky course, all three sled hoops in one run, flying past the red line...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
+  friend in the trailer, the zipline...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
-  counts, except for the three-animal tower.
+  remembered on this device. Five stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  counts, except for the three-animal tower and riding in the tractor's trailer.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
@@ -328,6 +340,8 @@ src/
       Landmarks.tsx     the mesa with the train tunnel, the footbridges, the river crossings, boulders, the summit flag
       Rides.tsx         river tubing (rings on a course down the river), the sleds down the mountain, their star hoops and landing field
       SkyCourse.tsx     the sky course: stumps, platforms, spinning disc, slider, bouncy cloud, planks, flags, bell, pads
+      Tractor.tsx       the farm tractor and its trailer (driven with the stick; checks it never ends up inside anything)
+      Zipline.tsx       the zipline from the mountain top to the lagoon
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
