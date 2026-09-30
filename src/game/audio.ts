@@ -831,6 +831,26 @@ export function playChuff(position?: AudioPosition) {
   v.finish();
 }
 
+/** The tractor's horn: "meep meep". */
+export function playHonk(position?: AudioPosition) {
+  const v = voice('action', { position });
+  if (!v) return;
+  for (let i = 0; i < 2; i += 1) {
+    v.tone({ type: 'square', from: 440, at: i * 0.2, dur: 0.15, gain: 0.08, filter: { type: 'lowpass', freq: 1800 } });
+    v.tone({ type: 'square', from: 554, at: i * 0.2, dur: 0.15, gain: 0.06, filter: { type: 'lowpass', freq: 1800 } });
+  }
+  v.finish();
+}
+
+/** One "putt" of the tractor's engine (played faster the faster it goes). */
+export function playPutt(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 0.6 });
+  if (!v) return;
+  v.tone({ type: 'square', from: 70, to: 55, dur: 0.07, gain: 0.07, filter: { type: 'lowpass', freq: 400 } });
+  v.noise({ dur: 0.05, gain: 0.03, filter: { type: 'lowpass', freq: 600 } });
+  v.finish();
+}
+
 export function playBell(position?: AudioPosition) {
   const v = voice('reward', { position });
   if (!v) return;
@@ -861,6 +881,15 @@ export function playCheep(position?: AudioPosition) {
   const f = rand(1500, 2100);
   v.tone({ from: f, to: f * 1.35, dur: 0.08, gain: 0.07 });
   v.tone({ from: f * 1.1, to: f * 0.8, at: 0.1, dur: 0.1, gain: 0.06 });
+  v.finish();
+}
+
+/** A hidden treasure nearby: a little glassy "ting" (higher the closer you are). */
+export function playTwinkle(position?: AudioPosition, pitch = 1) {
+  const v = voice('world', { position, gain: 0.9 });
+  if (!v) return;
+  v.tone({ type: 'triangle', from: 1760 * pitch, dur: 0.22, gain: 0.07 });
+  v.tone({ type: 'sine', from: 2637 * pitch, at: 0.06, dur: 0.28, gain: 0.05 });
   v.finish();
 }
 

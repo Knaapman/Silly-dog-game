@@ -10,6 +10,7 @@ import { useGame } from '../store';
 import { startFlip, type FrameCtx } from './frame';
 import type { Flip } from './state';
 import { lerpAngle } from './physics';
+import { glide, jumpsOf, rainbowJump, TRICK, woolBounce } from './tricks';
 
 /** Walking, sliding, swimming, jumping and bouncing; or, while flopped / held / riding, not. */
 export function movement(f: FrameCtx) {
@@ -30,8 +31,8 @@ export function movement(f: FrameCtx) {
 
   const prefs = settings();
   let speed: number = MOVE.speed;
-  if (s.swimming) speed = MOVE.swimSpeed;
-  else if (s.inMud) speed = MOVE.mudSpeed;
+  if (s.swimming) speed = f.species === 'duck' ? TRICK.duckSwim : MOVE.swimSpeed;
+  else if (s.inMud) speed = f.species === 'pig' ? TRICK.pigMud : MOVE.mudSpeed;
   speed *= SPEED_FACTOR[prefs.speed];
   if (f.heavyDrag) speed *= 0.72;
   if (s.power === 'giant') speed *= 1.2;
@@ -41,14 +42,15 @@ export function movement(f: FrameCtx) {
   const mag = Math.hypot(input.x, input.z);
   const pv = s.platformVel;
   if (controlling) {
-    const accel = s.grounded || s.swimming ? (surface?.slippery ?? MOVE.groundAccel) : MOVE.airAccel;
+    const accel = s.grounded || s.swimming ? (surface?.slippery ?? MOVE.groundAccel) : s.gliding ? TRICK.glideAccel : MOVE.airAccel;
     const k = 1 - Math.exp(-accel * dt);
     v.x += (input.x * speed + pv.x - v.x) * k;
     v.z += (input.z * speed + pv.z - v.z) * k;
     if (mag > 0.15 && s.bonkTime <= 0) s.targetFacing = Math.atan2(input.x, input.z);
   }
-  // Stick to rides going up and down.
-  if (s.grounded && surface?.velocityAt && s.jumpBuffer <= 0) v.y = pv.y - 0.3;
+  // Stick to rides going up and down (but not in the frame a launch throws you off one: the
+  // launch's upward speed would be replaced by the ride's, and you'd flop off the side).
+  if (s.grounded && surface?.velocityAt && s.jumpBuffer <= 0 && s.launched <= 0) v.y = pv.y - 0.3;
   if (s.dashTime > 0) {
     v.x = tmp.fwd.x * MOVE.bonkDashSpeed + pv.x;
     v.z = tmp.fwd.z * MOVE.bonkDashSpeed + pv.z;
@@ -111,6 +113,8 @@ export function movement(f: FrameCtx) {
     useGame.getState().addParty(PARTY_POINTS.bounce);
   }
 
+  woolBounce(f);
+
   if (s.jumpBuffer > 0 && s.stunned <= 0) {
     if (s.coyote > 0) {
       v.y = (s.swimming ? 8 : MOVE.jumpVelocity * (s.power === 'giant' ? 1.3 : 1)) + Math.max(0, pv.y);
@@ -124,6 +128,10 @@ export function movement(f: FrameCtx) {
         playSplash(s.pos, false);
         emit('drop', [t.x, s.groundY + 0.5, t.z], { count: 12, color: ['#7fd3ff', '#ffffff'], speed: 3, up: 5 });
       } else emit('puff', [t.x, s.groundY + 0.1, t.z], { count: 5, color: '#f5f0e6', speed: 2, up: 0.5, size: 0.25 });
+    } else if (s.jumps === 2 && jumpsOf(f) > 2 && s.airTime > 0.05) {
+      s.jumpBuffer = 0;
+      s.jumpedAt = gameNow();
+      rainbowJump(f);
     } else if (s.jumps < 2 && s.airTime > 0.05) {
       v.y = MOVE.doubleJumpVelocity * (s.power === 'giant' ? 1.3 : 1);
       s.jumps = 2;
@@ -135,6 +143,8 @@ export function movement(f: FrameCtx) {
       emit('star', [t.x, t.y - 0.3, t.z], { count: 4, color: ['#ffffff', '#ffe14d'], speed: 2.5, up: -1 });
     }
   }
+
+  glide(f, controlling);
 
   // Sticky feet: standing still on a slope (hill, roof, volcano) shouldn't creep downhill.
   // Static ground: switch gravity off. Moving things (see-saw, crates) need your weight,

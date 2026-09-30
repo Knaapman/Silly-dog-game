@@ -16,6 +16,9 @@ const PARK = '#f59e0b';
 const MORE = '#14b8a6';
 const SURPRISE = '#ec4899';
 const CHASE = '#ef4444';
+const TRICKS = '#65a30d';
+const TREASURE = '#f97316';
+const CHALLENGE = '#0ea5e9';
 
 export const STICKERS = [
   // the chase
@@ -60,13 +63,38 @@ export const STICKERS = [
   { id: 'hat', icon: '🎩', color: MORE },
   { id: 'swim', icon: '🏊', color: MORE },
   { id: 'roar', icon: '🦖', color: MORE },
+  { id: 'tube', icon: '🛟', color: MORE },
+  { id: 'sled', icon: '🛷', color: MORE },
   // surprises, and a few more things to find
   { id: 'chicken', icon: '🐔', badge: '✨', color: SURPRISE },
   { id: 'present', icon: '🎁', color: SURPRISE },
   { id: 'puddle', icon: '☔', color: SURPRISE },
   { id: 'rainbow', icon: '🌈', color: SURPRISE },
   { id: 'snowball', icon: '⛄', color: SURPRISE },
-  { id: 'windmill', icon: '🌬️', color: SURPRISE }
+  { id: 'windmill', icon: '🌬️', color: SURPRISE },
+  // every animal's own trick
+  { id: 'sniff', icon: '🐶', badge: '👃', color: TRICKS },
+  { id: 'goatbonk', icon: '🐐', badge: '💥', color: TRICKS },
+  { id: 'pigfart', icon: '🐷', badge: '💨', color: TRICKS },
+  { id: 'sheepbounce', icon: '🐑', badge: '🦘', color: TRICKS },
+  { id: 'climb', icon: '🐱', badge: '🌳', color: TRICKS },
+  { id: 'glide', icon: '🦆', badge: '🪂', color: TRICKS },
+  { id: 'moo', icon: '🐮', badge: '📢', color: TRICKS },
+  { id: 'unijump', icon: '🦄', badge: '🌈', color: TRICKS },
+  // the treasure hunt
+  { id: 'treasure', icon: '💎', color: TREASURE },
+  { id: 'hunt', icon: '💎', badge: '🌟', color: TREASURE },
+  // challenges: the sky course, and the sled run's hoops and far landings
+  { id: 'course', icon: '☁️', badge: '🔔', color: CHALLENGE },
+  { id: 'hoops', icon: '🛷', badge: '⭐', color: CHALLENGE },
+  { id: 'farfly', icon: '🛷', badge: '🚩', color: CHALLENGE },
+  // things to drive and ride
+  { id: 'tractor', icon: '🚜', color: CHALLENGE },
+  { id: 'trailer', icon: '🚜', badge: '👫', color: CHALLENGE },
+  { id: 'zipline', icon: '🚡', color: CHALLENGE },
+  { id: 'bumper', icon: '🚗', badge: '💥', color: CHALLENGE },
+  { id: 'chickens', icon: '🐔', badge: '🏠', color: CHALLENGE },
+  { id: 'snowman', icon: '⛄', badge: '🥕', color: CHALLENGE }
 ] as const satisfies readonly Sticker[];
 
 export type StickerId = (typeof STICKERS)[number]['id'];

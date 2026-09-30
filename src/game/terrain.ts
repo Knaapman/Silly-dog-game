@@ -1,4 +1,7 @@
 import { WORLD_HALF_X, WORLD_HALF_Z } from './config';
+import { LIFTS, trackAt, trackDist, trackHeight, trackNearest, wrapS } from './track';
+
+export { trackDist };
 import {
   BALLOONS,
   BIRD_SPOTS,
@@ -17,6 +20,7 @@ import {
   LAKE,
   LAUNCH_PADS,
   LAWN,
+  MELON_PATCH,
   MESA,
   MOUNTAIN,
   MOUNTAIN_PATH_GRADE,
@@ -33,10 +37,14 @@ import {
   SIGNS,
   SNACKS,
   SNOW_HILL,
+  TRACK_LIFTS,
   SOCCER,
   STALLS,
   TRAIN,
   TREX,
+  CHICKEN_COOP,
+  BUMPER,
+  TUBE_RIDE,
   UMBRELLAS,
   WATER_LEVEL,
   WINTER,
@@ -57,6 +65,9 @@ import {
 export const TERRAIN = { minX: -(WORLD_HALF_X + 4), maxX: WORLD_HALF_X + 4, minZ: -(WORLD_HALF_Z + 24), maxZ: WORLD_HALF_Z + 4, cell: 0.5 };
 /** How far a flat's edge blends out into the ground around it. */
 const BLEND = 3.5;
+/** Half the width of the level top of a railway embankment. */
+const LIFT_TOP = 2.2;
+const liftTmp = { d: 0, s: 0 };
 
 type Extra = { level?: number; levelB?: number; blend?: number; linear?: boolean };
 export type Flat = Extra & (
@@ -65,6 +76,7 @@ export type Flat = Extra & (
   | { kind: 'track'; r: number }
   | { kind: 'sea' }
   | { kind: 'river' }
+  | { kind: 'lift'; lift: number }
 );
 
 /** Distance from a point to a segment, and how far along it the nearest point is (0..1). */
@@ -77,18 +89,6 @@ function segNear(x: number, z: number, a: Vec2, b: Vec2, out: { d: number; t: nu
   return out;
 }
 const near = { d: 0, t: 0 };
-
-/** Distance from a point to the train track centre line (a rounded rectangle round `TRAIN.center`). */
-export function trackDist(x: number, z: number) {
-  const R = TRAIN.cornerRadius;
-  const CX = TRAIN.halfX - R;
-  const CZ = TRAIN.halfZ - R;
-  const ax = Math.abs(x - TRAIN.center[0]);
-  const az = Math.abs(z - TRAIN.center[1]);
-  if (ax <= CX) return Math.abs(az - TRAIN.halfZ);
-  if (az <= CZ) return Math.abs(ax - TRAIN.halfX);
-  return Math.abs(Math.hypot(ax - CX, az - CZ) - R);
-}
 
 function smoothstep(t: number) {
   const k = Math.min(1, Math.max(0, t));
@@ -132,6 +132,19 @@ function boxOf(f: Flat): Box {
       b.z0 = Math.min(b.z0, p[1] - m);
       b.z1 = Math.max(b.z1, p[1] + m);
     }
+  } else if (f.kind === 'lift') {
+    // the stretch of track this lift covers, ramps included
+    const lift = LIFTS[f.lift];
+    const m = LIFT_TOP + e;
+    const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    b = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+    for (let s = lift.sFrom - TRACK_LIFTS.ramp; s <= lift.sFrom + lift.span + TRACK_LIFTS.ramp; s += 1) {
+      trackAt(s, p);
+      b.x0 = Math.min(b.x0, p.x - m);
+      b.x1 = Math.max(b.x1, p.x + m);
+      b.z0 = Math.min(b.z0, p.z - m);
+      b.z1 = Math.max(b.z1, p.z + m);
+    }
   } else b = { x0: -Infinity, x1: Infinity, z0: SEA.coast - e, z1: Infinity };
   boxes.set(f, b);
   return b;
@@ -147,10 +160,22 @@ function weight(f: Flat, x: number, z: number) {
   else if (f.kind === 'seg') d = segNear(x, z, f.a, f.b, near).d - f.r;
   else if (f.kind === 'track') d = trackDist(x, z) - f.r;
   else if (f.kind === 'river') d = riverAt(x, z, riverTmp).d - RIVER_HALF_WIDTH;
+  else if (f.kind === 'lift') d = trackNearest(x, z, liftTmp).d - LIFT_TOP;
   else d = SEA.coast - z;
   if (d >= blend) return 0;
-  if (d <= 0) return 1;
-  return f.linear ? 1 - eased(d / blend) : 1 - smoothstep(d / blend);
+  // an embankment carries only the ramps up to a bridge: where the bridge's level deck begins it
+  // ends in a short, steep abutment (the deck, on posts, spans the rest)
+  const taper = f.kind === 'lift' ? abutment(f.lift, liftTmp.s) : 1;
+  if (d <= 0) return taper;
+  return taper * (f.linear ? 1 - eased(d / blend) : 1 - smoothstep(d / blend));
+}
+
+/** 1 along a lift's ramps, dropping to 0 within a few metres of where its level deck begins. */
+function abutment(lift: number, s: number) {
+  const l = LIFTS[lift];
+  const u = wrapS(s - l.sFrom);
+  if (u > l.span) return 1;
+  return 1 - smoothstep(Math.min(u, l.span - u) / 2.5);
 }
 
 /**
@@ -180,6 +205,9 @@ export const FLATS: Flat[] = [
   ...FLOOR_PATCHES.filter((p) => p.kind !== 'sand').map((p) => disc(p.center, p.radius + 1, { level: p.kind === 'snow' ? WINTER.level : 0 })),
   disc(PLAZA.center, PLAZA.radius + 1),
   disc(LAWN.center, LAWN.radius),
+  // the river tubes' jetty and the bank they tip you out on
+  disc([TUBE_RIDE.jettyFrom + 1, TUBE_RIDE.jettyZ], 2.5),
+  disc(TUBE_RIDE.landing, 2.5),
   ...PATHS.map(([a, b]) => seg(a, b, PATH_WIDTH / 2 + 1)),
   { kind: 'track', r: 4 },
   disc(MESA.center, 11),
@@ -191,6 +219,8 @@ export const FLATS: Flat[] = [
   seg([FOOTBRIDGE.rampFrom + 2, FOOTBRIDGE.z], [FOOTBRIDGE.deckTo, FOOTBRIDGE.z], 4),
   disc(ICE.center, ICE.radius + 0.5, { level: WINTER.level }),
   seg(MOUNTAIN_PATH_GRADE.from, MOUNTAIN_PATH_GRADE.to, PATH_WIDTH / 2 + 0.8, { level: 0, levelB: MOUNTAIN.level }),
+  // the embankments carrying the track up the ramps to its bridges over the water
+  ...LIFTS.map((_, lift) => ({ kind: 'lift' as const, lift, blend: 4 })),
   // the water
   disc(LAKE.center, LAKE.radius, { level: LAKE.floor, blend: 4 }),
   { kind: 'sea', level: SEA.floor, blend: SEA.shore },
@@ -207,13 +237,16 @@ export const FLATS: Flat[] = [
   seg([BOWLING.laneX, BOWLING.laneFrom], [BOWLING.laneX, BOWLING.laneTo], 4),
   disc(SOCCER.field.center, Math.hypot(...SOCCER.field.size) / 2 + 1),
   disc(PICNIC.center, 4),
+  disc([(MELON_PATCH[0][0] + MELON_PATCH[5][0]) / 2, (MELON_PATCH[0][1] + MELON_PATCH[5][1]) / 2], 3.5),
   disc([TREX.position[0], TREX.position[2]], 7),
   ...STALLS.map((s) => disc([s.position[0], s.position[2]], 3.5)),
   ...BUNTING_POLES.map((b) => disc(b, 1.5)),
   ...CONES.map((c) => disc([c[0], c[2]], 1.5)),
   ...SANDCASTLES.map((c) => disc(c, 2.5)),
   ...UMBRELLAS.map((u) => disc([u.position[0], u.position[2]], 2)),
-  disc([SHIP.center[0], SHIP.center[1] - SHIP.width / 2 - 6], 2.5)
+  disc([SHIP.center[0], SHIP.center[1] - SHIP.width / 2 - 6], 2.5),
+  disc(CHICKEN_COOP.center, (CHICKEN_COOP.size / 2) * Math.SQRT2 + 0.2, { blend: 1.5 }),
+  disc(BUMPER.center, Math.hypot(...BUMPER.size) / 2 + 1)
 ];
 
 /** Round bumps on top of everything: the hills, and the summit on the mountain's top. */
@@ -231,7 +264,7 @@ export function groundHeight(x: number, z: number) {
   for (const f of FLATS) {
     const w = weight(f, x, z);
     if (w <= 0) continue;
-    const level = f.kind === 'river' ? riverTmp.level : f.levelB != null && f.kind === 'seg' ? (f.level ?? 0) + (f.levelB - (f.level ?? 0)) * near.t : (f.level ?? 0);
+    const level = f.kind === 'lift' ? trackHeight(liftTmp.s) : f.kind === 'river' ? riverTmp.level : f.levelB != null && f.kind === 'seg' ? (f.level ?? 0) + (f.levelB - (f.level ?? 0)) * near.t : (f.level ?? 0);
     h += (level - h) * w;
   }
   for (const b of BUMPS) {

@@ -11,8 +11,10 @@ import { gameNow } from '../game/clock';
 import { useProgress } from '../game/progress';
 import { PHOTO_BEEPS, usePhotos } from '../game/photo';
 import { useStickers } from '../game/stickers';
+import { TREASURE_COLORS, useHunt } from '../game/hunt';
 import { EVENT_ICON, RAINBOW_TIME, useEvents } from '../game/world/Events';
 import { AlbumIcon, GuideBadge, StickerPop } from './Stickers';
+import { AnimalPickers } from './AnimalPicker';
 
 const HAT_EMOJI: Partial<Record<HatId, string>> = {
   party: '🥳',
@@ -42,7 +44,7 @@ function useNow(intervalMs: number) {
 
 function PlayerBadges() {
   const players = useGame((s) => s.players);
-  const cycleSpecies = useGame((s) => s.cycleSpecies);
+  const setPicking = useGame((s) => s.setPicking);
   const [padCount, setPadCount] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setPadCount(getConnectedPads().length), 1000);
@@ -72,12 +74,13 @@ function PlayerBadges() {
           <button
             key={slot}
             onClick={() => {
-              cycleSpecies(slot);
+              setPicking(slot, !p.picking);
               playTap();
             }}
             className="relative flex h-12 w-12 items-center justify-center rounded-full border-4 bg-white shadow-lg sm:h-14 sm:w-14 transition-transform active:scale-90"
             style={{ borderColor: p.color, boxShadow: `0 4px 0 ${p.color}` }}
-            title="Change animal"
+            title="Choose your animal"
+            data-testid={`player-badge-${slot}`}
           >
             <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
@@ -156,6 +159,30 @@ function CatSlots() {
   );
 }
 
+/** The treasure hunt: a gem lights up for each one found. All five: a cheer, and five new ones get hidden. */
+function TreasureSlots() {
+  const found = useHunt((s) => s.found);
+  const lastFoundAt = useHunt((s) => s.lastFoundAt);
+  const roundDoneAt = useHunt((s) => s.roundDoneAt);
+  const now = useNow(300);
+  const fresh = now - lastFoundAt < 1200;
+  const cheering = now - roundDoneAt < 4000;
+  return (
+    <div className="flex gap-1 rounded-full bg-slate-900/25 px-2 py-1" data-testid="treasure-slots">
+      {found.map((got, i) => (
+        <span
+          key={i}
+          className={`emoji flex h-7 w-7 items-center justify-center rounded-full border-2 text-base leading-none ${got ? 'border-white' : 'border-white/30'} ${cheering ? 'animate-wiggle' : fresh && got ? 'animate-pop' : ''}`}
+          style={{ background: got ? TREASURE_COLORS[i] : 'rgba(255,255,255,0.12)', filter: got ? undefined : 'grayscale(1)', opacity: got ? 1 : 0.55 }}
+          data-got={got}
+        >
+          💎
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
   const audio = useAudioState();
   return (
@@ -167,7 +194,10 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
         <div className="order-3 flex w-full flex-col items-center gap-2 md:order-2 md:w-auto">
           <PartyMeter />
           <StarSlots />
-          <CatSlots />
+          <div className="flex flex-wrap justify-center gap-2">
+            <CatSlots />
+            <TreasureSlots />
+          </div>
           <div className="flex items-center gap-3">
             <EventBadge />
             <GuideBadge />
@@ -214,6 +244,7 @@ export function Hud({ onOpenMenu }: { onOpenMenu: () => void }) {
           </button>
         </div>
       </div>
+      <AnimalPickers />
       <RainbowSky />
       <PartyFlash />
       <UnlockFlash />

@@ -1,4 +1,5 @@
 import {
+  ConvexHullCollider,
   CuboidCollider,
   CylinderCollider,
   RigidBody,
@@ -6,6 +7,7 @@ import {
 } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { ConvexGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 import type { Vec2, Vec3 } from '../layout';
 import { lambert } from '../materials';
 import { registerHint, type Hint, type Surface } from '../runtime';
@@ -98,7 +100,8 @@ export function Ramp({
   railHeight = 0.55,
   thickness = 0.3,
   surface,
-  friction
+  friction,
+  solid
 }: {
   from: Vec3;
   to: Vec3;
@@ -110,6 +113,11 @@ export function Ramp({
   surface?: Surface;
   /** A slide is frictionless (0): a ball with grip starts rolling, and rolling is damped, so it would crawl. */
   friction?: number;
+  /**
+   * Fill the space under it down into the ground, so nothing can wander in underneath and get
+   * wedged where the ramp comes down to meet the ground.
+   */
+  solid?: string;
 }) {
   const col = useRef<RapierCollider>(null);
   useSurface(col, surface ?? EMPTY_SURFACE);
@@ -126,8 +134,32 @@ export function Ramp({
     const c = a.clone().add(b).multiplyScalar(0.5).addScaledVector(normal, -thickness / 2);
     return { center: c, quaternion: q, length: len };
   }, [from, to, thickness]);
+  const base = useMemo(() => {
+    if (!solid) return null;
+    const dx = to[0] - from[0];
+    const dz = to[2] - from[2];
+    const flat = Math.hypot(dx, dz) || 1;
+    const sx = (-dz / flat) * (width / 2 - 0.05);
+    const sz = (dx / flat) * (width / 2 - 0.05);
+    const bottom = Math.min(from[1], to[1]) - 0.8;
+    const pts: THREE.Vector3[] = [];
+    for (const [x, y, z] of [from, to])
+      for (const side of [-1, 1]) {
+        pts.push(new THREE.Vector3(x + sx * side, y - thickness - 0.02, z + sz * side));
+        pts.push(new THREE.Vector3(x + sx * side, bottom, z + sz * side));
+      }
+    const geometry = new ConvexGeometry(pts);
+    return { geometry, vertices: new Float32Array(pts.flatMap((p) => [p.x, p.y, p.z])) };
+  }, [solid, from, to, width, thickness]);
 
   return (
+    <>
+    {base && (
+      <RigidBody type="fixed" colliders={false}>
+        <ConvexHullCollider args={[base.vertices]} />
+        <mesh castShadow receiveShadow geometry={base.geometry} material={lambert(solid!)} />
+      </RigidBody>
+    )}
     <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
       <CuboidCollider ref={col} args={[width / 2, thickness / 2, length / 2]} {...(friction != null ? { friction } : {})} />
       <mesh castShadow receiveShadow material={lambert(color)}>
@@ -143,6 +175,7 @@ export function Ramp({
           </group>
         ))}
     </RigidBody>
+    </>
   );
 }
 

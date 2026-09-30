@@ -191,7 +191,7 @@ test('catching the cats: easy, tricky, and auto that learns from each chase', as
     b.setLinvel({ x: 0, y: 0, z: 0 }, true);
   });
   await game.seconds(0.3);
-  const quick = await chase(game, 2, 4, 30);
+  const quick = await chase(game, 2, 3, 30);
   expect(['tagged', 'toTree', 'tree']).toContain(quick.cat.mode);
   expect(quick.seconds).toBeLessThan(5);
   const up = (await skill(game))[0];

@@ -31,6 +31,82 @@ a **lagoon** at the beach, and the **sea** along the whole south edge with a lin
 between, the grass rolls, there are hills to run up and jump off, and a mesa at the mountain's foot with the train tunnel
 through it (up the ramp from the mountainside, wave the flag, watch the train come out underneath you).
 
+Two rides use the new ground. **River tubing**: rubber rings wait in a line at a jetty below the railway bridge; step onto
+the one at the end of the jetty and it floats off down the middle of the river, spinning gently, under the arched
+footbridge, and tips you out onto the bank before the stepping stones (then bobs back up at the jetty). Friends can
+share a ring, or jump from one to another. **Sledding**: two sleds wait on the west rim of the mountain's top; walk into
+one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
+you off the hill at the bottom. The path up the mountain has log steps now.
+
+**Sledding challenges.** Three rings of stars float over the sled run: steer through one (stick up and down) and
+the sled goes faster, and each one lets it go faster still. Off the hill, the faster you were going the further you
+fly, and a jump right at the top of the hill sends you further still. Where you land there are green, yellow and red
+lines in the grass, and a golden flag with a star marks the furthest flight ever (remembered on this device). A new
+record: a cheer and a party. Past the red line: a sticker.
+
+**The tractor** 🚜 is parked at the farm, with a trailer. Walk up to its seat to drive: push the stick where you want
+to go and it turns and trundles that way (put-put, puffs from the chimney). Friends climb in the trailer and get
+bumped along (or jump out). It shoves balls, crates and bowling pins out of the way, bumps any animal in front of it
+with a boing, scatters the cats, and stops dead at walls, trees, hedges and the water's edge (it never drives
+through anything). The noise button is the horn; jump to hop out. Left somewhere, it trundles home by itself after a
+while (well: it pops back).
+
+**Bumper cars** 🚗 in the middle of the carnival: walk in through the gap in the rail and into a car, push the stick
+and zoom. Crash into the other cars (someone in them or not) and the rail: boing, a spin, sparks from the pole. Jump to
+hop out. Playing alone, the buddy jumps into a car too while you drive and chases you round.
+
+**The chicken round-up** 🐔: the farm's chickens run from anyone who comes close (and from barks). Chase them into the
+coop east of the pasture: the gate faces their yard, and a chicken running near the gate darts in. Once in, they stay
+in. The sign by the coop has a dot for each chicken, lit when it's in; all eight in is a party (and a sticker). After
+a while the gate opens and they trot back out to their yard, ready to be rounded up again. It works alone, and it's
+easier with friends coming at them from both sides.
+
+**Build a snowman** ⛄ on the mountain top: there's a blue ring in the snow east of the ice pond, with a see-through
+snowman standing in it to show what to build. Snowballs grow as they roll through the snow (quickest: grab one with
+your tongue and run about with it, or push it along). Roll a big one into the ring and it's the bottom; roll a
+middle-sized one against it and it hops up on top; then a small one for the head. The last one on: coal eyes, a
+carrot nose, a smile, stick arms, a top hat and a scarf, a cheer and a party (and a sticker). A headbutt while it's
+being built only makes it wobble; once it's finished, one headbutt knocks it flying, ready to build another. There
+are three snowballs, so friends can each roll one.
+
+**The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
+handle and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
+the lagoon with a splash. Jump to let go sooner (wherever you are!). The handle slides back up for the next one.
+
+**The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
+tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
+that slides to and fro, a pink bouncy cloud that throws you up to a cloud, three wobbly planks hanging from balloons,
+and the top cloud, 11 m up, with a big bell to ring (a party, and a sticker) and a rainbow pad that flies you all the
+way back down. There are four flags on the way; the pad at the start flies you straight back up to the highest flag
+anyone has reached, so a fall (onto soft grass) only costs one bit. It climbs away from the camera, so you can always
+see the next bit. Every step is one a jump makes; the tricks help (the duck glides across, the unicorn's third jump).
+
+**Every animal has a trick of its own**, on the buttons it already has (its picture sits in the corner of its face in
+the animal picker, and each trick has a sticker):
+
+| | Trick | How |
+|---|---|---|
+| 🐶 dog 👃 | sniffs out treasure | bark: a trail of golden sparkles runs off towards the nearest hidden treasure |
+| 🐐 goat 💥 | mighty headbutt | headbutt: balls, crates and friends fly almost twice as far |
+| 🐷 pig 💨 | fart jump | poop with an empty tummy: the toot throws the pig into the air (once more in the air) |
+| 🐑 sheep 🦘 | bouncy wool | land from high up (a double jump, a fall) and it bounces back up |
+| 🐱 cat 🌳 | climbs trees | walk into a tree trunk: up onto a branch; jump (or push the stick) to hop down. A park cat in that tree gets a fright and jumps down |
+| 🦆 duck 🪂 | glides and swims fast | hold jump while falling to float down; swims as fast as it runs |
+| 🐮 cow 📢 | shockwave moo | the moo knocks things over all around and makes friends hop |
+| 🦄 unicorn 🌈 | rainbow jump | a third jump in the air |
+
+The pig also zooms through mud instead of getting stuck in it.
+
+**The treasure hunt never runs out.** Five treasures are hidden round the park at a time, each in a different area:
+a coloured gem over a little mound with a red ✖ on it, tucked beside a fence, a rock or a building. They twinkle now and
+then, and when you get close you can hear them, "ting... ting.ting.ting", faster the closer you are. The five gems under
+the stars light up as you find them. Find all five: a party, one more gem goes into the **treasure chest** on the grass
+west of the plaza (it keeps every one, so the pile grows day by day), and five new treasures are hidden somewhere else.
+Where the hunt is up to is remembered on this device, so the next day doesn't start in the same places. Every other
+round, one of the five is somewhere harder: on the ship's deck, on top of the mesa, on the lighthouse island (swim!),
+on the sky course's cloud, on a bouncy mushroom, or on the footbridge over the railway; you can hear it ting when you
+walk underneath. The dog's bark points the way to the nearest one.
+
 Kids never need to read. Everything is shown with pictures, colours and sounds, and nothing can go wrong: no timers, no
 losing, no game over.
 
@@ -40,6 +116,16 @@ Press **any button** on a controller (or any key, or tap ▶) to start. Every ex
 so friends can drop in and out at any time. All players share one camera that zooms out to keep everyone on screen.
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
+
+**Choosing your animal.** Joining with a button brings up a row of animal faces in your colour at the bottom of the
+screen: push the stick (or D-pad, or `A`/`D`, or the arrow keys) left or right and your animal changes as you go,
+then press any button to go and play (on a touch screen, tap a face). Animals still to be earned with stickers are dark
+shadows at the end of the row. Under the faces are five blobs of paint: every animal comes in five **coats** (its usual
+one, two more from real life, and two silly ones: a blue dog, a black sheep, a purple cow, a night-sky unicorn...).
+Push the stick up or down (or `W`/`S`) to try them on, or tap a blob. The row goes away by itself after 10 seconds
+without a push. Each player number remembers its animal and the coat it wore on each animal on this device, so whoever
+is usually player two gets their own animal back next time (not the goat), in the same colour. To change later: tap
+Select (`1` / `,`), or tap your badge at the top left.
 
 **Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
 and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
@@ -57,7 +143,7 @@ Grown-ups can switch it off.
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
 | 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
 | 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
-| 🔄 Change animal | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
+| 🔄 Choose your animal (again: next animal) | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
 | 📒 Sticker album | Click a stick (L3 / R3) | `B` | `Num 4` | Orange album button (top right) |
@@ -109,9 +195,11 @@ menu or the album never also do something in the game.
 ## Things to discover
 
 The park is a ring of eight areas around a fountain plaza, with the mountain across the north and the sea along the
-south. Signposts with pictures point the way, and a **train** loops round the middle of it: over the river bridge, through
-the tunnel under the mesa, along a trestle out over the water, and it stops at the station on the east side (stand on a
-wagon to ride along). A footbridge over the west track lets you look down on it.
+south. Signposts with pictures point the way, and a **train** loops round the middle of it: up an embankment onto a stone
+bridge over the river, through the tunnel under the mesa, up onto a wooden trestle along the sea, and it stops at the
+station on the east side (stand on a wagon to ride along). A footbridge over the west track lets you look down on it.
+Every bridge over water is high enough to float or swim under: the river tubes pass under the arched footbridge, and you
+can wade up the river under the railway bridge or swim out of the lagoon under the trestle into the sea.
 
 | Area | What is there |
 |---|---|
@@ -121,7 +209,7 @@ wagon to ride along). A footbridge over the west track lets you look down on it.
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
-| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them |
+| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build |
 | 🚜 Farm (south-west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
 | 🍄 Forest (west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
 
@@ -164,19 +252,22 @@ wagon to ride along). A footbridge over the west track lets you look down on it.
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 36 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 63 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
-  chicken, jumping in a puddle...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
+  bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Four stickers need a friend (they have a little 👫 on them); playing alone, the buddy
-  counts, except for the three-animal tower.
+  remembered on this device. Five stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  counts, except for the three-animal tower and riding in the tractor's trailer.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
-  friend stickers: the nearest friend). The arrow goes away once you're there, and the guide ends when the sticker is
+  friend stickers: the nearest friend; for treasure: the nearest hidden treasure; for a trick: a place it works well,
+  like a tree for the cat). The arrow goes away once you're there, and the guide ends when the sticker is
   earned (or after two minutes; tap the sticker at the top of the screen to stop it). **B** closes the album.
 - **New animals** join as the album fills up: a 🐱 cat at 3 stickers, a 🦆 duck at 7, a 🐮 cow at 12 and a 🦄 unicorn at
-  18 (which leaves rainbow sparkles). Select / Change animal cycles through the ones you have.
+  18 (which leaves rainbow sparkles). They appear in the animal picker as soon as they have joined.
 - **Surprises**: about a minute into playing, and then every minute or two, something happens (its picture bounces
   under the stars at the top of the screen):
   - 🐔 a **golden chicken** runs around near you: catch it by touching or licking it (it gets tired after a while, so
@@ -233,11 +324,20 @@ src/
     config.ts           tuning: speeds, party points, players, species, hats
     layout.ts           where everything in the park lives
     terrain.ts          the lie of the land: groundHeight(x, z); the mountain, the river, the sea, and flats under everything that must stand level
+    course.ts           a smooth line through points, measured along its length (the river tubes' course)
+    track.ts            the railway: where the track runs (trackAt), how high (up onto its bridges), nearest point
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
     testMode.ts         ?test=<seed>
     store.ts            reactive state for UI: players, party meter, stars, menu
+    hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area; every other round one up high), found, the chest
+    skycourse.ts        how far up the sky course anyone has got (the flags)
+    sledding.ts         the furthest sled flight (the golden flag)
+    coop.ts             the chicken round-up: which chickens are in the coop
+    snowman.ts          the snowman being built: its pieces, how big a snowball has to be, where they go
+    animals.ts          each player number's animal (and coat on each animal), remembered for next time
+    coats.ts            the five coats (colours) of every animal
     settings.ts         grown-ups settings and graphics quality
     progress.ts         stars found ever and the hats they unlock
     photo.ts            the camera: countdown, photos kept on this device
@@ -253,14 +353,21 @@ src/
     Scene.tsx           lights, sky, shared camera, input loop, party director
     player/             one animal: Player.tsx runs these steps in order every frame:
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
-      actions.ts        tongue (props, food, friends), noise, poop, animal/hat, headbutt
+      actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
+      tricks.ts         every animal's own trick (sniff, mighty headbutt, fart jump, bouncy wool, climbing, glide, shockwave moo, rainbow jump)
       piggyback.ts, movement.ts, animate.ts
       frame.ts, state.ts, constants.ts, physics.ts
       AnimalModel.tsx, Hat.tsx
     world/
       Terrain.tsx       ground, paths, hedges, flowers, signposts, sky
       Water.tsx         the sea, the river's flow and the falls, the buoys, splashes, things that float
-      Landmarks.tsx     the mesa with the train tunnel, the footbridge, the river crossings, boulders, the summit flag
+      Landmarks.tsx     the mesa with the train tunnel, the footbridges, the river crossings, boulders, the summit flag
+      Rides.tsx         river tubing (rings on a course down the river), the sleds down the mountain, their star hoops and landing field
+      SkyCourse.tsx     the sky course: stumps, platforms, spinning disc, slider, bouncy cloud, planks, flags, bell, pads
+      Tractor.tsx       the farm tractor and its trailer (driven with the stick; checks it never ends up inside anything)
+      Zipline.tsx       the zipline from the mountain top to the lagoon
+      BumperCars.tsx    the bumper cars at the carnival
+      Chickens.tsx      the farm's chickens, and the coop they get rounded up into
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
@@ -269,6 +376,7 @@ src/
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Events.tsx        surprises: golden chicken, present balloon, rain and puddles
+      Treasures.tsx     the treasure hunt: hidden gems, the "ting" that gets faster, the chest by the plaza
       Cats.tsx          the park cats: nap, flee, get tagged, up a tree, barked down
       Birds.tsx         bird flocks: peck, scatter, fly to a new spot, peck at poops
       Buddy.tsx         the computer buddy for a child playing alone (its "brain" makes controller input)
@@ -276,7 +384,7 @@ src/
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform
-  ui/                   HUD, title screen, touch controls, sticker album, controller tester, grown-ups menu
+  ui/                   HUD, animal picker, title screen, touch controls, sticker album, controller tester, grown-ups menu
                         (icons for kids, words for grown-ups)
 tests/unit/             vitest unit tests (fake gamepads, fake storage)
 e2e/                    Playwright browser tests in test mode

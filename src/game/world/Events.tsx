@@ -88,6 +88,9 @@ function nearestPlayer(x: number, z: number) {
 // ---------------------------------------------------------------------------
 // The runaway golden chicken
 
+/** How far ahead (m) the golden chicken looks for water. */
+const WATER_LOOK = [0.8, 1.6, 2.5];
+
 function GoldenChicken() {
   const body = useRef<RapierRigidBody>(null);
   const yaw = useRef<THREE.Group>(null);
@@ -158,10 +161,26 @@ function GoldenChicken() {
     // stay in the park and out of the lake
     if (Math.abs(t.x) > WORLD_HALF_X - 8) dx -= Math.sign(t.x) * 2;
     if (t.z < -WORLD_HALF_Z + 8 || t.z > WORLD_HALF_Z - 16) dz -= Math.sign(t.z) * 2;
-    if (isInWater(t.x + dx * 2.5, t.z + dz * 2.5)) {
-      const ox = dx;
-      dx = -dz;
-      dz = ox;
+    // (water anywhere on the next few steps that way?)
+    const wet = (a: number) => WATER_LOOK.some((r) => isInWater(t.x + Math.sin(a) * r, t.z + Math.cos(a) * r));
+    const base = Math.atan2(dx, dz);
+    if (wet(base)) {
+      // water ahead: turn aside only as far as it takes, to whichever side keeps it furthest from
+      // the one chasing it (turning back if it has to)
+      const ux = fleeing && player ? t.x - player.position.x : dx;
+      const uz = fleeing && player ? t.z - player.position.z : dz;
+      const away = (a: number) => Math.sin(a) * ux + Math.cos(a) * uz;
+      let heading = base + Math.PI;
+      search: for (const turn of [0.4, 0.8, 1.2, 1.6, 2, 2.4]) {
+        const sides = away(base + turn) >= away(base - turn) ? [base + turn, base - turn] : [base - turn, base + turn];
+        for (const a of sides) {
+          if (wet(a)) continue;
+          heading = a;
+          break search;
+        }
+      }
+      dx = Math.sin(heading);
+      dz = Math.cos(heading);
     }
     const target = Math.atan2(dx, dz);
     let d = target - s.facing;

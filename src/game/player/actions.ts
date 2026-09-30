@@ -10,13 +10,14 @@ import {
   playFireBreath,
   playPlop,
   playSlurp,
+  playTap,
   playThrow,
   playWhoosh
 } from '../audio';
 import { gameNow } from '../clock';
 import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { bonkStars, emit, ring } from '../fx';
-import { rumble } from '../input';
+import { rumble, type ActionName } from '../input';
 import { distXZ, isOnGrass } from '../layout';
 import { groundHeight } from '../terrain';
 import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PlayerRuntime, type PropEntry } from '../runtime';
@@ -24,6 +25,7 @@ import { useGame } from '../store';
 import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
 import { releaseFriend, releaseHeld, type FrameCtx } from './frame';
 import { earnSticker } from '../stickers';
+import { mightyMoo, sniff, TRICK } from './tricks';
 
 /** How long a tongue can hang on to a friend (seconds). */
 const FRIEND_HOLD_MAX = 4;
@@ -237,10 +239,14 @@ export function voice(f: FrameCtx) {
       useGame.getState().addParty(PARTY_POINTS.duet);
     }
     pushNoise(s.pos, slot);
-    props.forEach((prop) => {
-      if (prop.heavy || prop.heldBy != null || !propPosition(prop, tmp.p)) return;
-      if (tmp.p.distanceTo(s.pos) < 3.5) prop.getBody()?.applyImpulse({ x: 0, y: 0.6, z: 0 }, true);
-    });
+    if (f.species === 'cow') mightyMoo(f);
+    else {
+      if (f.species === 'dog') sniff(f);
+      props.forEach((prop) => {
+        if (prop.heavy || prop.heldBy != null || !propPosition(prop, tmp.p)) return;
+        if (tmp.p.distanceTo(s.pos) < 3.5) prop.getBody()?.applyImpulse({ x: 0, y: 0.6, z: 0 }, true);
+      });
+    }
   }
 }
 
@@ -274,17 +280,27 @@ export function poop(f: FrameCtx) {
       s.poopPresses += Math.min(Math.max(1, input.presses.poop), s.belly - waiting);
     } else if (waiting === 0 && s.poopCooldown <= 0) {
       s.poopCooldown = 0.25;
-      playFart(s.pos);
+      const pig = f.species === 'pig' && !s.swimming;
+      if (pig) {
+        // the pig's trick: a fart jump
+        playBigFart(s.pos);
+        ring([t.x, s.groundY + 0.08, t.z], { color: '#b5e48c', radius: 2.2, duration: 0.45 });
+        emit('puff', [tmp.c.x, s.pos.y - 0.2, tmp.c.z], { count: 14, color: ['#b5e48c', '#99d98c', '#d9ed92'], speed: 2, up: -0.5, size: 0.6, dir: [-tmp.fwd.x * 2, -2, -tmp.fwd.z * 2] });
+        if (s.grounded || !s.fartedInAir) {
+          earnSticker('pigfart');
+          useGame.getState().addParty(PARTY_POINTS.trick);
+        }
+      } else playFart(s.pos);
       earnSticker('toot');
       const green = ['#b5e48c', '#99d98c', '#d9ed92'];
       if (s.swimming) emit('drop', [tmp.c.x, s.pos.y + 0.1, tmp.c.z], { count: 12, color: ['#e0f7ff', '#ffffff'], speed: 1.2, up: 4, size: 0.16 });
       else emit('puff', [tmp.c.x, s.pos.y - 0.1, tmp.c.z], { count: 9, color: green, speed: 1.6, up: 0.8, size: 0.45, dir: [-tmp.fwd.x * 2, 0, -tmp.fwd.z * 2] });
       s.squash = -0.25;
       // A little toot hop, once per jump in the air.
-      if (s.grounded) s.pendingNudge = 4;
+      if (s.grounded) s.pendingNudge = pig ? TRICK.pigToot : 4;
       else if (!s.fartedInAir && !s.swimming) {
         s.fartedInAir = true;
-        s.pendingNudge = 4.5;
+        s.pendingNudge = pig ? TRICK.pigTootAir : 4.5;
       }
       pushNoise(s.pos, slot);
       rumble(source, 0.35, 0.1, 160);
@@ -335,10 +351,64 @@ export function poop(f: FrameCtx) {
   }
 }
 
-/** Select / Start on a controller: change animal, change hat. */
+/** Start on a controller: change hat. */
 export function looks(f: FrameCtx) {
-  if (f.input.pressed.species) useGame.getState().cycleSpecies(f.slot);
   if (f.input.pressed.hat) useGame.getState().nextHat(f.slot);
+}
+
+/** An open animal picker closes by itself when nobody touches it for this long (seconds). */
+const PICK_IDLE = 10;
+/** A picker that just opened ignores the "go" buttons this long, so a joining press doesn't close it straight away. */
+const PICK_GRACE = 0.5;
+const PICK_GO: ActionName[] = ['jump', 'bonk', 'lick', 'noise', 'flop', 'poop', 'hat'];
+
+/**
+ * Choosing an animal (Select opens the row of faces; joining with a button does too): left /
+ * right looks through the animals, and the animal changes as you go; up / down through its
+ * coats; Select shows the next animal; any other button goes and plays. True while the faces are up: the animal waits meanwhile.
+ */
+export function choosing(f: FrameCtx): boolean {
+  const { s, input, slot } = f;
+  const game = useGame.getState();
+  const me = game.players.find((p) => p.slot === slot);
+  if (!me?.picking) {
+    if (s.picking && me) {
+      // chosen (here, or with a tap on the screen): the new animal says hello
+      playAnimalNoise(me.species, s.pos);
+      s.noiseTime = 0.5;
+      f.rt?.hop(7);
+      emit('confetti', [s.pos.x, s.pos.y + 1.2, s.pos.z], { count: 20, speed: 3, up: 5 });
+      rumble(f.source, 0.4, 0.4, 150);
+    }
+    s.picking = false;
+    if (!input.pressed.species || !me || me.bot) return false;
+    game.setPicking(slot, true);
+    playTap();
+    return true;
+  }
+  // one step per push of the stick (it has to come back towards the middle to go again):
+  // sideways for the animal (±1), up and down for its coat (±2)
+  const ax = Math.abs(input.x);
+  const az = Math.abs(input.z);
+  const lean = ax > 0.6 && ax >= az ? Math.sign(input.x) : az > 0.6 ? 2 * Math.sign(input.z) : Math.max(ax, az) < 0.3 ? 0 : s.pickDir;
+  if (!s.picking) {
+    s.picking = true;
+    s.pickAge = 0;
+    s.pickIdle = 0;
+    s.pickDir = lean;
+  }
+  s.pickAge += f.dt;
+  s.pickIdle += f.dt;
+  const step = lean !== 0 && lean !== s.pickDir ? lean : input.pressed.species ? 1 : 0;
+  s.pickDir = lean;
+  if (step) {
+    if (Math.abs(step) === 2) game.cycleCoat(slot, step / 2);
+    else game.cycleSpecies(slot, step);
+    s.pickIdle = 0;
+  }
+  const go = s.pickAge > PICK_GRACE && PICK_GO.some((a) => input.pressed[a]);
+  if (go || s.pickIdle > PICK_IDLE) game.setPicking(slot, false);
+  return true;
 }
 
 /** Headbutt: a little dash that knocks props, friends and trees. */
@@ -355,6 +425,7 @@ export function headbutt(f: FrameCtx) {
   tmp.head.copy(s.pos).addScaledVector(tmp.fwd, 0.8 * s.size);
   tmp.head.y += 0.15 * s.size;
   const giant = s.power === 'giant';
+  const goat = f.species === 'goat';
   let hits = 0;
   props.forEach((prop) => {
     if (!prop.enabled || prop.heldBy != null || s.bonkHits.has(prop.id)) return;
@@ -366,7 +437,7 @@ export function headbutt(f: FrameCtx) {
     tmp.d.normalize().add(tmp.fwd).normalize();
     const pb = prop.getBody();
     if (pb) {
-      const v = prop.launch * (giant ? 1.5 : 1);
+      const v = prop.launch * (giant ? 1.5 : 1) * (goat ? TRICK.goatBonk : 1);
       pb.wakeUp();
       pb.setLinvel({ x: tmp.d.x * v, y: v * 0.55 + 2, z: tmp.d.z * v }, true);
       pb.setAngvel({ x: (Math.random() - 0.5) * 12, y: (Math.random() - 0.5) * 12, z: (Math.random() - 0.5) * 12 }, true);
@@ -383,7 +454,7 @@ export function headbutt(f: FrameCtx) {
     s.bonkHits.add(-1 - other.slot);
     tmp.d.copy(other.position).sub(s.pos).setY(0);
     if (tmp.d.lengthSq() < 0.001) tmp.d.copy(tmp.fwd);
-    other.bump(tmp.d.normalize().multiplyScalar(giant ? 1.8 : 1));
+    other.bump(tmp.d.normalize().multiplyScalar((giant ? 1.8 : 1) * (goat ? TRICK.goatBump : 1)));
     bonkStars([other.position.x, other.position.y + 0.6, other.position.z]);
     hits += 1;
   });
@@ -400,7 +471,14 @@ export function headbutt(f: FrameCtx) {
   if (hits > 0) {
     s.dashTime = 0;
     s.squash = 0.3;
-    shakeCamera(0.25);
-    rumble(source, 0.7, 0.4, 140);
+    shakeCamera(goat ? 0.4 : 0.25);
+    rumble(source, goat ? 0.9 : 0.7, 0.4, 140);
+    if (goat && !s.bonkHits.has(-999)) {
+      // the goat's trick: BONK
+      s.bonkHits.add(-999);
+      ring([tmp.head.x, tmp.head.y, tmp.head.z], { color: '#ffd23f', radius: 2.2, duration: 0.35 });
+      earnSticker('goatbonk');
+      useGame.getState().addParty(PARTY_POINTS.trick);
+    }
   }
 }

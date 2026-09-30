@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { BASE_SPECIES, MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
+import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
+import { favouriteCoat, favouriteSpecies, rememberCoat, rememberSpecies } from './animals';
+import { COAT_COUNT } from './coats';
 import { GOLDEN_STARS } from './layout';
 import { playCheer, playFanfare, playHatTada } from './audio';
 import { players as runtimePlayers } from './runtime';
@@ -15,6 +17,8 @@ export type PlayerInfo = {
   slot: number;
   source: SourceId;
   species: Species;
+  /** Which of the animal's coats (colours) it wears; see coats.ts. */
+  coat: number;
   hat: HatId;
   color: string;
   joinedAt: number;
@@ -24,6 +28,8 @@ export type PlayerInfo = {
   asleep?: boolean;
   /** The computer buddy that keeps a child playing alone company. */
   bot?: boolean;
+  /** Choosing an animal: the row of animal faces is up and the animal waits. */
+  picking?: boolean;
 };
 
 type Phase = 'title' | 'play';
@@ -43,8 +49,9 @@ interface GameStore {
   resetToken: number;
   touchUi: boolean;
 
-  start: (source: SourceId) => void;
-  join: (source: SourceId) => number | null;
+  /** `pick`: a child pressed a button to join, so show them the animals to choose from. */
+  start: (source: SourceId, pick?: boolean) => void;
+  join: (source: SourceId, pick?: boolean) => number | null;
   leave: (slot: number) => void;
   /** Bring in / send off the computer buddy. */
   addBuddy: () => void;
@@ -53,6 +60,12 @@ interface GameStore {
   reattach: (slot: number, source: SourceId) => void;
   backToTitle: () => void;
   cycleSpecies: (slot: number, dir?: number) => void;
+  /** Be this animal (and be it again next time). */
+  setSpecies: (slot: number, species: Species) => void;
+  setPicking: (slot: number, picking: boolean) => void;
+  /** Wear this coat (and wear it again next time on this animal). */
+  setCoat: (slot: number, coat: number) => void;
+  cycleCoat: (slot: number, dir?: number) => void;
   nextHat: (slot: number) => void;
   randomHat: (slot: number) => void;
   setHat: (slot: number, hat: HatId) => void;
@@ -103,12 +116,12 @@ export const useGame = create<GameStore>((set, get) => {
     resetToken: 0,
     touchUi: false,
 
-    start: (source) => {
+    start: (source, pick = false) => {
       set({ phase: 'play' });
-      if (!get().players.some((p) => p.source === source)) get().join(source);
+      if (!get().players.some((p) => p.source === source)) get().join(source, pick);
     },
 
-    join: (source) => {
+    join: (source, pick = false) => {
       // a real friend arrives: the buddy makes room
       if (source !== 'bot' && get().players.some((p) => p.bot)) get().removeBuddy();
       const state = get();
@@ -117,15 +130,18 @@ export const useGame = create<GameStore>((set, get) => {
       const used = new Set(state.players.map((p) => p.slot));
       let slot = 0;
       while (used.has(slot)) slot += 1;
+      const species = favouriteSpecies(slot);
       const player: PlayerInfo = {
         slot,
         source,
-        species: BASE_SPECIES[slot % BASE_SPECIES.length],
+        species,
+        coat: source === 'bot' ? 0 : favouriteCoat(slot, species),
         hat: 'none',
         color: PLAYER_COLORS[slot],
         joinedAt: Date.now(),
         padId: padIdOf(source),
-        bot: source === 'bot'
+        bot: source === 'bot',
+        picking: pick && source !== 'bot'
       };
       set({ players: [...state.players, player].sort((a, b) => a.slot - b.slot) });
       return slot;
@@ -142,7 +158,7 @@ export const useGame = create<GameStore>((set, get) => {
       const kid = state.players.find((p) => !p.bot);
       const all = unlockedSpecies();
       const species = all.find((s) => s !== kid?.species && s !== 'dog') ?? all[0];
-      set((s) => ({ players: s.players.map((p) => (p.slot === slot ? { ...p, species } : p)) }));
+      set((s) => ({ players: s.players.map((p) => (p.slot === slot ? { ...p, species, coat: 0 } : p)) }));
     },
 
     removeBuddy: () => set((state) => ({ players: state.players.filter((p) => !p.bot) })),
@@ -155,15 +171,37 @@ export const useGame = create<GameStore>((set, get) => {
 
     backToTitle: () => set({ phase: 'title', players: [], menuOpen: false, albumOpen: false }),
 
-    cycleSpecies: (slot, dir = 1) =>
-      set((state) => ({
-        players: state.players.map((p) => {
-          if (p.slot !== slot) return p;
-          const all = unlockedSpecies();
-          const i = Math.max(0, all.indexOf(p.species));
-          return { ...p, species: all[(i + dir + all.length) % all.length] };
-        })
-      })),
+    cycleSpecies: (slot, dir = 1) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p) return;
+      const all = unlockedSpecies();
+      const i = Math.max(0, all.indexOf(p.species));
+      get().setSpecies(slot, all[(i + dir + all.length) % all.length]);
+    },
+
+    setSpecies: (slot, species) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p || p.species === species) return;
+      if (!p.bot) rememberSpecies(slot, species);
+      const coat = p.bot ? 0 : favouriteCoat(slot, species);
+      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, species, coat } : x)) }));
+    },
+
+    setCoat: (slot, coat) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p || p.coat === coat) return;
+      if (!p.bot) rememberCoat(slot, p.species, coat);
+      set((state) => ({ players: state.players.map((x) => (x.slot === slot ? { ...x, coat } : x)) }));
+    },
+
+    cycleCoat: (slot, dir = 1) => {
+      const p = get().players.find((x) => x.slot === slot);
+      if (!p) return;
+      get().setCoat(slot, (p.coat + dir + COAT_COUNT) % COAT_COUNT);
+    },
+
+    setPicking: (slot, picking) =>
+      set((state) => ({ players: state.players.map((p) => (p.slot === slot && !!p.picking !== picking && !p.bot ? { ...p, picking } : p)) })),
 
     nextHat: (slot) => {
       const hats = unlockedHats();

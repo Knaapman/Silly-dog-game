@@ -89,6 +89,8 @@ export const STALLS: { position: Vec3; colors: [string, string] }[] = [
   { position: at3(Z.carnival, -9, 0, 11), colors: ['#ff4d5e', '#ffffff'] },
   { position: at3(Z.carnival, 9, 0, 13), colors: ['#3b82f6', '#ffffff'] }
 ];
+/** The bumper cars: a floor with a low rail round it (a gap on the south side to walk in), and four cars. */
+export const BUMPER = { center: at(Z.carnival, 2, 5), size: [10, 9] as Vec2, gate: 2.4, cars: 4 };
 export const BUNTING_POLES: Vec2[] = [at(Z.carnival, -20, 12), at(Z.carnival, -8, 14), at(Z.carnival, 6, 14), at(Z.carnival, 14, 9), at(Z.carnival, 14, -4)];
 
 // ---------------------------------------------------------------------------
@@ -173,9 +175,17 @@ export const SNOW_HILL = { center: at(Z.winter, -10, -3), radius: 8, height: 4 }
 export const SKI_JUMP = { base: at3(Z.winter, 18, WINTER.level, 2), height: 4.5 };
 export const ICE = { center: at(Z.winter, 0, 6), radius: 4.5 };
 export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.winter, 21, -6), at(Z.winter, -14, 8)];
+/**
+ * The zipline: from a platform on the south rim of the mountain top, right over the park, down
+ * to a pole in the lagoon. `platform`: how high the platform stands; `cable`: the cable's height
+ * above the platform. The end is `endHeight` above the water, so you drop in with a splash.
+ */
+export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, to: [-4, 38] as Vec2, endHeight: 4 };
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
-export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7)];
+export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7), at3(Z.winter, 11, WINTER.level + 1, -3)];
+/** Where you build your own snowman: roll a big snowball into the ring, then two more onto it. */
+export const SNOWMAN_BUILD = { center: at(Z.winter, 9, 2), radius: 1.4 };
 
 // ---------------------------------------------------------------------------
 // Farm
@@ -184,10 +194,14 @@ export const BARN = { center: at(Z.farm, -7, -7), width: 10, depth: 8, wallHeigh
 export const SILO = { center: at(Z.farm, -11.5, 4), radius: 2.2, height: 9 };
 export const WINDMILL = { position: at3(Z.farm, -11, 0, 15) };
 export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
+/** The farm tractor (and its trailer): parked east of the barn, facing the way out (+x). */
+export const TRACTOR = { home: at(Z.farm, 6, -0.5), yaw: Math.PI / 2 };
 export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
 export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
-export const MELON_PATCH: Vec2[] = [at(Z.farm, 8, 10), at(Z.farm, 10.5, 10), at(Z.farm, 13, 10), at(Z.farm, 8, 13), at(Z.farm, 10.5, 13), at(Z.farm, 13, 13)];
-export const TRACTOR = at3(Z.farm, -3, 0, -17);
+/** The chicken coop: a fenced pen east of the pasture, the gate in its north side (towards the chickens' yard). */
+export const CHICKEN_COOP = { center: at(Z.farm, 9, 12), size: 5.5, gate: 2.4, fence: 1.1 };
+/** The melon field, out on the grass west of the silo (clear of the railway embankment on the farm's east side). */
+export const MELON_PATCH: Vec2[] = [at(Z.farm, -20, -3), at(Z.farm, -17.5, -3), at(Z.farm, -15, -3), at(Z.farm, -20, -0.5), at(Z.farm, -17.5, -0.5), at(Z.farm, -15, -0.5)];
 export const FARM_PROPS: { kind: 'hay' | 'barrel'; position: Vec3; rotation?: Vec3; color?: string }[] = [
   { kind: 'hay', position: at3(Z.farm, -0.5, 0.62, -12.5), rotation: [0, 0, Math.PI / 2] },
   { kind: 'hay', position: at3(Z.farm, -2.9, 0.62, -12.8), rotation: [0, 0.3, Math.PI / 2] },
@@ -232,7 +246,7 @@ export const BOULDERS: { at: Vec2; r: number }[] = [
   { at: [-12, -42], r: 1.5 },
   { at: [8, -37], r: 1.1 },
   { at: [36, -57], r: 1.6 },
-  { at: [-21, -57], r: 1.8 },
+  { at: [-24, -63], r: 1.6 },
   { at: [45, -60], r: 1.3 },
   { at: [-3, -33], r: 0.9 }
 ];
@@ -277,12 +291,126 @@ export const TRAIN = {
   station: { from: 12, to: 26 }
 };
 
-/** The track over the river: a low bridge (its deck carries the track over the channel). */
-export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, length: 14, width: 3.4 };
-/** The path from the hub to the dino park crosses the river here. */
-export const RIVER_FOOTBRIDGE = { center: [25, -2] as Vec2, length: 12, width: 2.8 };
+/**
+ * Every bridge over water is high enough to float under: its underside is at least this far
+ * above the water (an animal standing on a river tube, ears and hat included, is 1.9 m).
+ */
+export const FLOAT_CLEARANCE = 2.1;
+
+/**
+ * Where the track crosses water it climbs onto a bridge, high enough to float (or swim) under:
+ * up a grassy embankment `ramp` metres long to `height`, level across the water, and down
+ * again. `from` and `to` are where each bridge's level top starts and ends: points on the
+ * track, in the direction the train runs. The ramps keep clear of the station, the tunnel
+ * and the footbridge over the west straight, where the track stays on the ground.
+ */
+export const TRACK_LIFTS = {
+  height: 2.5,
+  ramp: 14,
+  deckThickness: 0.4,
+  bridges: [
+    { name: 'river bridge', from: [29.2, -20.6] as Vec2, to: [15.4, -22] as Vec2, style: 'stone' as const },
+    { name: 'trestle', from: [-33.3, 49.8] as Vec2, to: [33.3, 49.6] as Vec2, style: 'wood' as const }
+  ]
+};
+/** The river bridge (on the first of those lifts): where the track crosses the river. */
+export const TRAIN_BRIDGE = { center: [22.5, -22] as Vec2, width: 3.4 };
+/**
+ * The path from the hub to the dino park crosses the river here, on an arched footbridge: the
+ * river tubes float underneath (a rider standing on a tube is 1.1 m tall; the deck's underside
+ * is at `height - deckThickness`).
+ */
+export const RIVER_FOOTBRIDGE = { z: -2, west: 16, east: 32, deckFrom: 22.4, deckTo: 27.8, width: 2.8, height: 2.65, deckThickness: 0.45 };
 /** Stepping stones across the river on the way to the playground. */
 export const STEPPING_STONES = { from: [20.5, 30] as Vec2, to: [31.5, 30] as Vec2, count: 7, radius: 0.75 };
+
+// ---------------------------------------------------------------------------
+// Rides on the new ground: rubber rings down the river, sleds down the mountain
+
+/**
+ * River tubing: rubber rings wait in a line at a jetty below the train bridge. Step onto the one
+ * at the jetty and off it floats, down the middle of the river (the `course`, a smooth line
+ * through these points), under the footbridge, to the take-out before the stepping stones,
+ * where it tips you out onto the bank.
+ */
+export const TUBE_RIDE = {
+  course: [[24, -19], [24, -10], [26, 4], [23, 18], [25.5, 28]] as Vec2[],
+  jettyZ: -13,
+  jettyFrom: 16.5,
+  takeOutZ: 23,
+  landing: [17.5, 23] as Vec2,
+  count: 3,
+  radius: 1.05,
+  speed: 2.4
+};
+
+/**
+ * Sledding: two sleds on the west rim of the mountain's top. Walk into one and it pushes off,
+ * down the west face (steer with the stick), and throws you off where the run goes up the
+ * hill at the mountain's foot.
+ */
+export const SLED_RUN = {
+  starts: [[-6.5, -55], [-6.5, -52]] as Vec2[],
+  /** How far a sled can be steered to either side of its start line. */
+  laneHalfWidth: 3,
+  kickX: -33,
+  /** Star hoops floating over the run (both lanes can reach every one): through one = faster. */
+  hoops: [[-14, -53.5], [-20, -54.4], [-26, -52.6]] as Vec2[],
+  /** How far you fly off the hill: metres per m/s of speed at the kick, and extra for a jump right at the kick. */
+  flyPerSpeed: 1.3,
+  jumpBonus: 3.5,
+  /** Never lands further than this (the sky course starts a little further on). */
+  furthestX: -56,
+  /** Coloured lines in the grass where you land: green, yellow, red. */
+  markers: [-45, -48, -51],
+  /** The landing field, across (z). */
+  fieldZ: [-58.5, -48.5] as Vec2
+};
+
+// ---------------------------------------------------------------------------
+// The sky course: a climb into the sky in the north-west corner, behind the carnival. Stumps, a
+// spinning disc, a platform that slides to and fro, a bouncy cloud, wobbly planks on balloons,
+// and a cloud at the top with a bell and a rainbow pad back down. It climbs away from the camera,
+// so the high parts are never hidden behind the low ones. Heights are absolute (the ground rolls
+// a little there). Every step is one that a jump (or the bouncy cloud) makes: never more than
+// 1.2 m up, and at most 1.3 m across.
+
+export const SKY_COURSE = {
+  /** The start: a pad that takes you back up to the highest flag anyone has reached. */
+  pad: [-61, -45.5] as Vec2,
+  stumps: [
+    { at: [-63.5, -47.5] as Vec2, top: 1.2 },
+    { at: [-66, -48] as Vec2, top: 2.4 },
+    { at: [-68.5, -47.5] as Vec2, top: 3.6 }
+  ],
+  stumpRadius: 0.9,
+  /** The two wooden platforms (flags 1 and 2). */
+  platforms: [
+    { at: [-72, -47.5] as Vec2, top: 4.4, size: [3, 3] as Vec2 },
+    { at: [-74, -57.5] as Vec2, top: 6, size: [3, 3] as Vec2 }
+  ],
+  disc: { at: [-74, -52.5] as Vec2, top: 5.2, radius: 2.2, speed: 0.8 },
+  /** Slides along x between `from` and `to` (its centre), there and back in `period` seconds. */
+  slider: { z: -57.5, from: -71.1, to: -65.9, top: 6, size: 2.4, period: 6 },
+  bouncer: { at: [-63.3, -57.5] as Vec2, top: 6, radius: 1.2, bounce: 14 },
+  /** The cloud the bouncer throws you up to (flag 3). */
+  cloud: { at: [-63.5, -61] as Vec2, top: 9, size: [3, 3] as Vec2 },
+  planks: [
+    { at: [-67, -61] as Vec2, top: 9.6 },
+    { at: [-69.5, -61] as Vec2, top: 10.2 },
+    { at: [-72, -61] as Vec2, top: 10.8 }
+  ],
+  plankSize: [1.8, 1.3] as Vec2,
+  plankBob: 0.25,
+  /** The top cloud (flag 4): the bell, and the rainbow pad that flies you back down. */
+  top: { at: [-75.5, -60.5] as Vec2, top: 11.4, size: [3.6, 4] as Vec2 },
+  bell: [-74.4, -61.9] as Vec2,
+  rainbowPad: [-76.4, -59.3] as Vec2,
+  rainbowTarget: [-59.5, -52.5] as Vec2
+};
+
+/** The course's flags, in order: the two platforms, the cloud, the top. */
+export const SKY_FLAGS: { at: Vec2; top: number; size: Vec2 }[] = [...SKY_COURSE.platforms, SKY_COURSE.cloud, SKY_COURSE.top];
 
 // ---------------------------------------------------------------------------
 // Launch pads (glowing arrows)
@@ -327,7 +455,7 @@ export const SNACKS: { kind: SnackKind; position: Vec3 }[] = [
   { kind: 'cake', position: [PICNIC.center[0] + 0.6, 0.06, PICNIC.center[1] + 0.4] },
   { kind: 'cake', position: [PICNIC.center[0] - 0.4, 0.06, PICNIC.center[1] + 0.7] },
   // carrot patch on the farm
-  ...([[8, 5], [9.4, 5], [10.8, 5], [8, 6.6], [9.4, 6.6], [10.8, 6.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: at3(Z.farm, c[0], 0, c[1]) })),
+  ...([[7, 5], [8.4, 5], [9.8, 5], [7, 6.6], [8.4, 6.6], [9.8, 6.6]] as Vec2[]).map((c) => ({ kind: 'carrot' as const, position: at3(Z.farm, c[0], 0, c[1]) })),
   // ice creams on the stall counters
   ...STALLS.flatMap((s) => [-0.6, 0.6].map((dx) => ({ kind: 'icecream' as const, position: [s.position[0] + dx, 1.2, s.position[2] + 0.4] as Vec3 }))),
   // the magic snack table on the west side of the plaza...
@@ -401,11 +529,49 @@ export const BALLOONS: Vec3[] = [
 // open grass, and on a few high spots you need a launcher for)
 
 export const CAT_HOMES: Vec2[] = [
-  [8, -18],
+  [15, -16],
   [-26, -4],
   [14, 41],
   [38, 8]
 ];
+
+/**
+ * Where treasure can be hidden: tucked beside something (a fence, a rock, a building), on open
+ * ground with nothing overhead, off the railway and out of the water. Found by scanning the
+ * park's physics for clear spots with something 1-2 m away; each round of the treasure hunt
+ * hides one treasure in each of five different areas.
+ */
+export const TREASURE_SPOTS: { zone: keyof typeof ZONES; at: Vec2 }[] = (
+  [
+    ['hub', [[3, 14], [5, -18], [15, 4]]],
+    ['carnival', [[-67, -26], [-33, -30], [-65, -42]]],
+    ['forest', [[-41, -4], [-73, 22], [-39, 16]]],
+    ['farm', [[-39, 46], [-65, 50]]],
+    ['beach', [[-19, 44], [-9, 24]]],
+    ['playground', [[55, 22], [39, 50], [39, 28], [71, 22]]],
+    ['dino', [[53, -18], [71, 12], [53, 16]]],
+    ['sports', [[51, -36], [71, -60], [43, -60], [39, -42]]],
+    ['winter', [[11, -56], [33, -50], [-5, -48], [7, -44]]]
+  ] as [keyof typeof ZONES, Vec2[]][]
+).flatMap(([zone, list]) => list.map((at) => ({ zone, at })));
+
+/**
+ * Harder hiding places, somewhere up high or across the water (absolute surface height). Every
+ * other round, one of the five treasures goes to one of these: up the gangplank onto the ship's
+ * deck, up the ramp onto the mesa, a swim to the lighthouse island, the sky course's cloud,
+ * bouncing on a big mushroom, and the footbridge over the railway.
+ */
+export const TREASURE_HIGH_SPOTS: { at: Vec2; y: number }[] = [
+  { at: [-15.2, 38.3], y: 1.8 },
+  { at: [-18, -20], y: 5.2 },
+  { at: [-1.4, 48.6], y: 0.09 },
+  { at: [-63, -60.5], y: 9 },
+  { at: [-50, 1], y: 6.8 },
+  { at: [-34.5, 36], y: 4.6 }
+];
+
+/** The treasure chest west of the plaza: one gem for every treasure hunt round ever finished. `yaw` turns it to face the plaza. */
+export const TREASURE_CHEST = { position: [-21, 8] as Vec2, yaw: Math.PI / 2 };
 
 /** Where bird flocks land: [x, height above the ground, z, spread radius]. */
 export const BIRD_SPOTS: [number, number, number, number][] = [
@@ -441,7 +607,7 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
   // beach palms
   ...treesOf('palm', [[-22, 30], [-19, 42], [12, 44], [16, 50], [-22, 52], [38, 51]]),
   // snow pines on the plateau
-  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-8, -50], [14, -64], [8, -45], [-2, -63]])
+  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-12, -46], [14, -64], [8, -45], [-2, -63]])
 ];
 
 export function distXZ(ax: number, az: number, bx: number, bz: number) {

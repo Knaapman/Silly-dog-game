@@ -101,8 +101,8 @@ export type PlayerRuntime = {
   hop: (vy: number) => void;
   /** Fly in an arc that lands on `target`, peaking at absolute height `apex`. */
   launchTo: (target: THREE.Vector3, apex: number) => void;
-  /** Pin the player at a point (e.g. inside a cannon), hidden or not. null releases. */
-  hold: (position: THREE.Vector3 | null, hidden?: boolean) => void;
+  /** Pin the player at a point (e.g. inside a cannon, on a sled), hidden or not, facing a way. null releases. */
+  hold: (position: THREE.Vector3 | null, hidden?: boolean, facing?: number) => void;
   isLaunched: () => boolean;
   /** Standing on something (not in the air). */
   grounded: boolean;

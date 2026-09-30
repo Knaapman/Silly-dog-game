@@ -23,6 +23,7 @@ test('settings, stars and photos are still there after a reload (old photos move
     s.useProgress.getState().addStar();
     s.useStickers.getState().earn('goal');
     s.useGame.getState().start('kb1');
+    s.useGame.getState().setSpecies(0, 'sheep');
     s.usePhotos.getState().request();
   });
   await page.waitForFunction(() => (window as any).__silly.usePhotos.getState().photos.length === 1, null, { timeout: 90_000 });
@@ -39,7 +40,13 @@ test('settings, stars and photos are still there after a reload (old photos move
       stars: s.useProgress.getState().starsEver,
       stickers: s.useStickers.getState().got,
       photoIds: s.usePhotos.getState().photos.map((p: any) => p.id),
-      oldKey: localStorage.getItem('silly-park:photos:v1')
+      oldKey: localStorage.getItem('silly-park:photos:v1'),
+      // player one picked the sheep last time; player two never chose
+      animals: (() => {
+        s.useGame.getState().start('kb1');
+        s.useGame.getState().join('kb2');
+        return s.useGame.getState().players.map((p: any) => p.species);
+      })()
     };
   });
   expect(state.speed).toBe(2);
@@ -49,6 +56,7 @@ test('settings, stars and photos are still there after a reload (old photos move
   expect([...state.stickers].sort()).toEqual(['goal', 'photo']);
   expect(state.photoIds[0]).toBe(1);
   expect(state.oldKey).toBeNull();
+  expect(state.animals).toEqual(['sheep', 'goat']);
 
   // deleting sticks too
   await page.evaluate(() => (window as any).__silly.usePhotos.getState().remove(1));

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../../src/game/config';
 import * as L from '../../src/game/layout';
 import { groundHeight, mountainWeight, riverAt, trackDist } from '../../src/game/terrain';
+import { makeCourse } from '../../src/game/course';
+import { LIFTS, TRACK_LENGTH, trackAt, trackHeight, trackNearest } from '../../src/game/track';
 
 // The park layout, checked for things standing where they shouldn't: on the train track, on a
 // path, in the river, on top of each other, on the mountain's slope, in the sea or in the
@@ -32,6 +34,7 @@ L.CAT_HOMES.forEach((c, i) => add(`cat home ${i}`, c[0], c[1], 1));
 L.BIRD_SPOTS.forEach((b, i) => add(`bird spot ${i}`, b[0], b[2], b[3], { onPathOk: true, floats: b[1] > 0, slopeOk: true, winter: mountainWeight(b[0], b[2]) === 1 }));
 L.SNOWMEN.forEach((s, i) => add(`snowman ${i}`, s[0], s[1], 0.9, { winter: true }));
 L.SNOWBALLS.forEach((s, i) => add(`snowball ${i}`, s[0], s[2], 0.5, { winter: true }));
+add('snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], 2.2, { winter: true });
 add('ice pond', L.ICE.center[0], L.ICE.center[1], L.ICE.radius, { winter: true });
 add('ski jump', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2], 2.2, { winter: true });
 add('ski jump ramp foot', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2] - 1.6 - 7, 1.2, { winter: true });
@@ -63,7 +66,13 @@ add('barn', L.BARN.center[0], L.BARN.center[1], 4);
 add('silo', L.SILO.center[0], L.SILO.center[1], L.SILO.radius + 0.2);
 add('windmill', L.WINDMILL.position[0], L.WINDMILL.position[2], 2);
 add('mud', L.MUD.center[0], L.MUD.center[1], L.MUD.radius);
-add('tractor', L.TRACTOR[0], L.TRACTOR[2], 2);
+// the tractor where it's parked, and its trailer behind it
+add('tractor', L.TRACTOR.home[0], L.TRACTOR.home[1], 1.8);
+// the bumper car floor (a rectangle: covered with a few circles)
+for (const fx of [-1, 0, 1]) for (const fz of [-1, 0, 1]) add(`bumper cars ${fx * 3 + fz + 4}`, L.BUMPER.center[0] + (fx * L.BUMPER.size[0]) / 3, L.BUMPER.center[1] + (fz * L.BUMPER.size[1]) / 3, Math.hypot(L.BUMPER.size[0], L.BUMPER.size[1]) / 6);
+add('chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], (L.CHICKEN_COOP.size / 2) * 1.2);
+add('zipline platform', L.ZIPLINE.from[0], L.ZIPLINE.from[1], 2.1, { winter: true });
+add('trailer', L.TRACTOR.home[0] - Math.sin(L.TRACTOR.yaw) * 3.6, L.TRACTOR.home[1] - Math.cos(L.TRACTOR.yaw) * 3.6, 1.7);
 L.FARM_PROPS.forEach((p, i) => add(`farm prop ${i} (${p.kind})`, p.position[0], p.position[2], 0.8));
 L.MELON_PATCH.forEach((m, i) => add(`melon ${i}`, m[0], m[1], 0.7));
 L.LAMP_POSTS.forEach((p, i) => add(`lamp post ${i}`, p[0], p[1], 0.3));
@@ -82,6 +91,17 @@ add('fallen log', L.FALLEN_LOG[0], L.FALLEN_LOG[2], 2.6);
 add('mesa ramp foot', L.MESA.rampFrom[0], L.MESA.rampFrom[2], 1.5, { slopeOk: true });
 add('footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z, 1.5);
 L.SPAWN_POINTS.forEach((p, i) => add(`spawn ${i}`, p[0], p[2], 0.6));
+add('treasure chest', L.TREASURE_CHEST.position[0], L.TREASURE_CHEST.position[1], 1.1);
+{
+  const C = L.SKY_COURSE;
+  C.stumps.forEach((s, i) => add(`sky course stump ${i}`, s.at[0], s.at[1], C.stumpRadius));
+  L.SKY_FLAGS.forEach((f, i) => add(`sky course flag ${i}`, f.at[0], f.at[1], Math.hypot(f.size[0], f.size[1]) / 2, { floats: i > 1 }));
+  add('sky course disc', C.disc.at[0], C.disc.at[1], C.disc.radius);
+  add('sky course pad', C.pad[0], C.pad[1], 1.35);
+}
+L.SLED_RUN.starts.forEach((s, i) => add(`sled ${i}`, s[0], s[1], 1.2, { winter: true }));
+add('tube landing', L.TUBE_RIDE.landing[0], L.TUBE_RIDE.landing[1], 1.5, { onPathOk: true });
+add('jetty foot', L.TUBE_RIDE.jettyFrom + 1, L.TUBE_RIDE.jettyZ, 1.2, { wet: true }); // a jetty stands at the water's edge
 L.MAZE.walls.forEach((w, i) => add(`maze wall ${i}`, (w[0] + w[2]) / 2, (w[1] + w[3]) / 2, 0.45));
 
 const river = { d: 0, level: 0 };
@@ -115,12 +135,13 @@ describe('park layout', () => {
     }
     expect(out).toEqual([]);
     // the crossings sit squarely over the channel, with their ends on the banks
-    const bank = L.RIVER_HALF_WIDTH + L.RIVER_BANK;
     expect(riverAt(L.TRAIN_BRIDGE.center[0], L.TRAIN_BRIDGE.center[1], river).d).toBeLessThan(1.5);
-    expect(L.TRAIN_BRIDGE.length / 2).toBeGreaterThan(bank + 1);
     expect(trackDist(L.TRAIN_BRIDGE.center[0], L.TRAIN_BRIDGE.center[1])).toBeLessThan(0.01);
-    expect(riverAt(L.RIVER_FOOTBRIDGE.center[0], L.RIVER_FOOTBRIDGE.center[1], river).d).toBeLessThan(1.5);
-    expect(L.RIVER_FOOTBRIDGE.length / 2).toBeGreaterThan(bank);
+    const fb = L.RIVER_FOOTBRIDGE;
+    expect(riverAt((fb.deckFrom + fb.deckTo) / 2, fb.z, river).d).toBeLessThan(1.5);
+    expect(groundHeight(fb.west, fb.z)).toBeGreaterThan(-0.02);
+    expect(groundHeight(fb.east, fb.z)).toBeGreaterThan(-0.02);
+    expect(trackDist(fb.east, fb.z)).toBeGreaterThan(1.3 + 0.5); // the train passes the east ramp's foot
     const mid: L.Vec2 = [(L.STEPPING_STONES.from[0] + L.STEPPING_STONES.to[0]) / 2, (L.STEPPING_STONES.from[1] + L.STEPPING_STONES.to[1]) / 2];
     expect(riverAt(mid[0], mid[1], river).d).toBeLessThan(1.5);
     expect(groundHeight(...L.STEPPING_STONES.from)).toBeGreaterThan(-0.2);
@@ -198,6 +219,78 @@ describe('park layout', () => {
     expect(out).toEqual([]);
     const wet = spots.filter((s) => !s.wet && !s.floats && groundHeight(s.x, s.z) < -0.2).map((s) => `${s.name} at (${s.x}, ${s.z}) is under water`);
     expect(wet).toEqual([]);
+  });
+
+  it('the river tubes float down the middle of the river, under the footbridge, clear of everything', () => {
+    const course = makeCourse(L.TUBE_RIDE.course);
+    const sway = 0.45;
+    let worst = 0;
+    for (let s = 0; s <= course.length; s += 0.25) {
+      const p = course.at(s);
+      worst = Math.max(worst, riverAt(p.x, p.z, river).d);
+    }
+    expect(worst + sway + L.TUBE_RIDE.radius).toBeLessThan(L.RIVER_HALF_WIDTH);
+    // the train bridge is upstream of the line of waiting tubes, the stepping stones downstream of the take-out
+    const first = course.at(0);
+    expect(first.z - L.TUBE_RIDE.radius).toBeGreaterThan(L.TRAIN_BRIDGE.center[1] + L.TRAIN_BRIDGE.width / 2);
+    expect(L.TUBE_RIDE.takeOutZ + L.TUBE_RIDE.radius + sway).toBeLessThan(L.STEPPING_STONES.from[1] - L.STEPPING_STONES.radius - 1);
+    // the footbridge's deck spans where the tubes go, clear of its ramps' solid bases (which stand
+    // at the channel's edges, from the banks to where each ramp meets the deck)
+    const fb = L.RIVER_FOOTBRIDGE;
+    const atBridge = course.at(course.sAtZ(fb.z));
+    expect(atBridge.x - L.TUBE_RIDE.radius - sway).toBeGreaterThan(fb.deckFrom + 0.4 + 0.3);
+    expect(atBridge.x + L.TUBE_RIDE.radius + sway).toBeLessThan(fb.deckTo - 0.4 - 0.3);
+  });
+
+  it('every bridge over water is high enough to float under', () => {
+    // an animal standing on a tube, ears and hat and all, fits under the clearance
+    expect(L.FLOAT_CLEARANCE).toBeGreaterThan(0.27 + 1.9 * 0.95);
+    const out: string[] = [];
+    // the arched footbridge: its deck clears the water, and leaves a wide channel between the
+    // solid bases of its ramps (they stand at the water's edges, like a stone bridge's abutments)
+    const fb = L.RIVER_FOOTBRIDGE;
+    if (fb.height - fb.deckThickness - L.WATER_LEVEL < L.FLOAT_CLEARANCE) out.push('the river footbridge deck is too low');
+    if (fb.deckTo - 0.4 - (fb.deckFrom + 0.4) < 4) out.push('the channel under the river footbridge is too narrow');
+    // the railway: wherever there is water under the track, the track is up on a bridge
+    const p = { x: 0, z: 0, dx: 0, dz: 0 };
+    for (let s = 0; s < TRACK_LENGTH; s += 0.5) {
+      trackAt(s, p);
+      if (groundHeight(p.x, p.z) > L.WATER_LEVEL) continue;
+      const clearance = trackHeight(s) - L.TRACK_LIFTS.deckThickness - L.WATER_LEVEL;
+      if (clearance < L.FLOAT_CLEARANCE) out.push(`the track at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) is only ${clearance.toFixed(2)} m over the water`);
+    }
+    expect(out).toEqual([]);
+  });
+
+  it('the railway stays on the ground at the station, in the tunnel and under the west footbridge', () => {
+    const near = { d: 0, s: 0 };
+    const flat = (name: string, x: number, z: number, along: number) => {
+      const s0 = trackNearest(x, z, near).s;
+      for (let s = s0 - along; s <= s0 + along; s += 0.5) expect(trackHeight(s), `${name} at ${s.toFixed(1)}`).toBeLessThan(0.1);
+    };
+    const east = L.TRAIN.center[0] + L.TRAIN.halfX;
+    flat('station', east, (L.TRAIN.station.from + L.TRAIN.station.to) / 2, (L.TRAIN.station.to - L.TRAIN.station.from) / 2 + 3.5);
+    flat('tunnel', L.MESA.center[0], L.MESA.center[1], L.MESA.halfLength + 1);
+    flat('west footbridge', L.TRAIN.center[0] - L.TRAIN.halfX, L.FOOTBRIDGE.z, L.FOOTBRIDGE.width / 2 + 0.2);
+    // (and the lifts are where the layout says)
+    expect(LIFTS.map((l) => l.name)).toEqual(['river bridge', 'trestle']);
+  });
+
+  it('the sleds start on the mountain top and run clear down to the hill that throws you off', () => {
+    const { starts, laneHalfWidth, kickX, furthestX, flyPerSpeed } = L.SLED_RUN;
+    const blocking = spots.filter((s) => !s.floats && !['hill', 'sled', 'summit'].includes(s.name.split(' ')[0]));
+    for (const [sx, sz] of starts) {
+      expect(mountainWeight(sx, sz)).toBe(1);
+      expect(groundHeight(sx, sz)).toBeCloseTo(L.WINTER.level, 3);
+      const inLane = blocking.filter((s) => s.x < sx + 1 && s.x > kickX - 1 - s.r && Math.abs(s.z - sz) < laneHalfWidth + 0.8 + s.r).map((s) => s.name);
+      expect(inLane, `in the lane of the sled at z ${sz}`).toEqual([]);
+      // the run goes up the hill where you're thrown off, and the landing is clear grass
+      for (let z = sz - laneHalfWidth; z <= sz + laneHalfWidth; z += 1) expect(groundHeight(kickX, z)).toBeGreaterThan(groundHeight(kickX + 4, z));
+      // the whole landing field, from the shortest flight (no hoops, no jump) to the furthest
+      const nearest = kickX - flyPerSpeed * 9;
+      const nearLanding = blocking.filter((s) => s.x < nearest + 1 + s.r && s.x > furthestX - 2 - s.r && Math.abs(s.z - sz) < laneHalfWidth + 2 + s.r).map((s) => s.name);
+      expect(nearLanding, `at the landing of the sled at z ${sz}`).toEqual([]);
+    }
   });
 
   it('every zone is a reasonable way from its neighbours', () => {

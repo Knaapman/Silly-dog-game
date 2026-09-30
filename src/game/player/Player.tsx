@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { playBurp, playHatTada, playPoof, playPower } from '../audio';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { ANIMAL_GROUPS } from '../collision';
+import { coatOf } from '../coats';
 import { BELLY_MAX, PARTY_POINTS, PLAYER_SHAPES } from '../config';
 import { emit, poof, ring } from '../fx';
 import { getInput, NO_INPUT, rumble } from '../input';
@@ -11,7 +12,7 @@ import { lambert } from '../materials';
 import { players, props, type PlayerRuntime } from '../runtime';
 import { MAGIC_FACTOR, settings } from '../settings';
 import { isPaused, useGame, type PlayerInfo } from '../store';
-import { tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
+import { choosing, tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
 import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
@@ -22,6 +23,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
+import { climb } from './tricks';
 import { earnSticker } from '../stickers';
 
 // One animal. The per-frame logic lives in the modules next to this file and runs in a
@@ -29,7 +31,7 @@ import { earnSticker } from '../stickers';
 // scene objects, and the hooks that let the rest of the game talk to the animal.
 
 export function Player({ info }: { info: PlayerInfo }) {
-  const { slot, source, species, hat, color } = info;
+  const { slot, source, species, coat, hat, color } = info;
   const asleep = !!info.asleep;
   const { world, rapier } = useRapier();
   const body = useRef<RapierRigidBody>(null);
@@ -82,9 +84,11 @@ export function Player({ info }: { info: PlayerInfo }) {
       launchTo: (target, apex) => {
         s.pendingLaunch = { target: target.clone(), apex };
       },
-      hold: (position, hidden = false) => {
-        s.holdAt = position ? position.clone() : null;
+      hold: (position, hidden = false, facing) => {
+        if (position && s.holdAt) s.holdAt.copy(position);
+        else s.holdAt = position ? position.clone() : null;
         s.hidden = position ? hidden : false;
+        if (facing != null) s.facing = s.targetFacing = facing;
       },
       isLaunched: () => s.launched > 0 || s.pendingLaunch != null || s.holdAt != null,
       grounded: false,
@@ -202,6 +206,8 @@ export function Player({ info }: { info: PlayerInfo }) {
       v: { x: lv.x, y: lv.y, z: lv.z }
     };
 
+    // choosing an animal: the buttons pick, the animal waits
+    if (choosing(f)) f.input = NO_INPUT;
     // the body: size, what's underneath, timers, water, flopping
     powerAndSize(f);
     probeGround(f, world, ray, rapier.QueryFilterFlags.EXCLUDE_SENSORS);
@@ -215,6 +221,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     looks(f);
     headbutt(f);
     // what happens to us, then where we go
+    climb(f);
     impulses(f);
     tugged(f);
     piggyback(f);
@@ -256,7 +263,7 @@ export function Player({ info }: { info: PlayerInfo }) {
           <group ref={squashGroup}>
             <group ref={flipGroup} position={[0, 0.6, 0]}>
               <group position={[0, -0.6, 0]} scale={MODEL_SCALE}>
-                <AnimalModel key={species} species={species} hat={hat} color={color} rig={rig} />
+                <AnimalModel key={species} species={species} coat={coatOf(species, coat)} hat={hat} color={color} rig={rig} />
               </group>
             </group>
           </group>

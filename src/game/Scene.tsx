@@ -1,5 +1,7 @@
 import { Birds } from './world/Birds';
 import { Landmarks } from './world/Landmarks';
+import { Sleds, TubeRide } from './world/Rides';
+import { Zipline } from './world/Zipline';
 import { Cats } from './world/Cats';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Physics, useRapier } from '@react-three/rapier';
@@ -21,6 +23,8 @@ import { isPartyTime, isPaused, useGame } from './store';
 import { TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Carnival } from './world/Carnival';
+import { SkyCourse } from './world/SkyCourse';
+import { BumperCars } from './world/BumperCars';
 import { DinoPark } from './world/DinoPark';
 import { Farm } from './world/Farm';
 import { Forest } from './world/Forest';
@@ -30,6 +34,7 @@ import { LaunchPad } from './world/Launchers';
 import { Playground } from './world/Playground';
 import { Sports } from './world/Sports';
 import { GoldenStars } from './world/Stars';
+import { Treasures } from './world/Treasures';
 import { Sky, Terrain } from './world/Terrain';
 import { Balloons } from './world/Toys';
 import { Train } from './world/Train';
@@ -214,7 +219,7 @@ function InputSystem() {
     if (game.phase === 'title') {
       // Keyboard starts are handled by App (any key works there); here: controllers and touch.
       const source = pressed.find((s) => s !== 'kb1' && s !== 'kb2');
-      if (source) game.start(source);
+      if (source) game.start(source, true);
       return;
     }
     for (const source of pressed) {
@@ -223,7 +228,7 @@ function InputSystem() {
       const padId = padIdOf(source);
       const napper = padId ? game.players.find((p) => p.asleep && p.padId === padId && !isSourceConnected(p.source)) : undefined;
       if (napper) game.reattach(napper.slot, source);
-      else game.join(source);
+      else game.join(source, true);
     }
     // Hold Start = grown-ups menu, hold Select = leave the game.
     for (const p of game.players) {
@@ -366,8 +371,13 @@ export function Scene() {
         <Terrain />
         <Trees />
         <Landmarks />
+        <TubeRide />
+        <Sleds />
+        <Zipline />
         <Hub />
         <Carnival />
+        <SkyCourse />
+        <BumperCars />
         <Sports />
         <DinoPark />
         <Playground />
@@ -385,6 +395,7 @@ export function Scene() {
         ))}
         <Balloons />
         <GoldenStars />
+        <Treasures />
         <ParkEvents />
         <Players />
       </Physics>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as L from '../../src/game/layout';
-import { buildHeightGrid, groundHeight, isInWater, mountainWeight, riverAt, TERRAIN, trackDist, waterLevelAt } from '../../src/game/terrain';
+import { buildHeightGrid, groundHeight, isInWater, mountainWeight, riverAt, TERRAIN, waterLevelAt } from '../../src/game/terrain';
+import { TRACK_LENGTH, trackAt, trackHeight } from '../../src/game/track';
 
 // The ground rolls, but everything that has to stand level stands on level ground: the park on
 // the flat, the winter zone on the mountain's top, the river in its channel.
@@ -35,7 +36,6 @@ describe('terrain', () => {
       ['picnic', L.PICNIC.center[0], L.PICNIC.center[1]],
       ['crate tower', L.CRATE_TOWER.base[0], L.CRATE_TOWER.base[2]],
       ['high striker', L.HIGH_STRIKER.position[0], L.HIGH_STRIKER.position[2]],
-      ['tractor', L.TRACTOR[0], L.TRACTOR[2]],
       ['fallen log', L.FALLEN_LOG[0], L.FALLEN_LOG[2]],
       ['gangplank foot', L.SHIP.center[0], L.SHIP.center[1] - L.SHIP.width / 2 - 6],
       ['footbridge ramp foot', L.FOOTBRIDGE.rampFrom, L.FOOTBRIDGE.z],
@@ -44,10 +44,8 @@ describe('terrain', () => {
       ['bowling lane end', L.BOWLING.laneX, L.BOWLING.laneTo],
       ['slide tower ramp foot', L.SLIDE_TOWER.base[0], L.SLIDE_TOWER.base[2] - 1.6 - 10],
       ['slide end', L.SLIDE_TOWER.base[0] + 1.6 + 9.5, L.SLIDE_TOWER.base[2]],
-      ['train bridge west end', L.TRAIN_BRIDGE.center[0] - L.TRAIN_BRIDGE.length / 2, L.TRAIN_BRIDGE.center[1]],
-      ['train bridge east end', L.TRAIN_BRIDGE.center[0] + L.TRAIN_BRIDGE.length / 2, L.TRAIN_BRIDGE.center[1]],
-      ['river footbridge west end', L.RIVER_FOOTBRIDGE.center[0] - L.RIVER_FOOTBRIDGE.length / 2, L.RIVER_FOOTBRIDGE.center[1]],
-      ['river footbridge east end', L.RIVER_FOOTBRIDGE.center[0] + L.RIVER_FOOTBRIDGE.length / 2, L.RIVER_FOOTBRIDGE.center[1]],
+      ['river footbridge west foot', L.RIVER_FOOTBRIDGE.west, L.RIVER_FOOTBRIDGE.z],
+      ['river footbridge east foot', L.RIVER_FOOTBRIDGE.east, L.RIVER_FOOTBRIDGE.z],
       ['station north ramp', L.TRAIN.center[0] + L.TRAIN.halfX - 2.4, L.TRAIN.station.from - 3.2],
       ['station south ramp', L.TRAIN.center[0] + L.TRAIN.halfX - 2.4, L.TRAIN.station.to + 3.2]
     );
@@ -63,18 +61,21 @@ describe('terrain', () => {
     expect(bad).toEqual([]);
   });
 
-  it('is level along the track on land, and below it over the water (the trestle)', () => {
+  it('carries the track: level on the ground, embankments up the ramps, decks over the water', () => {
     const bad: string[] = [];
+    const p = { x: 0, z: 0, dx: 0, dz: 0 };
     let wet = 0;
-    for (let x = -40; x <= 40; x += 0.5)
-      for (let z = -25; z <= 60; z += 0.5) {
-        if (trackDist(x, z) > 0.3) continue;
-        const h = groundHeight(x, z);
-        if (h > 0.001) bad.push(`track at (${x}, ${z}) is ${h.toFixed(2)} m up`);
-        const onBridge = Math.abs(x - L.TRAIN_BRIDGE.center[0]) < L.TRAIN_BRIDGE.length / 2 && Math.abs(z - L.TRAIN_BRIDGE.center[1]) < 2;
-        if (h < -0.001 && z < 44 && !onBridge) bad.push(`track at (${x}, ${z}) is ${(-h).toFixed(2)} m down`);
-        if (h < -0.3) wet += 1;
-      }
+    for (let s = 0; s < TRACK_LENGTH; s += 0.5) {
+      trackAt(s, p);
+      const rail = trackHeight(s);
+      const g = groundHeight(p.x, p.z);
+      const where = `track at (${p.x.toFixed(1)}, ${p.z.toFixed(1)})`;
+      // on the ground and up the ramps the ground is right under the rails
+      if (rail < L.TRACK_LIFTS.height - 0.001 && Math.abs(g - rail) > 0.02) bad.push(`${where}: rails at ${rail.toFixed(2)}, ground at ${g.toFixed(2)}`);
+      // on a bridge the ground is never above the rails (the deck sits on it or spans over it)
+      if (g > rail + 0.001) bad.push(`${where}: ground ${g.toFixed(2)} above the rails ${rail.toFixed(2)}`);
+      if (g < L.WATER_LEVEL - 0.2) wet += 1;
+    }
     expect(bad).toEqual([]);
     expect(wet).toBeGreaterThan(80);
   });

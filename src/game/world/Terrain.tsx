@@ -276,24 +276,70 @@ function ZoneFloors() {
   );
 }
 
-function Paths() {
-  const material = useMemo(() => {
-    const m = new THREE.MeshLambertMaterial({ color: '#ecd29a' });
-    m.polygonOffset = true;
-    m.polygonOffsetFactor = -1;
-    m.polygonOffsetUnits = -1;
-    return m;
+function pathMaterial(color: string) {
+  const m = new THREE.MeshLambertMaterial({ color });
+  m.polygonOffset = true;
+  m.polygonOffsetFactor = -1;
+  m.polygonOffsetUnits = -1;
+  return m;
+}
+
+const pathParts = (list: [Vec2, Vec2][]) =>
+  list.flatMap(([a, b]) => [groundRibbonGeometry(a, b, PATH_WIDTH, 0.012), groundDiscGeometry(a, PATH_WIDTH / 2, 0.012, 20), groundDiscGeometry(b, PATH_WIDTH / 2, 0.012, 20)]);
+
+/** Log steps across the mountain path where it climbs (flush with the ground: you run straight over them). */
+function LogSteps() {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const steps = useMemo(() => {
+    const out: { x: number; y: number; z: number; q: THREE.Quaternion }[] = [];
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const [a, b] of MOUNTAIN_PATHS) {
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const across = new THREE.Vector3(-(b[1] - a[1]) / len, 0, (b[0] - a[0]) / len);
+      const q = new THREE.Quaternion().setFromUnitVectors(up, across);
+      for (let d = 0.8; d < len - 0.8; d += 1.6) {
+        const x = a[0] + ((b[0] - a[0]) * d) / len;
+        const z = a[1] + ((b[1] - a[1]) * d) / len;
+        const y = groundHeight(x, z);
+        if (y > 0.4) out.push({ x, y: y + 0.03, z, q });
+      }
+    }
+    return out;
   }, []);
-  const parts = useMemo(
-    () =>
-      [...PATHS, ...MOUNTAIN_PATHS].flatMap(([a, b]) => [groundRibbonGeometry(a, b, PATH_WIDTH, 0.012), groundDiscGeometry(a, PATH_WIDTH / 2, 0.012, 20), groundDiscGeometry(b, PATH_WIDTH / 2, 0.012, 20)]),
-    []
+  useLayoutEffect(() => {
+    const m = mesh.current;
+    if (!m) return;
+    const o = new THREE.Object3D();
+    steps.forEach((st, i) => {
+      o.position.set(st.x, st.y, st.z);
+      o.quaternion.copy(st.q);
+      o.updateMatrix();
+      m.setMatrixAt(i, o.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+    m.computeBoundingSphere();
+  }, [steps]);
+  return (
+    <instancedMesh ref={mesh} args={[undefined, undefined, steps.length]} receiveShadow material={lambert('#8b5a2b')}>
+      <cylinderGeometry args={[0.09, 0.09, PATH_WIDTH + 0.2, 8]} />
+    </instancedMesh>
   );
+}
+
+function Paths() {
+  const sandy = useMemo(() => pathMaterial('#ecd29a'), []);
+  const gravel = useMemo(() => pathMaterial('#cdc3b1'), []);
+  const parts = useMemo(() => pathParts(PATHS), []);
+  const mountain = useMemo(() => pathParts(MOUNTAIN_PATHS), []);
   return (
     <group>
       {parts.map((g, i) => (
-        <mesh key={i} receiveShadow geometry={g} material={material} />
+        <mesh key={i} receiveShadow geometry={g} material={sandy} />
       ))}
+      {mountain.map((g, i) => (
+        <mesh key={`m${i}`} receiveShadow geometry={g} material={gravel} />
+      ))}
+      <LogSteps />
     </group>
   );
 }
@@ -333,7 +379,8 @@ function Flowers() {
       const z = -WORLD_HALF_Z + 2 + rnd() * (SEA.coast - 8 + WORLD_HALF_Z - 2);
       if (BLOCKERS.some((b) => distXZ(x, z, b.c[0], b.c[1]) < b.r) || trackDist(x, z) < 2.5 || riverAt(x, z, river).d < 6.5) continue;
       const y = groundHeight(x, z);
-      if (y < 0) continue;
+      // only on grass: not in the water, the sand along the coast, the mountain's stone or its snow
+      if (y < 0 || y > 7.8 || (y > 3 && mountainWeight(x, z) > 0.12) || z > SEA.coast - SEA.shore - 2.8) continue;
       out.push({ x, z, y, s: 0.7 + rnd() * 0.6, color: colors[Math.floor(rnd() * colors.length)] });
     }
     return out;

@@ -23,6 +23,18 @@ export const SPECIES_EMOJI: Record<Species, string> = {
   unicorn: '🦄'
 };
 
+/** Each animal's own trick, as a picture (under its face in the animal picker, and on its sticker). */
+export const SPECIES_TRICK: Record<Species, string> = {
+  dog: '👃',
+  goat: '💥',
+  pig: '💨',
+  sheep: '🦘',
+  cat: '🌳',
+  duck: '🪂',
+  cow: '📢',
+  unicorn: '🌈'
+};
+
 export const HATS = ['none', 'party', 'crown', 'tophat', 'propeller', 'flower', 'cowboy', 'duck'] as const;
 export type HatId = (typeof HATS)[number];
 
@@ -69,7 +81,9 @@ export const PARTY_POINTS = {
   splash: 0.02,
   poop: 0.04,
   goldenPoop: 0.15,
-  fart: 0.015
+  fart: 0.015,
+  trick: 0.03,
+  treasure: 0.1
 } as const;
 
 /** Bites a belly holds. Every bite comes back out as one poop. */

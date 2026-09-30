@@ -187,16 +187,26 @@ test('the train: over the river bridge, through the tunnel, along the trestle, a
     if (Math.abs(c.z - 56) < 0.2 && Math.abs(c.x) < 10) seen.trestle = true;
   }
   expect(seen).toEqual({ bridge: true, tunnel: true, trestle: true });
-  // you can walk the track over the bridge and along the trestle without getting wet
-  await game.teleport(0, 14, 1, -22);
+  // you can walk the track up the embankment, over the bridge and down again without getting wet
+  await game.teleport(0, 4, 1, -22);
+  await game.seconds(0.3);
+  let top = 0;
+  await page.keyboard.down('KeyD');
+  for (let i = 0; i < 26; i += 1) {
+    await game.seconds(0.1);
+    top = Math.max(top, (await game.player(0)).y);
+    expect(await swimming(game)).toBe(false);
+  }
+  await page.keyboard.up('KeyD');
+  expect(top).toBeGreaterThan(2.8);
+  // on the bridge over the river (straight on, the parapet where the track curves away stops you)
+  expect((await game.player(0)).x).toBeGreaterThan(18);
+  expect((await game.player(0)).y).toBeGreaterThan(2.8);
+  // and along the trestle over the sea (the teleport height is over the sea floor there)
+  await game.teleport(0, -10, 3.8, 56);
   await game.seconds(0.3);
   await game.hold('KeyD', 2);
   expect(await swimming(game)).toBe(false);
-  expect((await game.player(0)).x).toBeGreaterThan(28);
-  await game.teleport(0, -10, 1, 56);
-  await game.seconds(0.3);
-  await game.hold('KeyD', 2);
-  expect(await swimming(game)).toBe(false);
-  expect((await game.player(0)).y).toBeGreaterThan(0.3);
+  expect((await game.player(0)).y).toBeGreaterThan(2.8);
   game.expectNoErrors();
 });

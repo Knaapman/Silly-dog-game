@@ -53,12 +53,15 @@ export function probeGround(f: FrameCtx, world: World, ray: Ray, excludeSensors:
   f.surface = hit && f.groundDist < f.rad + 0.4 ? surfaces.get(hit.collider.handle) : undefined;
   const groundBody = hit ? hit.collider.parent() : null;
   f.onStatic = !groundBody || groundBody.isFixed();
-  // Generous so slopes (roof, hill, island) still count as ground for jumping. Moving
-  // platforms can rise faster than a normal "falling" check allows.
-  const riseLimit = f.surface?.velocityAt ? 12 : 4;
-  s.grounded = !s.flopped && f.groundDist < f.rad + 0.25 && lv.y < riseLimit;
-  if (s.grounded && f.surface?.velocityAt) f.surface.velocityAt(s.pos, s.platformVel);
+  // Generous so slopes (roof, hill, island) still count as ground for jumping. On a moving
+  // platform, rising is measured against the platform: one going up (a gondola) still counts as
+  // ground, but an animal that just jumped off it doesn't (else "stick to rides" would pull it
+  // straight back down, and nothing that moves could be jumped off).
+  const near = !s.flopped && f.groundDist < f.rad + 0.25;
+  if (near && f.surface?.velocityAt) f.surface.velocityAt(s.pos, s.platformVel);
   else s.platformVel.set(0, 0, 0);
+  s.grounded = near && lv.y - s.platformVel.y < 4;
+  if (!s.grounded) s.platformVel.set(0, 0, 0);
 }
 
 export function tickTimers(f: FrameCtx) {

@@ -31,6 +31,11 @@ export function createState(spawn: THREE.Vector3) {
     friendHoldTime: 0,
     lickMiss: 0,
     noiseTime: 0,
+    /** The animal picker, as this animal last saw it: open, for how long, idle for how long, which way the stick leans. */
+    picking: false,
+    pickAge: 0,
+    pickIdle: 0,
+    pickDir: 0,
     launched: 0,
     padCooldown: 0,
     launchAirborne: false,
@@ -84,6 +89,15 @@ export function createState(spawn: THREE.Vector3) {
     rippleTimer: 0,
     walkPhase: 0,
     idleTime: 0,
+    // tricks: the duck's glide, the cat's climb (tree index, time, where from, where it holds us)
+    gliding: false,
+    glideTime: 0,
+    climbTree: -1,
+    climbT: 0,
+    climbPush: 0,
+    climbArmed: false,
+    climbFrom: new THREE.Vector3(),
+    climbHold: new THREE.Vector3(),
     pupils: [
       { x: 0, y: 0, vx: 0, vy: 0 },
       { x: 0, y: 0, vx: 0, vy: 0 }
