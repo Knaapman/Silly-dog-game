@@ -38,6 +38,7 @@ import {
   ZIPLINE,
   SLED_RUN,
   TREES,
+  SNOW_PILES,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -51,9 +52,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -122,6 +123,7 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   carrotfriends: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]],
   waterslide: [[WATER_SLIDE.tower[0], WATER_SLIDE.tower[1] - 1.6 - WATER_SLIDE.stairs - 1.5]],
   slidetogether: [[WATER_SLIDE.tower[0], WATER_SLIDE.tower[1] - 1.6 - WATER_SLIDE.stairs - 1.5]],
+  snowballfight: SNOW_PILES.map(([x, z]): P => [x, z - 1.8]),
   paint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
   rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]]
 };

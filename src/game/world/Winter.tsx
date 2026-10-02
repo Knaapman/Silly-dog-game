@@ -16,6 +16,7 @@ import { useSurface } from './surface';
 import { after, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { cameraFoci } from '../views';
+import { SnowballFight } from './SnowballFight';
 
 function IcePond() {
   const [ix, iz] = ICE.center;
@@ -516,6 +517,7 @@ export function Winter() {
         <SnowBall key={i} home={p} index={i} />
       ))}
       <SnowmanBuild />
+      <SnowballFight />
       <Snowfall />
     </group>
   );

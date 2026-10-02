@@ -3,6 +3,12 @@
 // a while) and leaves a trail of coloured paw prints wherever it goes.
 
 export const PAINT_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e'];
+/** Not a paint: a dusting of snow from a snowball (white, melts quickly, no paint stickers). */
+export const SNOW_PAINT = PAINT_COLORS.length;
+
+export function paintColor(i: number) {
+  return i === SNOW_PAINT ? '#f4f9ff' : PAINT_COLORS[i];
+}
 
 /** Splashes waiting for each animal (slot → colour); the animal puts it on in its own frame. */
 export const paintSplashes = new Map<number, number>();

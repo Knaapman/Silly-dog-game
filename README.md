@@ -96,6 +96,13 @@ carrot nose, a smile, stick arms, a top hat and a scarf, a cheer and a party (an
 being built only makes it wobble; once it's finished, one headbutt knocks it flying, ready to build another. There
 are three snowballs, so friends can each roll one.
 
+**Snowball fight** ❄️ on the mountain top: two snow piles with little snowballs on them. Lick one to pick it up, lick
+again to throw it (it's a lob: throw it from a few steps away). A friend it hits gets a splat, a hop and a dusting of
+snow that melts after ten seconds or so (and leaves white paw prints until it does); hitting a friend is a friend
+sticker. A snowball hits things just like a headbutt does: it knocks a snowman down, shakes a tree, tips a paint
+bucket, even opens the hat box, from afar. Playing alone? Hit the buddy and it throws one right back. Thrown
+snowballs burst when they land and grow back on their pile; nothing is counted, it's just for fun.
+
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). There's a handle for every child (four, each bar
@@ -251,7 +258,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
-| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build |
+| ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build, a snowball fight |
 | 🚜 Farm (south-west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
 | 🍄 Forest (west) | Giant **bouncy mushrooms** to climb, a hedge maze, logs and toadstools |
 
@@ -294,13 +301,13 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 71 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 72 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Seven stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
@@ -416,6 +423,7 @@ src/
       GiantCarrot.tsx   the giant carrot to pull out with your tongues
       WaterSlide.tsx    the water slide at the beach (two slides along a curve, ridden like the sleds)
       PaintBuckets.tsx  the paint buckets, their puddles and the paw prints (paint.ts: who's painted what colour)
+      SnowballFight.tsx the snow piles and little snowballs to throw (a hit: a splat and a dusting of snow)
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

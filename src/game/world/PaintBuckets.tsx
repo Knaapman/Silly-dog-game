@@ -8,7 +8,7 @@ import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { distXZ, PAINT_BUCKETS } from '../layout';
 import { lambert } from '../materials';
-import { FOOTPRINTS, footprints, PAINT_COLORS, paintAnimal, paintOf } from '../paint';
+import { FOOTPRINTS, footprints, PAINT_COLORS, paintAnimal, paintColor, paintOf } from '../paint';
 import { RADIUS } from '../player/constants';
 import { debugInfo, players, registerStatic } from '../runtime';
 import { useGame } from '../store';
@@ -151,7 +151,7 @@ export function PaintBuckets() {
           dummy.position.set(f.x, f.y, f.z);
           dummy.rotation.set(0, f.yaw, 0);
           dummy.scale.setScalar(Math.min(1, (PRINT_FOR - age) / 4));
-          ip.setColorAt(k, color.set(PAINT_COLORS[f.color]));
+          ip.setColorAt(k, color.set(paintColor(f.color)));
         }
         dummy.updateMatrix();
         ip.setMatrixAt(k, dummy.matrix);

@@ -102,7 +102,8 @@ export const STICKERS = [
   { id: 'waterslide', icon: '🛝', badge: '💦', color: CHALLENGE },
   { id: 'slidetogether', icon: '🛝', color: CHALLENGE },
   { id: 'paint', icon: '🎨', color: CHALLENGE },
-  { id: 'rainbowpaint', icon: '🎨', badge: '🌈', color: CHALLENGE }
+  { id: 'rainbowpaint', icon: '🎨', badge: '🌈', color: CHALLENGE },
+  { id: 'snowballfight', icon: '❄️', badge: '💥', color: CHALLENGE }
 ] as const satisfies readonly Sticker[];
 
 export type StickerId = (typeof STICKERS)[number]['id'];

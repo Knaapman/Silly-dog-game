@@ -24,6 +24,7 @@ export type PropKind =
   | 'cow'
   | 'dino'
   | 'snowball'
+  | 'throwball'
   | 'poop'
   | 'giantcarrot';
 
