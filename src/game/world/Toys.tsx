@@ -1,6 +1,6 @@
 import { CoefficientCombineRule } from '@dimforge/rapier3d-compat';
 import { CuboidCollider, CylinderCollider, RigidBody, type RapierCollider } from '@react-three/rapier';
-import { useEffect, useMemo, useRef } from 'react';
+import { createRef, useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from 'react';
 import * as THREE from 'three';
 import { playButton, playPop, playPoof } from '../audio';
 import { MOVE, PARTY_POINTS } from '../config';
@@ -11,6 +11,7 @@ import { basic, lambert } from '../materials';
 import { players, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
+import { useSeeThrough } from './seeThrough';
 import { useSurface } from './surface';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -69,8 +70,15 @@ export function Trampoline({ position, radius, color = 0 }: { position: Vec3; ra
 
 const BALLOON_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e', '#a855f7', '#ff8fd8'];
 
+/** A balloon fades while it hangs between the camera and an animal (they float high, over the trampolines). */
+function SeeThroughBalloon({ target, x, z }: { target: RefObject<THREE.Group | null>; x: number; z: number }) {
+  useSeeThrough(target, x, z, 1, 0.2);
+  return null;
+}
+
 export function Balloons() {
   const groups = useRef<(THREE.Group | null)[]>([]);
+  const fadeRefs = useMemo(() => BALLOONS.map(() => createRef<THREE.Group>()), []);
   const state = useMemo(() => BALLOONS.map(() => ({ popped: false, respawnAt: 0, grow: 1, pos: new THREE.Vector3() })), []);
   const probe = useMemo(() => new THREE.Vector3(), []);
 
@@ -137,6 +145,7 @@ export function Balloons() {
           key={i}
           ref={(g) => {
             groups.current[i] = g;
+            (fadeRefs[i] as MutableRefObject<THREE.Group | null>).current = g;
           }}
         >
           <mesh castShadow scale={[1, 1.2, 1]} material={lambert(BALLOON_COLORS[i % BALLOON_COLORS.length])}>
@@ -152,6 +161,9 @@ export function Balloons() {
             <cylinderGeometry args={[0.01, 0.01, 1.2, 4]} />
           </mesh>
         </group>
+      ))}
+      {BALLOONS.map(([x, , z], i) => (
+        <SeeThroughBalloon key={`fade${i}`} target={fadeRefs[i]} x={x} z={z} />
       ))}
     </group>
   );

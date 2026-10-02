@@ -13,6 +13,7 @@ import { Chickens } from './Chickens';
 import { useHint } from './common';
 import { Cows } from './Critters';
 import { LaunchPad } from './Launchers';
+import { GiantCarrot } from './GiantCarrot';
 import { Prop } from './Prop';
 import { useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -269,6 +270,7 @@ export function Farm() {
       <Chickens />
       <MelonPatch />
       <Tractor />
+      <GiantCarrot />
       <LaunchPad pad={LAUNCH_PADS[0]} />
       {FARM_PROPS.map((p, i) => (
         <Prop key={i} kind={p.kind} position={p.position} rotation={p.rotation} color={p.color} />

@@ -41,6 +41,8 @@ export function useSeeThrough(ref: RefObject<THREE.Object3D | null>, x: number, 
     fade.current = THREE.MathUtils.clamp(fade.current + Math.sign(want - fade.current) * dt * 3, faded, 1);
     const see = fade.current < 0.999;
     for (const m of mats.current) {
+      // (switching `transparent` needs a shader rebuild: an opaque shader ignores the opacity)
+      if (m.transparent !== see) m.needsUpdate = true;
       m.transparent = see;
       m.opacity = fade.current;
       m.depthWrite = !see;

@@ -7,6 +7,7 @@ import {
   EGG_NEST,
   FERRIS,
   GEYSERS,
+  GIANT_CARROT,
   GOLDEN_STARS,
   HAT_RACK,
   HIGH_STRIKER,
@@ -26,6 +27,7 @@ import {
   TREX,
   VOLCANO,
   WINDMILL,
+  XYLOPHONE,
   BRONTO,
   CHICKEN_COOP,
   BUMPER,
@@ -47,9 +49,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -111,7 +113,11 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   bumper: [[BUMPER.center[0], BUMPER.center[1] + BUMPER.size[1] / 2 + 1]],
   trailer: [TRACTOR.home],
   course: [SKY_COURSE.pad],
-  snowman: [[SNOWMAN_BUILD.center[0] - 2.5, SNOWMAN_BUILD.center[1] + 1.5]]
+  snowman: [[SNOWMAN_BUILD.center[0] - 2.5, SNOWMAN_BUILD.center[1] + 1.5]],
+  tune: [[XYLOPHONE.center[0], XYLOPHONE.center[1] + 3.5]],
+  bigtune: [[XYLOPHONE.center[0], XYLOPHONE.center[1] + 3.5]],
+  carrot: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]],
+  carrotfriends: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

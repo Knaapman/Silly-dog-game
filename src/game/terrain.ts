@@ -13,6 +13,7 @@ import {
   distXZ,
   FLOOR_PATCHES,
   FOOTBRIDGE,
+  GIANT_CARROT,
   HIGH_STRIKER,
   HILLS,
   ICE,
@@ -246,7 +247,9 @@ export const FLATS: Flat[] = [
   ...UMBRELLAS.map((u) => disc([u.position[0], u.position[2]], 2)),
   disc([SHIP.center[0], SHIP.center[1] - SHIP.width / 2 - 6], 2.5),
   disc(CHICKEN_COOP.center, (CHICKEN_COOP.size / 2) * Math.SQRT2 + 0.2, { blend: 1.5 }),
-  disc(BUMPER.center, Math.hypot(...BUMPER.size) / 2 + 1)
+  disc(BUMPER.center, Math.hypot(...BUMPER.size) / 2 + 1),
+  // (level all round, so every place to pull from is on the same ground: it's by the bank at the park's edge)
+  disc(GIANT_CARROT.at, GIANT_CARROT.pull + 1.6, { blend: 2 })
 ];
 
 /** Round bumps on top of everything: the hills, and the summit on the mountain's top. */
