@@ -51,6 +51,8 @@ export const MOVE = {
   speed: 9,
   swimSpeed: 5,
   mudSpeed: 7,
+  /** Wading through the balls in the ball pit. */
+  ballPitSpeed: 4.5,
   groundAccel: 14,
   airAccel: 5,
   jumpVelocity: 9.5,

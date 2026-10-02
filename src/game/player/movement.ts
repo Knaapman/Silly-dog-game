@@ -3,7 +3,7 @@ import { gameNow } from '../clock';
 import { MOVE, PARTY_POINTS } from '../config';
 import { emit, ring } from '../fx';
 import { rumble } from '../input';
-import { distXZ, isOnSnow } from '../layout';
+import { distXZ, isInBallPit, isOnSnow } from '../layout';
 import { players, playersCentroid } from '../runtime';
 import { LEASH_RADIUS, settings, SPEED_FACTOR } from '../settings';
 import { useGame } from '../store';
@@ -33,6 +33,7 @@ export function movement(f: FrameCtx) {
   let speed: number = MOVE.speed;
   if (s.swimming) speed = f.species === 'duck' ? TRICK.duckSwim : MOVE.swimSpeed;
   else if (s.inMud) speed = f.species === 'pig' ? TRICK.pigMud : MOVE.mudSpeed;
+  else if (isInBallPit(s.pos.x, s.pos.y, s.pos.z)) speed = MOVE.ballPitSpeed;
   speed *= SPEED_FACTOR[prefs.speed];
   if (f.heavyDrag) speed *= 0.72;
   if (s.power === 'giant') speed *= 1.2;
