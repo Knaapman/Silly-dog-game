@@ -109,6 +109,8 @@ test('the machine keeps blowing bubbles, off towards the plaza', async ({ page }
   await game.open();
   await game.start();
   const M = await page.evaluate(() => (window as any).__silly.layout.BUBBLE_MACHINE);
+  // (in test mode it starts switched off)
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.bubbles.setAuto(true));
   await game.seconds(7, true);
   const s = await state(game);
   const alive = s.list.filter((b) => b.alive);

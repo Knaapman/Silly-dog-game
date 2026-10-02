@@ -61,6 +61,8 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   await game.withPads();
   await game.open(11);
   await game.start();
+  // (the bubble machine starts switched off in test mode: chaos has it on, like real play)
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.bubbles.setAuto(true));
   await game.join('kb2');
   await page.evaluate(() => {
     (window as any).__addPad(0, 'standard', 'Xbox Pad');
@@ -155,6 +157,7 @@ test('chaos: one child mashing everything, with the buddy along', async ({ page 
   await game.open(5);
   await game.start();
   await page.evaluate(() => ((window as any).__silly.buddyControl.auto = true));
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.bubbles.setAuto(true));
   await game.seconds(5);
   expect(await game.state<number>('(g) => g.players.filter((p) => p.bot).length')).toBe(1);
   const r = rng(2024);

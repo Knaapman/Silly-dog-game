@@ -10,6 +10,7 @@ import { lambert } from '../materials';
 import { debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
+import { TEST_MODE } from '../testMode';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
 
@@ -49,8 +50,12 @@ const [MX, MZ] = BUBBLE_MACHINE.at;
 const MG = groundHeight(MX, MZ);
 const WAND = new THREE.Vector3(MX + Math.sin(BUBBLE_MACHINE.blow) * 0.9, MG + 2.3, MZ + Math.cos(BUBBLE_MACHINE.blow) * 0.9);
 
-/** For tests and tuning: every bubble, rides and pops so far, and a way to blow one on purpose. */
-export const bubbles = { list: [] as Bubble[], rides: 0, pops: 0, auto: true };
+/**
+ * For tests and tuning: every bubble, rides and pops so far. In the browser tests the machine
+ * starts switched off (like the buddy's own mind), or its bubbles drifting over the plaza would
+ * swallow whoever a test has put there; the bubble tests and the chaos test switch it on.
+ */
+export const bubbles = { list: [] as Bubble[], rides: 0, pops: 0, auto: !TEST_MODE };
 
 export function BubbleMachine() {
   const list = useMemo(
