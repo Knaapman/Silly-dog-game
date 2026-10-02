@@ -7,7 +7,7 @@ import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { poof, ring } from '../fx';
 import { rumble } from '../input';
 import { SPAWN_POINTS } from '../layout';
-import { players } from '../runtime';
+import { debugInfo, players } from '../runtime';
 import { groundHeight, isInWater } from '../terrain';
 import { endFlop, releaseFriend, releaseHeld, type FrameCtx } from './frame';
 
@@ -31,6 +31,14 @@ export const STUCK_HOP_AFTER = 3;
 export const STUCK_RESCUE_AFTER = 7;
 /** Getting less than this far (along the ground) from where the pushing started is "nowhere". */
 const STUCK_RADIUS = 0.8;
+
+/** How often each has happened, and where the last few were (for tests and tuning). */
+export const unstuckLog = { chord: 0, hops: 0, pops: 0, where: [] as { slot: number; kind: 'hop' | 'pop'; x: number; z: number }[] };
+debugInfo.unstuck = unstuckLog;
+const note = (slot: number, kind: 'hop' | 'pop', p: THREE.Vector3) => {
+  unstuckLog.where.push({ slot, kind, x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 });
+  if (unstuckLog.where.length > 20) unstuckLog.where.shift();
+};
 
 export type Rapier = ReturnType<typeof useRapier>['rapier'];
 const IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
@@ -107,6 +115,7 @@ export function rescue(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
   }
   if (s.rescueHold < RESCUE_SECONDS) return;
   s.rescueHold = -1;
+  unstuckLog.chord += 1;
   popOut(f, world, rapier);
 }
 
@@ -130,8 +139,12 @@ export function autoUnstick(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
   if (before < STUCK_HOP_AFTER && s.stuckFor >= STUCK_HOP_AFTER) {
     s.pendingHop = 9;
     playBoing(s.pos, 1.2);
+    unstuckLog.hops += 1;
+    note(f.slot, 'hop', s.pos);
   }
   if (s.stuckFor >= STUCK_RESCUE_AFTER) {
+    unstuckLog.pops += 1;
+    note(f.slot, 'pop', s.pos);
     popOut(f, world, rapier);
     s.stuckFor = 0;
     s.stuckFrom.copy(s.pos);

@@ -140,6 +140,7 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   for (const k of held) await page.keyboard.up(k);
   console.log(`seed ${seed}: ${((simMs / (CHUNKS * 15)) || 0).toFixed(2)} ms per simulated frame (4 players, no drawing)`);
   if (stuck.length) console.log(`seed ${seed} possibly stuck: ${stuck.join(' | ')}`);
+  console.log(`seed ${seed} unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
   console.log(`seed ${seed} stickers: ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
   await game.seconds(1, true);
   await page.screenshot({ path: 'test-results/chaos-end.png' });
@@ -197,6 +198,7 @@ test('chaos: one child mashing everything, with the buddy along', async ({ page 
   }
   for (const k of held) await page.keyboard.up(k);
   console.log(`solo chaos: the buddy was at most ${farthest.toFixed(1)} m away; stickers ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
+  console.log(`solo chaos unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
   expect(problems, problems.join('\n')).toEqual([]);
   // it never wanders off (it pops back when more than 24 m away)
   expect(farthest).toBeLessThan(30);
