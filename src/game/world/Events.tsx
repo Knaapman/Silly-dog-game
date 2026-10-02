@@ -164,12 +164,12 @@ function GoldenChicken() {
     // (water anywhere on the next few steps that way?)
     const wet = (a: number) => WATER_LOOK.some((r) => isInWater(t.x + Math.sin(a) * r, t.z + Math.cos(a) * r));
     const base = Math.atan2(dx, dz);
+    const ux = fleeing && player ? t.x - player.position.x : dx;
+    const uz = fleeing && player ? t.z - player.position.z : dz;
+    const away = (a: number) => Math.sin(a) * ux + Math.cos(a) * uz;
     if (wet(base)) {
       // water ahead: turn aside only as far as it takes, to whichever side keeps it furthest from
       // the one chasing it (turning back if it has to)
-      const ux = fleeing && player ? t.x - player.position.x : dx;
-      const uz = fleeing && player ? t.z - player.position.z : dz;
-      const away = (a: number) => Math.sin(a) * ux + Math.cos(a) * uz;
       let heading = base + Math.PI;
       search: for (const turn of [0.4, 0.8, 1.2, 1.6, 2, 2.4]) {
         const sides = away(base + turn) >= away(base - turn) ? [base + turn, base - turn] : [base - turn, base + turn];
@@ -187,6 +187,20 @@ function GoldenChicken() {
     while (d > Math.PI) d -= Math.PI * 2;
     while (d < -Math.PI) d += Math.PI * 2;
     s.facing += d * (1 - Math.exp(-8 * dt));
+    // (and never a step into the water: while it's still turning, the way it's actually going can
+    // cut across the edge, so if the next bit that way is wet it turns right now)
+    const wetSoon = (a: number) => isInWater(t.x + Math.sin(a) * 0.8, t.z + Math.cos(a) * 0.8) || isInWater(t.x + Math.sin(a) * 1.6, t.z + Math.cos(a) * 1.6);
+    if (wetSoon(s.facing)) {
+      const f = s.facing;
+      search: for (const turn of [0.3, 0.6, 0.9, 1.2, 1.6, 2, 2.5, Math.PI]) {
+        const sides = away(f + turn) >= away(f - turn) ? [f + turn, f - turn] : [f - turn, f + turn];
+        for (const a of sides) {
+          if (wetSoon(a)) continue;
+          s.facing = a;
+          break search;
+        }
+      }
+    }
     // it gets tired after a while, so small legs can catch it
     const speed = fleeing ? THREE.MathUtils.lerp(6.2, 4.2, THREE.MathUtils.clamp((age - 12) / 15, 0, 1)) : 2.2;
     const v = rb.linvel();

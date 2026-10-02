@@ -922,3 +922,37 @@ export function playSpin(position?: AudioPosition) {
   v.tone({ type: 'triangle', from: 300, to: 900, dur: 0.5, gain: 0.08, vibrato: [18, 60] });
   v.finish();
 }
+
+/** The giant xylophone's notes: a C major scale, low to high. */
+export const XYLO_NOTES = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.5];
+
+/** A key of the giant xylophone: a woody "tock" with a ringing bar. */
+export function playXylo(note: number, position?: AudioPosition, loud = 1) {
+  const f = XYLO_NOTES[Math.max(0, Math.min(XYLO_NOTES.length - 1, note))];
+  const v = voice('world', { position, gain: 1.1 * loud });
+  if (!v) return;
+  v.tone({ type: 'sine', from: f, dur: 1.1, gain: 0.2, attack: 0.002 });
+  v.tone({ type: 'sine', from: f * 4, dur: 0.18, gain: 0.07, attack: 0.001 });
+  v.tone({ type: 'triangle', from: f * 2, dur: 0.4, gain: 0.05, attack: 0.002 });
+  v.noise({ dur: 0.03, gain: 0.05, filter: { type: 'bandpass', freq: 2200, q: 1.2 } });
+  v.finish();
+}
+
+/** The songbird sings one note of its tune (the same note as the key, an octave up and warbly). */
+export function playBirdNote(note: number, position?: AudioPosition) {
+  const f = XYLO_NOTES[Math.max(0, Math.min(XYLO_NOTES.length - 1, note))] * 2;
+  const v = voice('world', { position, gain: 1 });
+  if (!v) return;
+  v.tone({ type: 'sine', from: f * 0.94, to: f, dur: 0.38, gain: 0.09, attack: 0.01, vibrato: [11, 18] });
+  v.tone({ type: 'sine', from: f * 2, dur: 0.12, gain: 0.02, attack: 0.005 });
+  v.finish();
+}
+
+/** The songbird, puzzled: "hm-mm?" (that wasn't it; listen again). */
+export function playBirdHmm(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 0.9 });
+  if (!v) return;
+  v.tone({ type: 'sine', from: 1500, to: 1150, dur: 0.16, gain: 0.07, vibrato: [9, 30] });
+  v.tone({ type: 'sine', from: 1150, to: 1650, at: 0.22, dur: 0.2, gain: 0.07, vibrato: [9, 30] });
+  v.finish();
+}

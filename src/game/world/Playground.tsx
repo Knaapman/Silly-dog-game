@@ -20,6 +20,7 @@ import { SlideTower, StaticBox, useHint } from './common';
 import { Prop } from './Prop';
 import { useSurface } from './surface';
 import { Trampoline } from './Toys';
+import { Xylophone } from './Xylophone';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -254,6 +255,7 @@ export function Playground() {
         colors={{ tower: '#ffd23f', ramp: '#3b82f6', slide: '#ff4d5e', rail: '#ffffff' }}
       />
       <BouncyCastle />
+      <Xylophone />
       {SEESAWS.map((_, i) => (
         <SeeSaw key={i} index={i} />
       ))}

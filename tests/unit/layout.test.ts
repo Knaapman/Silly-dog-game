@@ -35,6 +35,11 @@ L.BIRD_SPOTS.forEach((b, i) => add(`bird spot ${i}`, b[0], b[2], b[3], { onPathO
 L.SNOWMEN.forEach((s, i) => add(`snowman ${i}`, s[0], s[1], 0.9, { winter: true }));
 L.SNOWBALLS.forEach((s, i) => add(`snowball ${i}`, s[0], s[2], 0.5, { winter: true }));
 add('snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], 2.2, { winter: true });
+// the xylophone: a row of circles along its keys, and the songbird's post
+for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i - 2) * 3.1, L.XYLOPHONE.center[1], 1.8);
+add('songbird post', L.XYLOPHONE.bird[0], L.XYLOPHONE.bird[1], 0.5);
+// the giant carrot and the ring of places to pull it from
+add('giant carrot', L.GIANT_CARROT.at[0], L.GIANT_CARROT.at[1], L.GIANT_CARROT.pull + 0.8);
 add('ice pond', L.ICE.center[0], L.ICE.center[1], L.ICE.radius, { winter: true });
 add('ski jump', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2], 2.2, { winter: true });
 add('ski jump ramp foot', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2] - 1.6 - 7, 1.2, { winter: true });
@@ -146,6 +151,24 @@ describe('park layout', () => {
     expect(riverAt(mid[0], mid[1], river).d).toBeLessThan(1.5);
     expect(groundHeight(...L.STEPPING_STONES.from)).toBeGreaterThan(-0.2);
     expect(groundHeight(...L.STEPPING_STONES.to)).toBeGreaterThan(-0.2);
+  });
+
+  it('leaves the treasure spots clear of the things you play on', () => {
+    const pieces: [string, number, number, number][] = [
+      ['giant carrot', L.GIANT_CARROT.at[0], L.GIANT_CARROT.at[1], L.GIANT_CARROT.pull + 1],
+      ['xylophone', L.XYLOPHONE.center[0], L.XYLOPHONE.center[1], 7.5],
+      ['snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], L.SNOWMAN_BUILD.radius + 1.5],
+      ['bumper cars', L.BUMPER.center[0], L.BUMPER.center[1], Math.hypot(...L.BUMPER.size) / 2],
+      ['chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], L.CHICKEN_COOP.size * 0.75]
+    ];
+    const out: string[] = [];
+    for (const t of L.TREASURE_SPOTS) {
+      for (const [name, x, z, r] of pieces) {
+        const d = Math.hypot(t.at[0] - x, t.at[1] - z);
+        if (d < r + 1) out.push(`treasure spot (${t.at[0]}, ${t.at[1]}) is ${d.toFixed(1)} m from the ${name}`);
+      }
+    }
+    expect(out).toEqual([]);
   });
 
   it('keeps the winter zone on the mountain top', () => {

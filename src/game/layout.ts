@@ -145,6 +145,12 @@ export const SEESAWS: { center: Vec2; angle: number }[] = [
   { center: at(Z.playground, -3, 10), angle: 0 },
   { center: at(Z.playground, 3, 4), angle: Math.PI / 2 }
 ];
+/**
+ * The giant xylophone: eight keys in a row, low notes to the west, each a little shorter than the
+ * one before. `pitch`: key to key; `width` × `depth`: the keys (the first and the last depth);
+ * `top`: how high they stand. The songbird sings from its post behind them.
+ */
+export const XYLOPHONE = { center: at(Z.playground, -3.5, -1.5), pitch: 1.62, width: 1.5, depth: [3.4, 2.5] as Vec2, top: 0.22, bird: at(Z.playground, -3.5, -4.7) };
 export const TRAMPOLINES: { position: Vec3; radius: number }[] = [
   { position: at3(Z.playground, -16, 0, 4), radius: 1.8 },
   { position: at3(Z.playground, -11, 0, 9), radius: 1.8 },
@@ -198,6 +204,8 @@ export const MUD = { center: at(Z.farm, 7, -7), radius: 3.5 };
 export const TRACTOR = { home: at(Z.farm, 6, -0.5), yaw: Math.PI / 2 };
 export const PASTURE = { center: at(Z.farm, -1, 10), size: [12, 8] as Vec2 };
 export const CHICKEN_HOME = { center: at(Z.farm, 4, 0), radius: 8, count: 8 };
+/** The giant carrot in the vegetable garden, south of the melons: grab its leaves with your tongue and pull (friends pull from the other sides). `pull`: how far out the pullers stand. */
+export const GIANT_CARROT = { at: at(Z.farm, -18.5, 5.2), pull: 2.4 };
 /** The chicken coop: a fenced pen east of the pasture, the gate in its north side (towards the chickens' yard). */
 export const CHICKEN_COOP = { center: at(Z.farm, 9, 12), size: 5.5, gate: 2.4, fence: 1.1 };
 /** The melon field, out on the grass west of the silo (clear of the railway embankment on the farm's east side). */
@@ -546,7 +554,7 @@ export const TREASURE_SPOTS: { zone: keyof typeof ZONES; at: Vec2 }[] = (
     ['hub', [[3, 14], [5, -18], [15, 4]]],
     ['carnival', [[-67, -26], [-33, -30], [-65, -42]]],
     ['forest', [[-41, -4], [-73, 22], [-39, 16]]],
-    ['farm', [[-39, 46], [-65, 50]]],
+    ['farm', [[-37.5, 52], [-65, 50]]],
     ['beach', [[-19, 44], [-9, 24]]],
     ['playground', [[55, 22], [39, 50], [39, 28], [71, 22]]],
     ['dino', [[53, -18], [71, 12], [53, 16]]],
@@ -582,7 +590,7 @@ export const BIRD_SPOTS: [number, number, number, number][] = [
   [-15, 0, 25, 2],
   [-48, 0, -10, 2.2],
   [10, 0, 7, 2],
-  [60, 0, 35, 2.2],
+  [63.5, 0, 38, 2.2],
   [-52, 0, -4, 2],
   [20, 0, -62, 2],
   [-22, 0, -44, 2.2],
@@ -599,7 +607,7 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
     [-74, 12], [-72, -2], [-66, -8], [-60, -9], [-54, -9], [-46, -4], [-72, 18], [-68, 22], [-47, 25], [-48, 21], [-40, 0], [-40, 12], [-64, 12], [-56, 12], [-54, 3], [-70, 24]
   ]),
   // round the hub, and between the hub and its neighbours
-  ...treesOf((i) => (i % 2 === 0 ? 'round' : 'blossom'), [[-24, -10], [-30, -2], [-26, 30], [13, -13], [10, -12], [16, 12], [8, 26], [-30, -40], [-70, -26], [-66, -40], [-38, -42], [-66, 26], [-38, 31], [-66, 46]]),
+  ...treesOf((i) => (i % 2 === 0 ? 'round' : 'blossom'), [[-24, -10], [-30, -2], [-26, 30], [13, -13], [10, -12], [16, 12], [8, 26], [-30, -40], [-70, -26], [-66, -40], [-38, -42], [-66, 26], [-38, 31], [-63.5, 47]]),
   // east: by the sports, the dino park and the playground
   ...treesOf((i) => (i % 2 === 0 ? 'pine' : 'round'), [[40, -14], [72, 20], [74, -30], [50, -62], [40, -40], [40, -52], [38.5, 45.5], [46, 26]]),
   // on the mountain's slopes

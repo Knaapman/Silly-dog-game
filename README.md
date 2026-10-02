@@ -61,6 +61,22 @@ in. The sign by the coop has a dot for each chicken, lit when it's in; all eight
 a while the gate opens and they trot back out to their yard, ready to be rounded up again. It works alone, and it's
 easier with friends coming at them from both sides.
 
+**The giant xylophone** 🎵 in the playground: eight big rainbow keys on the ground, low notes to the west. Walk,
+run or jump along them and they play. Behind them a little bluebird on a post sings a short tune and lights up each key
+as it sings it; play it back (anyone can, in turns or all together) and it dances, there's a party (and a sticker), and
+the next tune is a note longer, up to seven (a six-note tune is a sticker of its own). A wrong key: it puts its head on
+one side, "hm-mm?", and sings the tune again. After two tries, the next key to play glows to help. The buddy hopping
+about on the keys only makes music; it doesn't count. When everybody has gone away for a while, the bird starts again
+with a short tune for whoever comes next.
+
+**The giant carrot** 🥕 in the vegetable garden by the melons at the farm: its leaves stick out of a mound of earth.
+Grab them with your tongue and you hang on; push the stick away from the carrot to pull (a yellow arrow on the ground
+shows which way if you just hang there). It comes up bit by bit, shaking, with earth flying. Alone it takes a while
+(about twelve seconds of pulling); a friend pulling from the other side nearly triples the speed, and up to four can
+pull. Playing alone, the buddy hops over to help as soon as you grab it. Out it pops: everybody tumbles over backwards,
+a carrot the size of a sofa flies out to push about and headbutt, and four big bites eat it up. Then a new one grows.
+Jump to let go. (A sticker for pulling it out, and a friend sticker for pulling it out together.)
+
 **Build a snowman** ⛄ on the mountain top: there's a blue ring in the snow east of the ice pond, with a see-through
 snowman standing in it to show what to build. Snowballs grow as they roll through the snow (quickest: grab one with
 your tongue and run about with it, or push it along). Roll a big one into the ring and it's the bottom; roll a
@@ -252,13 +268,13 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 63 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 67 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Five stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  remembered on this device. Six stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
@@ -368,6 +384,8 @@ src/
       Zipline.tsx       the zipline from the mountain top to the lagoon
       BumperCars.tsx    the bumper cars at the carnival
       Chickens.tsx      the farm's chickens, and the coop they get rounded up into
+      Xylophone.tsx     the giant xylophone and the songbird with its tunes (tune.ts: the tunes, and checking a copy)
+      GiantCarrot.tsx   the giant carrot to pull out with your tongues
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

@@ -321,11 +321,12 @@ function PhotoDirector() {
 
 function DevHook() {
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
   useEffect(() => {
     if (!import.meta.env.DEV && !TEST_MODE) return;
     const w = window as unknown as { __silly?: Record<string, unknown> };
-    if (w.__silly) w.__silly.gl = gl;
-  }, [gl]);
+    if (w.__silly) Object.assign(w.__silly, { gl, scene });
+  }, [gl, scene]);
   return null;
 }
 
