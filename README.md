@@ -97,8 +97,9 @@ being built only makes it wobble; once it's finished, one headbutt knocks it fly
 are three snowballs, so friends can each roll one.
 
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
-handle and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
-the lagoon with a splash. Jump to let go sooner (wherever you are!). The handle slides back up for the next one.
+handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
+the lagoon with a splash. Jump to let go sooner (wherever you are!). There's a handle for every child (four, each bar
+in a player colour), so friends go one just behind the other; empty handles slide back up by themselves.
 
 **The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
 tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
@@ -141,6 +142,11 @@ losing, no game over.
 
 Press **any button** on a controller (or any key, or tap ▶) to start. Every extra controller joins by pressing any button,
 so friends can drop in and out at any time. All players share one camera that zooms out to keep everyone on screen.
+**Split screen:** when the children wander so far apart that the camera would have to zoom right out, the screen
+splits, a view each that follows their own animal (two side by side; three: two on top and one along the bottom;
+four: a 2×2 grid), framed in the child's colour with their shape in the corner. Come back together and it joins up
+again (it waits until they're clearly closer, so it doesn't flick back and forth). The buddy never gets a view of
+its own. Grown-ups can turn split screen off; then friends are gently pulled back together instead.
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
 
@@ -180,8 +186,8 @@ Grown-ups can switch it off.
 The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
 tester**, the sticker album, a picture of all controls, and:
 
-- **Settings** (remembered on this device): running speed (calm / normal / zoomy), how far apart friends can wander
-  before they are gently pulled together, how long magic food lasts, how soon poops turn into flowers, controller
+- **Settings** (remembered on this device): running speed (calm / normal / zoomy), split screen when far apart
+  (on / off), how far apart friends can wander before they are gently pulled together (only with split screen off), how long magic food lasts, how soon poops turn into flowers, controller
   a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
@@ -377,7 +383,8 @@ src/
     collision.ts        collision groups (animals walk through poops)
     audio.ts, music.ts  synthesised sound effects and background music (Web Audio)
     fx.ts, FxRenderer   pooled particles (instanced) and shockwave rings
-    Scene.tsx           lights, sky, shared camera, input loop, party director
+    Scene.tsx           lights, sky, shared camera (and a camera per child in split screen), input loop, party director
+    views.ts            split screen: when to split and join, the screen layouts, drawing each view
     player/             one animal: Player.tsx runs these steps in order every frame:
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
       actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
@@ -415,7 +422,7 @@ src/
       Stars, Hints, Toys, Trees, Critters, Breakable, Prop
       common.tsx        shared building blocks (boxes, ramps, slide towers, hedges)
       surface.ts        tags a collider as bouncy / slippery / slide / snow / moving platform
-  ui/                   HUD, animal picker, title screen, touch controls, sticker album, controller tester, grown-ups menu
+  ui/                   HUD, split-screen frames, animal picker, title screen, touch controls, sticker album, controller tester, grown-ups menu
                         (icons for kids, words for grown-ups)
 tests/unit/             vitest unit tests (fake gamepads, fake storage)
 e2e/                    Playwright browser tests in test mode
@@ -428,7 +435,8 @@ e2e/                    Playwright browser tests in test mode
 2. **Every button always does something visible and audible**, even when nothing is in range (the tongue still
    comes out, the headbutt still dashes).
 3. **No failure states.** Nothing is timed and nothing is lost. If you fall out of the world you pop back in.
-4. **Co-op first.** Drop-in with any button, one shared camera with a gentle pull that keeps friends together, and shared
+4. **Co-op first.** Drop-in with any button, one shared camera (splitting into a view each when friends wander far
+   apart, or with a gentle pull that keeps them together if split screen is off), and shared
    goals (stars, party meter) with nothing competitive.
 5. **Performance on tablets.** Per-frame state lives in `runtime.ts`, not in React state. Particles, trees, flowers,
    fences and track are instanced, and materials are shared Lambert materials.

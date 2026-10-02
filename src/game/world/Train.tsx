@@ -5,13 +5,14 @@ import { playChuff, playToot } from '../audio';
 import { emit } from '../fx';
 import { GOLDEN_STARS, TRACK_LIFTS, TRAIN } from '../layout';
 import { lambert } from '../materials';
-import { camera, debugInfo, players, type Surface } from '../runtime';
+import { debugInfo, players, type Surface } from '../runtime';
 import { Ramp, StaticBox, useHint } from './common';
 import { GoldenStar } from './Stars';
 import { useSurface } from './surface';
 import { gameNow, useGameFrame } from '../clock';
 import { groundHeight } from '../terrain';
 import { LIFTS, TRACK_LENGTH, trackAt, trackLift } from '../track';
+import { nearAnyCamera } from '../views';
 
 const [TX, TZ] = TRAIN.center;
 const R = TRAIN.cornerRadius;
@@ -313,7 +314,7 @@ export function Train() {
     });
 
     const loco = cars.current[0];
-    const near = Math.hypot(camera.focus.x - loco.x, camera.focus.z - loco.z) < 45;
+    const near = nearAnyCamera(loco.x, loco.z, 45);
     st.smoke -= dt;
     if (near && st.smoke <= 0 && speed.current > 0.5) {
       st.smoke = 0.35;

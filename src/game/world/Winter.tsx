@@ -7,7 +7,7 @@ import { emit, poof, ring } from '../fx';
 import { distXZ, ICE, isOnSnow, SKI_JUMP, SNOW, SNOWBALLS, SNOWMAN_BUILD, SNOWMEN, WINTER, type Vec3 } from '../layout';
 import { groundHeight } from '../terrain';
 import { lambert } from '../materials';
-import { allocPropId, camera, debugInfo, registerProp, registerStatic, type PropEntry, type Surface } from '../runtime';
+import { allocPropId, debugInfo, registerProp, registerStatic, type PropEntry, type Surface } from '../runtime';
 import { offerSnowball, pieceHeights, plannedSizes, SNOWMAN_FLY, useSnowman } from '../snowman';
 import { useGame } from '../store';
 import { Breakable, type Piece } from './Breakable';
@@ -15,6 +15,7 @@ import { SlideTower, useHint } from './common';
 import { useSurface } from './surface';
 import { after, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { cameraFoci } from '../views';
 
 function IcePond() {
   const [ix, iz] = ICE.center;
@@ -478,15 +479,17 @@ function SnowmanBuild() {
 function Snowfall() {
   const timer = useRef(0);
   useGameFrame((_, delta) => {
-    const f = camera.focus;
-    if (distXZ(f.x, f.z, SNOW.center[0], SNOW.center[1]) > SNOW.radius + 12) return;
     timer.current -= delta;
     if (timer.current > 0) return;
     timer.current = 0.05;
-    const x = f.x + (Math.random() - 0.5) * 34;
-    const z = f.z + (Math.random() - 0.5) * 26;
-    if (!isOnSnow(x, z)) return;
-    emit('confetti', [x, WINTER.level + 12, z], { count: 2, color: '#ffffff', speed: 0.4, up: 0, gravity: 1.1, drag: 1.2, life: 6 });
+    // around wherever a camera is looking (each view's, in split screen)
+    for (const f of cameraFoci()) {
+      if (distXZ(f.x, f.z, SNOW.center[0], SNOW.center[1]) > SNOW.radius + 12) continue;
+      const x = f.x + (Math.random() - 0.5) * 34;
+      const z = f.z + (Math.random() - 0.5) * 26;
+      if (!isOnSnow(x, z)) continue;
+      emit('confetti', [x, WINTER.level + 12, z], { count: 2, color: '#ffffff', speed: 0.4, up: 0, gravity: 1.1, drag: 1.2, life: 6 });
+    }
   });
   return null;
 }

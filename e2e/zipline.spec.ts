@@ -1,10 +1,29 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
-// The zipline: up on the mountain's south rim, grab the handle, whizz over the whole park and
-// let go over the lagoon, splash. Jump lets go sooner.
+// The zipline: up on the mountain's south rim, grab a handle, whizz over the whole park and
+// let go over the lagoon, splash. Jump lets go sooner. A handle for every child.
 
-const zip = (game: Game) => game.page.evaluate(() => ({ ...(window as any).__silly.runtime.debugInfo.zipline }) as { mode: string; t: number; v: number; rider: number | null });
+type Handle = { mode: string; t: number; v: number; rider: number | null };
+const zip = (game: Game) =>
+  game.page.evaluate(() => {
+    const z = (window as any).__silly.runtime.debugInfo.zipline;
+    return { handles: z.handles.map((h: Handle) => ({ ...h })) as Handle[], rides: z.rides as number, together: z.together as number };
+  });
+/** The handle this player is riding (if any). */
+const ridden = async (game: Game, slot = 0) => (await zip(game)).handles.find((h) => h.rider === slot && h.mode === 'ride');
+/** Put an animal up on the platform, `dx` along from the handle. */
+const onPlatform = (game: Game, slot: number, dx: number) =>
+  game.page.evaluate(
+    ([slot, dx]) => {
+      const s = (window as any).__silly;
+      const Z = s.layout.ZIPLINE;
+      const b = s.runtime.players.get(slot).getBody();
+      b.setTranslation({ x: Z.from[0] + dx, y: s.terrain.groundHeight(Z.from[0], Z.from[1]) + Z.platform + 1, z: Z.from[1] }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    },
+    [slot, dx] as const
+  );
 const swimming = (game: Game) => game.page.evaluate(() => (window as any).__silly.runtime.players.get(0).swimming as boolean);
 
 test('zipline: grab the handle on the mountain, fly over the park, splash into the lagoon', async ({ page }) => {
@@ -36,21 +55,16 @@ test('zipline: grab the handle on the mountain, fly over the park, splash into t
   expect(hits, hits.join('\n')).toEqual([]);
 
   // up on the platform, by the handle: off we go
-  await page.evaluate((Z) => {
-    const s = (window as any).__silly;
-    const b = s.runtime.players.get(0).getBody();
-    b.setTranslation({ x: Z.from[0] + 1, y: s.terrain.groundHeight(Z.from[0], Z.from[1]) + Z.platform + 1, z: Z.from[1] }, true);
-    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
-  }, Z);
+  await onPlatform(game, 0, 1);
   await game.seconds(1);
-  expect((await zip(game)).mode).toBe('ride');
+  expect((await ridden(game))?.mode).toBe('ride');
   await game.seconds(3, true);
   const mid = await game.player();
   await game.screenshot('test-results/zipline.png');
   expect(mid.z).toBeGreaterThan(Z.from[1] + 10);
   expect(mid.y).toBeGreaterThan(4);
   // all the way down, and in with a splash
-  for (let i = 0; i < 80 && (await zip(game)).mode === 'ride'; i += 1) await game.seconds(0.1);
+  for (let i = 0; i < 80 && (await ridden(game)); i += 1) await game.seconds(0.1);
   await game.seconds(1.5);
   const end = await game.player();
   expect(Math.hypot(end.x - Z.to[0], end.z - Z.to[1])).toBeLessThan(3);
@@ -58,7 +72,7 @@ test('zipline: grab the handle on the mountain, fly over the park, splash into t
   expect(await page.evaluate(() => (window as any).__silly.useStickers.getState().got)).toContain('zipline');
   // the handle slides back up for the next one
   await game.seconds(6);
-  expect(await zip(game)).toMatchObject({ mode: 'wait', t: 0 });
+  expect((await zip(game)).handles.every((h) => h.mode === 'wait' && h.t === 0)).toBe(true);
   game.expectNoErrors();
 });
 
@@ -66,20 +80,56 @@ test('zipline: jump to let go halfway (and fall wherever you are)', async ({ pag
   const game = new Game(page);
   await game.open();
   await game.start();
-  const Z = await page.evaluate(() => (window as any).__silly.layout.ZIPLINE);
-  await page.evaluate((Z) => {
-    const s = (window as any).__silly;
-    const b = s.runtime.players.get(0).getBody();
-    b.setTranslation({ x: Z.from[0] + 1, y: s.terrain.groundHeight(Z.from[0], Z.from[1]) + Z.platform + 1, z: Z.from[1] }, true);
-  }, Z);
+  await onPlatform(game, 0, 1);
   await game.seconds(3);
-  expect((await zip(game)).mode).toBe('ride');
+  expect((await ridden(game))?.mode).toBe('ride');
   await game.tap('Space');
   await game.seconds(0.2);
-  expect((await zip(game)).mode).toBe('return');
+  expect(await ridden(game)).toBeUndefined();
+  expect((await zip(game)).handles.map((h) => h.mode)).toContain('return');
   await game.seconds(3);
   const p = await game.player();
   const g = await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [p.x, p.z] as const);
   expect(p.y - g).toBeLessThan(1.5);
+  game.expectNoErrors();
+});
+
+test('zipline: friends ride it together, one just behind the other, and both splash down', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await game.join('kb2');
+  const Z = await page.evaluate(() => (window as any).__silly.layout.ZIPLINE);
+
+  // both up by the handles at once: off they go, a moment apart, each on a handle of their own
+  await onPlatform(game, 0, 0.8);
+  await onPlatform(game, 1, -0.8);
+  await game.seconds(2);
+  const [a, b] = [await ridden(game, 0), await ridden(game, 1)];
+  expect(a).toBeDefined();
+  expect(b).toBeDefined();
+  const z = await zip(game);
+  expect(z.together).toBe(1);
+  // the one who went first stays ahead (nobody bumps into anybody)
+  const [first, second] = a!.t > b!.t ? [0, 1] : [1, 0];
+  for (let i = 0; i < 20; i += 1) {
+    await game.seconds(0.2);
+    const [p, q] = [await ridden(game, first), await ridden(game, second)];
+    if (!p || !q) break;
+    expect(p.t).toBeGreaterThan(q.t);
+    const [pp, qp] = [await game.player(first), await game.player(second)];
+    expect(Math.hypot(pp.x - qp.x, pp.y - qp.y, pp.z - qp.z)).toBeGreaterThan(2);
+  }
+  await game.screenshot('test-results/zipline-friends.png');
+
+  // all the way down, both of them
+  for (let i = 0; i < 100 && ((await ridden(game, 0)) || (await ridden(game, 1))); i += 1) await game.seconds(0.1);
+  await game.seconds(1.5);
+  for (const slot of [0, 1]) {
+    const p = await game.player(slot);
+    expect(Math.hypot(p.x - Z.to[0], p.z - Z.to[1])).toBeLessThan(4);
+  }
+  expect((await zip(game)).rides).toBe(2);
   game.expectNoErrors();
 });

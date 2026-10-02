@@ -3,11 +3,12 @@ import * as THREE from 'three';
 import { GRAVITY, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { playSplash } from '../audio';
 import { emit, ring } from '../fx';
-import { distXZ, RIVER, RIVER_HALF_WIDTH, SEA, WATER_LEVEL } from '../layout';
+import { RIVER, RIVER_HALF_WIDTH, SEA, WATER_LEVEL } from '../layout';
 import { lambert } from '../materials';
-import { camera, props } from '../runtime';
+import { props } from '../runtime';
 import { isInWater, waterLevelAt } from '../terrain';
 import { gameClock, useGameFrame } from '../clock';
+import { nearAnyCamera } from '../views';
 
 // The water: one big sheet at WATER_LEVEL (the sea, the lagoon and the river all show through
 // wherever the ground is cut below it), the stream tumbling down the mountain's face on its own
@@ -169,7 +170,7 @@ function Flow() {
   useGameFrame((_, delta) => {
     if (material.map) material.map.offset.y = -((gameClock.time * 0.45) % 1);
     // foam where the stream lands, and a few drops tumbling down it (only when someone is near)
-    if (distXZ(camera.focus.x, camera.focus.z, FALLS_FOOT[0], FALLS_FOOT[1]) > 45) return;
+    if (!nearAnyCamera(FALLS_FOOT[0], FALLS_FOOT[1], 45)) return;
     foam.current -= delta;
     if (foam.current > 0) return;
     foam.current = 0.12;

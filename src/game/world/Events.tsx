@@ -8,12 +8,13 @@ import { PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { burstConfetti, emit, poof, ring } from '../fx';
 import { distXZ } from '../layout';
 import { lambert } from '../materials';
-import { camera, players, playersCentroid, registerFood, type PlayerRuntime } from '../runtime';
+import { players, playersCentroid, registerFood, type PlayerRuntime } from '../runtime';
 import { settings } from '../settings';
 import { earnSticker } from '../stickers';
 import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
+import { cameraFoci } from '../views';
 
 // Park surprises: now and then something happens that pulls everybody somewhere new, with no
 // words needed: a golden chicken to chase, a present floating by on a balloon, or a rain
@@ -449,10 +450,10 @@ function RainShower() {
       return;
     }
 
-    // falling rain around the camera's focus
+    // falling rain around the camera's focus (each view's, in split screen)
     const m = drops.current;
     if (m) {
-      const f = camera.focus;
+      const foci = cameraFoci();
       const shown = Math.floor(DROPS * rain);
       for (let i = 0; i < shown; i += 1) {
         let y = dropPos[i * 3 + 1] - dt * 18;
@@ -462,6 +463,7 @@ function RainShower() {
           dropPos[i * 3 + 2] = (Math.random() - 0.5) * 32;
         }
         dropPos[i * 3 + 1] = y;
+        const f = foci[i % foci.length];
         dummy.position.set(f.x + dropPos[i * 3], y, f.z + dropPos[i * 3 + 2]);
         dummy.updateMatrix();
         m.setMatrixAt(i, dummy.matrix);

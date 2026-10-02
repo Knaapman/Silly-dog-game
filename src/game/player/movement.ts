@@ -75,8 +75,9 @@ export function movement(f: FrameCtx) {
     }
   }
 
-  // Soft leash: nobody wanders off-screen in co-op.
-  if (players.size > 1 && s.launched <= 0) {
+  // Soft leash: nobody wanders off-screen in co-op. (With split screen, children go where they
+  // like and get a view of their own; only the buddy is still kept close.)
+  if (players.size > 1 && s.launched <= 0 && (!prefs.split || f.rt?.bot)) {
     playersCentroid(tmp.c, slot);
     const d = distXZ(t.x, t.z, tmp.c.x, tmp.c.z);
     const leash = LEASH_RADIUS[prefs.together];

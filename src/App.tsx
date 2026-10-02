@@ -9,6 +9,7 @@ import { useGame } from './game/store';
 import { GrownUpMenu } from './ui/GrownUpMenu';
 import { Hud } from './ui/Hud';
 import { TitleScreen } from './ui/TitleScreen';
+import { SplitFrames } from './ui/SplitFrames';
 import { StickerAlbum } from './ui/Stickers';
 import { TouchControls } from './ui/TouchControls';
 
@@ -93,6 +94,7 @@ export default function App() {
           }}
         />
       )}
+      {phase === 'play' && <SplitFrames />}
       {phase === 'play' && <Hud onOpenMenu={() => setMenuOpen(true)} />}
       {phase === 'play' && touchUi && !menuOpen && !albumOpen && <TouchControls />}
       {menuOpen && <GrownUpMenu />}
