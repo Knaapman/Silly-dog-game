@@ -126,12 +126,28 @@ export type PlayerRuntime = {
   grabbedBy: number | null;
   /** Where that tongue is pulling us to (set by the friend every frame). */
   tug: THREE.Vector3;
+  /** When (game time) this player last held the "I'm stuck" buttons and popped out somewhere safe. */
+  rescuedAt: number;
 };
 
 /** Magic foods: beans = fart rocket, mushroom = giant, chili = fire breath + fast feet. */
 export type PowerKind = 'beans' | 'giant' | 'chili';
 
 export const players = new Map<number, PlayerRuntime>();
+
+/** Rides let go of a rider who was rescued this recently. */
+const RESCUE_LET_GO_MS = 250;
+
+/**
+ * The player on a ride (a sled, a bumper car, the zipline...), looked up every frame. Someone who
+ * has just been rescued ("I'm stuck!") counts as gone, so the ride lets go of them just as it
+ * does when a player leaves the game.
+ */
+export function rider(slot: number | null | undefined): PlayerRuntime | undefined {
+  if (slot == null) return undefined;
+  const p = players.get(slot);
+  return p && gameNow() - p.rescuedAt < RESCUE_LET_GO_MS ? undefined : p;
+}
 
 /**
  * Where each animal last stepped onto a launch pad, into a cannon or onto a geyser (game ms), so

@@ -24,6 +24,11 @@ export type InputFrame = {
   menu?: boolean;
   /** Controller only: Select held long enough to leave the game. */
   leave?: boolean;
+  /**
+   * The "I'm stuck" chord is down: all four shoulder buttons on a controller, or the flop and poop
+   * keys together on a keyboard. Held for a while, it pops the animal back out somewhere safe.
+   */
+  rescue?: boolean;
 };
 
 /** Directional / confirm / back events for navigating menus with a controller. */
@@ -83,6 +88,8 @@ const PAD_BUTTONS: Record<ActionName, number[]> = {
   species: [8],
   hat: [9]
 };
+/** L, R, ZL and ZR: all four held together is the "I'm stuck" chord. */
+const PAD_RESCUE = [4, 5, 6, 7];
 /** Capture (the camera button on Switch-style pads; Chrome puts it after Home). */
 const PAD_CAPTURE = 17;
 /**
@@ -266,7 +273,7 @@ function readKeyboard(source: 'kb1' | 'kb2'): InputFrame {
     pressed[action] = presses[action] > 0;
     anyPressed ||= pressed[action];
   }
-  return { x, z, held, pressed, presses, anyPressed, photo: tapped(map.photo), album: tapped(map.album) };
+  return { x, z, held, pressed, presses, anyPressed, photo: tapped(map.photo), album: tapped(map.album), rescue: held.flop && held.poop };
 }
 
 function readTouch(): InputFrame {
@@ -279,7 +286,7 @@ function readTouch(): InputFrame {
     anyPressed = true;
   });
   touch.presses.clear();
-  return { x: touch.x, z: touch.z, held: { ...touch.held }, pressed, presses, anyPressed };
+  return { x: touch.x, z: touch.z, held: { ...touch.held }, pressed, presses, anyPressed, rescue: touch.held.flop && touch.held.poop };
 }
 
 /**
@@ -375,7 +382,7 @@ function readPad(gp: Gamepad): InputFrame {
     held[action] = now[button];
   }
   navEdges.set(gp.index, downs);
-  return { x, z, held, pressed, presses, anyPressed, menu, leave, photo: tapped(PAD_CAPTURE), album: PAD_ALBUM.some(tapped) };
+  return { x, z, held, pressed, presses, anyPressed, menu, leave, photo: tapped(PAD_CAPTURE), album: PAD_ALBUM.some(tapped), rescue: PAD_RESCUE.every((i) => now[i]) };
 }
 
 const navEdges = new Map<number, number[]>();

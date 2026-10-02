@@ -8,7 +8,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { BUMPER } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players } from '../runtime';
+import { debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
@@ -71,7 +71,7 @@ export function BumperCars() {
     });
 
     list.forEach((c, i) => {
-      const p = c.driver != null ? players.get(c.driver) : undefined;
+      const p = rider(c.driver);
       if (c.driver != null && (!p || (p.bot && !kidDriving))) {
         // gone (or the buddy, once nobody else is driving): out of the car
         p?.hold(null);

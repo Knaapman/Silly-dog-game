@@ -41,6 +41,11 @@ export function createState(spawn: THREE.Vector3) {
     launchAirborne: false,
     bounceCooldown: 0,
     stunned: 0,
+    /** Seconds the "I'm stuck" chord has been held (-1: done, until it's let go). */
+    rescueHold: 0,
+    /** Seconds spent pushing the stick without getting anywhere, and where that started. */
+    stuckFor: 0,
+    stuckFrom: new THREE.Vector3(),
     pendingBump: null as THREE.Vector3 | null,
     pendingHop: 0,
     /** Small upward nudge without a flip (the toot hop). */

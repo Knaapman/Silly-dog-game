@@ -227,6 +227,9 @@ function Chicken({ index }: { index: number }) {
       if (c.penned && !coop.penned[index]) {
         c.penned = false;
         c.leaving = true;
+        // one after another, pecking while they wait their turn (all at once, they jam in the gate)
+        c.mode = 'peck';
+        c.timer = index * 0.6;
       }
       if (!c.penned && inside && !c.leaving && coop.doneAt < 0) {
         c.penned = true;
@@ -243,9 +246,14 @@ function Chicken({ index }: { index: number }) {
         }
       } else c.outFor = 0;
       if (c.leaving && c.mode === 'wander') {
-        // to just inside the gate first (straight at the gate from a corner runs into the fence)
-        const atGate = Math.abs(t.x - GATE_IN.x) < 0.7 && t.z < GATE_IN.z + 0.4;
-        if (inside) c.target.set(atGate ? GATE_OUT.x : GATE_IN.x, 0, atGate ? GATE_OUT.z : GATE_IN.z);
+        // to just inside the gate first (straight at the gate from a corner runs into the fence),
+        // each in its own lane across the gate so they don't all squeeze for the middle
+        // (and straight on out until clear of the fence: turning for home in the gateway walks
+        // into the end of the fence)
+        const lane = GATE_IN.x + THREE.MathUtils.clamp(t.x - GATE_IN.x, -0.7, 0.7);
+        const atGate = Math.abs(t.x - lane) < 0.5 && t.z < GATE_IN.z + 0.4;
+        const inGateway = Math.abs(t.x - GATE_IN.x) < CHICKEN_COOP.gate / 2 + 0.3 && t.z > GATE_OUT.z + 0.3 && t.z < GATE_IN.z + 0.4;
+        if (inside || inGateway) c.target.set(lane, 0, atGate || !inside ? GATE_OUT.z : GATE_IN.z);
         else {
           c.leaving = false;
           c.target.set(CHICKEN_HOME.center[0], 0, CHICKEN_HOME.center[1]);

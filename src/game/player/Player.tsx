@@ -23,6 +23,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
+import { autoUnstick, rescue, RESCUE_DOTS, RESCUE_SECONDS } from './rescue';
 import { climb } from './tricks';
 import { earnSticker } from '../stickers';
 
@@ -55,6 +56,7 @@ export function Player({ info }: { info: PlayerInfo }) {
   const sourceRef = useRef(source);
   sourceRef.current = source;
   const beam = useRef<THREE.Mesh>(null);
+  const rescueRing = useRef<THREE.Group>(null);
   const bornAt = useRef(gameNow());
 
   const tmp = useMemo(createTmp, []);
@@ -113,6 +115,7 @@ export function Player({ info }: { info: PlayerInfo }) {
       ridingOn: null,
       grabbedBy: null,
       tug: new THREE.Vector3(),
+      rescuedAt: -1e9,
       bot: source === 'bot',
       powerUp: (kind) => {
         s.powerTime = POWER_TIME[kind] * MAGIC_FACTOR[settings().magic];
@@ -228,7 +231,9 @@ export function Player({ info }: { info: PlayerInfo }) {
     launch(f);
     movement(f);
     landing(f);
-    respawnIfLost(f, rb);
+    rescue(f, world, rapier);
+    autoUnstick(f, world, rapier);
+    respawnIfLost(f, rb, world, rapier);
     syncRuntime(f);
     animate(f, {
       rig: rig.current,
@@ -243,6 +248,19 @@ export function Player({ info }: { info: PlayerInfo }) {
       tongueTip: tongueTip.current,
       bornAt: bornAt.current
     });
+    // "I'm stuck" held: a ring of dots fills up round the animal
+    const ringGroup = rescueRing.current;
+    if (ringGroup) {
+      const lit = s.rescueHold > 0 ? Math.floor((s.rescueHold / RESCUE_SECONDS) * RESCUE_DOTS) + 1 : 0;
+      ringGroup.visible = lit > 0;
+      if (lit > 0) {
+        ringGroup.position.set(s.pos.x, s.pos.y - RADIUS * s.size + 0.15, s.pos.z);
+        ringGroup.rotation.y += f.dt * 1.5;
+        ringGroup.children.forEach((dot, i) => {
+          dot.visible = i < lit;
+        });
+      }
+    }
   });
 
   return (
@@ -279,6 +297,13 @@ export function Player({ info }: { info: PlayerInfo }) {
         <cylinderGeometry args={[0.9, 1.2, 12, 20, 1, true]} />
         <meshBasicMaterial color={color} transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
+      <group ref={rescueRing} visible={false}>
+        {Array.from({ length: RESCUE_DOTS }, (_, i) => (
+          <mesh key={i} position={[Math.sin((i / RESCUE_DOTS) * Math.PI * 2) * 1.15, 0, Math.cos((i / RESCUE_DOTS) * Math.PI * 2) * 1.15]} material={lambert(color)}>
+            <sphereGeometry args={[0.16, 10, 8]} />
+          </mesh>
+        ))}
+      </group>
       <group ref={marker}>
         <MarkerShape shape={PLAYER_SHAPES[slot % PLAYER_SHAPES.length]} color={color} />
       </group>

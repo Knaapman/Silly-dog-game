@@ -12,7 +12,8 @@ import { players, propPosition, props, shakeCamera, surfaces } from '../runtime'
 import { useGame } from '../store';
 import { GIANT_SIZE, RADIUS } from './constants';
 import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './frame';
-import { ballistic, pickSpawn } from './physics';
+import { ballistic } from './physics';
+import { safeSpot, type Rapier } from './rescue';
 import { earnSticker } from '../stickers';
 
 /** Magic food wearing off, and growing / shrinking (the mushroom). Sets f.rad. */
@@ -288,11 +289,11 @@ export function landing(f: FrameCtx) {
   s.lastVy = lv.y;
 }
 
-/** Fell out of the world? Pop back in next to the others. */
-export function respawnIfLost(f: FrameCtx, rb: RapierRigidBody) {
+/** Fell out of the world? Pop back in next to a friend (or in the plaza). */
+export function respawnIfLost(f: FrameCtx, rb: RapierRigidBody, world: World, rapier: Rapier) {
   const { t } = f;
   if (t.y < -8 || Math.abs(t.x) > WORLD_HALF_X + 6 || Math.abs(t.z) > WORLD_HALF_Z + 6) {
-    const p = pickSpawn(f.slot);
+    const p = safeSpot(f.slot, f.s.pos, world, rapier);
     rb.setTranslation(p, true);
     rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
     poof([p.x, p.y, p.z], f.color, 18);

@@ -6,7 +6,7 @@ import { emit } from '../fx';
 import { rumble, type SourceId } from '../input';
 import { distXZ, WATER_LEVEL, WATER_SLIDE } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players } from '../runtime';
+import { debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { Ramp, StaticBox, StaticCylinder } from './common';
@@ -164,7 +164,7 @@ export function WaterSlide() {
     // whoosh down
     rides.current.forEach((r, i) => {
       if (r.rider == null) return;
-      const p = players.get(r.rider);
+      const p = rider(r.rider);
       const lane = lanes[i];
       if (!p) {
         r.rider = null;
