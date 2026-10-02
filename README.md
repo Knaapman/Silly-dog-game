@@ -77,6 +77,17 @@ pull. Playing alone, the buddy hops over to help as soon as you grab it. Out it 
 a carrot the size of a sofa flies out to push about and headbutt, and four big bites eat it up. Then a new one grows.
 Jump to let go. (A sticker for pulling it out, and a friend sticker for pulling it out together.)
 
+**The water slide** 🛝 on the beach, east of the lagoon: walk up the blue stairs on the north side of the tower, then
+step into the red slide or the blue one at the top. Whoosh: round the bends and over the bumps, faster and faster,
+spray flying, and out over the lagoon with a splash. Two friends can go at once, side by side (a friend sticker);
+playing alone, the buddy hops into the other slide next to you. The tower's roof fades when it would hide you.
+
+**Paint buckets** 🎨 at the north end of the playground: red, yellow, blue and green. Headbutt one and over it goes,
+splashing everybody close by with paint and leaving a big puddle (walk through it to get painted too). A painted
+animal wears big blobs of the colour and leaves a trail of coloured paw prints everywhere it goes, which fade after a
+while. A swim washes it off; otherwise it dries and flakes off by itself after a minute or so. The buckets stand back
+up, full again, a few seconds later. Wear all four colours at once (before a wash) for a sticker.
+
 **Build a snowman** ⛄ on the mountain top: there's a blue ring in the snow east of the ice pond, with a see-through
 snowman standing in it to show what to build. Snowballs grow as they roll through the snow (quickest: grab one with
 your tongue and run about with it, or push it along). Roll a big one into the ring and it's the bottom; roll a
@@ -268,13 +279,13 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 67 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 71 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Six stickers need a friend (they have a little 👫 on them); playing alone, the buddy
+  remembered on this device. Seven stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
@@ -386,6 +397,8 @@ src/
       Chickens.tsx      the farm's chickens, and the coop they get rounded up into
       Xylophone.tsx     the giant xylophone and the songbird with its tunes (tune.ts: the tunes, and checking a copy)
       GiantCarrot.tsx   the giant carrot to pull out with your tongues
+      WaterSlide.tsx    the water slide at the beach (two slides along a curve, ridden like the sleds)
+      PaintBuckets.tsx  the paint buckets, their puddles and the paw prints (paint.ts: who's painted what colour)
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

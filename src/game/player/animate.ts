@@ -7,6 +7,7 @@ import type { createRig } from './AnimalModel';
 import { MODEL_SCALE, RADIUS, UP } from './constants';
 import type { FrameCtx } from './frame';
 import { waterLevelAt } from '../terrain';
+import { addFootprint, PAINT_COLORS } from '../paint';
 
 /** The scene objects one animal moves around every frame. */
 export type PlayerVisuals = {
@@ -179,6 +180,21 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
   if (r.mud) {
     r.mud.visible = s.mud > 0.02;
     r.mud.scale.setScalar(Math.max(0.001, s.mud));
+  }
+  if (r.paint) {
+    r.paint.visible = s.paint > 0.02;
+    r.paint.scale.setScalar(Math.max(0.001, 0.4 + 0.6 * s.paint));
+    r.paintMat.color.set(PAINT_COLORS[s.paintColor]);
+  }
+  // painted paws: a trail of coloured prints, left, right, left...
+  if (s.paint > 0.1 && s.grounded && !s.swimming && !s.hidden && hSpeed > 1) {
+    s.pawStride += hSpeed * dt;
+    if (s.pawStride > 0.55) {
+      s.pawStride = 0;
+      s.pawSide = -s.pawSide;
+      const yaw = Math.atan2(tmp.fwd.x, tmp.fwd.z);
+      addFootprint({ x: s.pos.x + Math.cos(yaw) * 0.14 * s.pawSide, y: s.groundY + 0.015, z: s.pos.z - Math.sin(yaw) * 0.14 * s.pawSide, yaw, color: s.paintColor, at: gameNow() });
+    }
   }
 
   // a unicorn leaves a little rainbow of sparkles behind when it runs

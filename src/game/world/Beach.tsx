@@ -9,6 +9,7 @@ import { Cannon } from './Launchers';
 import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
 import { useSeeThrough } from './seeThrough';
+import { WaterSlide } from './WaterSlide';
 
 /** The lagoon: the water itself is the sea's (see Water.tsx); here are the lily pads and the island. */
 function Lagoon() {
@@ -213,6 +214,7 @@ export function Beach() {
       <Lagoon />
       <Lighthouse />
       <PirateShip />
+      <WaterSlide />
       {SANDCASTLES.map((at, i) => (
         <Sandcastle key={i} at={at} />
       ))}

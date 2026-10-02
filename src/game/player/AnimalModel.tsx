@@ -17,6 +17,9 @@ export type Rig = {
   ears: (THREE.Group | null)[];
   pupils: (THREE.Group | null)[];
   mud: THREE.Group | null;
+  /** Paint splotches (where the mud goes, but the other way round), and their colour. */
+  paint: THREE.Group | null;
+  paintMat: THREE.MeshLambertMaterial;
   /** Round tummy that grows with every bite (scaled by the controller). */
   belly: THREE.Group | null;
   /** Rosy cheeks, hidden until the animal strains (pooping) or eats a chili. */
@@ -25,7 +28,7 @@ export type Rig = {
 };
 
 export function createRig(): Rig {
-  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, belly: null, cheeks: null, eyeRadius: 0.09 };
+  return { body: null, head: null, legs: [null, null, null, null], tail: null, ears: [null, null], pupils: [null, null], mud: null, paint: null, paintMat: new THREE.MeshLambertMaterial({ color: '#ff4d5e' }), belly: null, cheeks: null, eyeRadius: 0.09 };
 }
 
 type SpeciesSpec = {
@@ -241,18 +244,33 @@ function Collar({ spec, color, bell = false }: { spec: SpeciesSpec; color: strin
 
 function MudSplotches({ rig, spots }: { rig: MutableRefObject<Rig>; spots: [number, number, number, number][] }) {
   return (
-    <group
-      ref={(g) => {
-        rig.current.mud = g;
-      }}
-      visible={false}
-    >
-      {spots.map(([x, y, z, r], i) => (
-        <mesh key={i} position={[x, y, z]} material={lambert('#6b4a2b')}>
-          <sphereGeometry args={[r, 8, 6]} />
-        </mesh>
-      ))}
-    </group>
+    <>
+      <group
+        ref={(g) => {
+          rig.current.mud = g;
+        }}
+        visible={false}
+      >
+        {spots.map(([x, y, z, r], i) => (
+          <mesh key={i} position={[x, y, z]} material={lambert('#6b4a2b')}>
+            <sphereGeometry args={[r, 8, 6]} />
+          </mesh>
+        ))}
+      </group>
+      {/* paint goes on the other side from the mud, in big blobs (you should see it from across the park) */}
+      <group
+        ref={(g) => {
+          rig.current.paint = g;
+        }}
+        visible={false}
+      >
+        {spots.map(([x, y, z, r], i) => (
+          <mesh key={i} position={[-x, y + 0.03, z]} material={rig.current.paintMat}>
+            <sphereGeometry args={[r * 1.8, 8, 6]} />
+          </mesh>
+        ))}
+      </group>
+    </>
   );
 }
 

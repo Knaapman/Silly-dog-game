@@ -151,6 +151,8 @@ export const SEESAWS: { center: Vec2; angle: number }[] = [
  * `top`: how high they stand. The songbird sings from its post behind them.
  */
 export const XYLOPHONE = { center: at(Z.playground, -3.5, -1.5), pitch: 1.62, width: 1.5, depth: [3.4, 2.5] as Vec2, top: 0.22, bird: at(Z.playground, -3.5, -4.7) };
+/** Paint buckets in a row at the north end of the playground (red, yellow, blue, green): headbutt one over. */
+export const PAINT_BUCKETS = { center: at(Z.playground, 6, -13), spacing: 2.1 };
 export const TRAMPOLINES: { position: Vec3; radius: number }[] = [
   { position: at3(Z.playground, -16, 0, 4), radius: 1.8 },
   { position: at3(Z.playground, -11, 0, 9), radius: 1.8 },
@@ -165,6 +167,27 @@ export const ISLAND = { center: at(Z.beach, 0, 3), sphereRadius: 7, height: 0.8 
 export const LIGHTHOUSE = { center: ISLAND.center, height: 9, radius: 1.2, balcony: 2.4 };
 /** The pirate ship, afloat at the lagoon's edge, its gangplank down to the sand. */
 export const SHIP = { center: at(Z.beach, -8, -6), deck: 1.8, length: 9, width: 3.6 };
+/**
+ * The water slide on the lagoon's east shore: a tower with stairs up its north side, and two
+ * slides side by side that wind west and south down into the lagoon. `path`: the middle of the
+ * two slides (x, height above the sand, z), from the top of the tower to the end over the water.
+ */
+export const WATER_SLIDE = {
+  tower: at(Z.beach, 20, -3),
+  height: 5,
+  stairs: 8,
+  lane: 0.65,
+  path: [
+    [14.7, 5.0, 41.0],
+    [12.6, 4.6, 40.6],
+    [10.7, 4.0, 41.6],
+    [10.0, 3.3, 43.6],
+    [10.9, 2.7, 45.6],
+    [10.2, 2.1, 47.6],
+    [8.2, 1.6, 48.8],
+    [6.0, 1.1, 49.2]
+  ] as Vec3[]
+};
 export const SANDCASTLES: Vec2[] = [at(Z.beach, 6, -15), at(Z.beach, 12, -11), at(Z.beach, -13, -11)];
 export const UMBRELLAS: { position: Vec3; colors: [string, string] }[] = [
   { position: at3(Z.beach, -5, 0, -16), colors: ['#ff4d5e', '#ffffff'] },
@@ -539,7 +562,7 @@ export const BALLOONS: Vec3[] = [
 export const CAT_HOMES: Vec2[] = [
   [15, -16],
   [-26, -4],
-  [14, 41],
+  [12, 30],
   [38, 8]
 ];
 
