@@ -57,9 +57,14 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   expect((await guide(game)).sticker).toBeNull();
   await expect(page.getByTestId('guide-badge')).toBeHidden();
 
-  // with a controller: click a stick for the album, D-pad to move, A to pick, B to close
+  // with a controller: Home for the album, D-pad to move, A to pick, B to close (pressing the
+  // sticks in, as small hands do all the time while steering, doesn't open it)
   await page.evaluate(() => (window as any).__addPad(0, 'standard', 'Pad'));
   await game.pad(0, 10);
+  await game.pad(0, 11);
+  await game.seconds(0.2, true);
+  await expect(album).toBeHidden();
+  await game.pad(0, 16);
   await expect(album).toBeVisible();
   // (it opens on the first sticker still to find: tag a cat; one row down is the first poop)
   await game.pad(0, 13);
@@ -68,7 +73,7 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   await game.pad(0, 0);
   await expect(album).toBeHidden();
   expect((await guide(game)).sticker).toBe('toot');
-  await game.pad(0, 11);
+  await game.pad(0, 16);
   await expect(album).toBeVisible();
   await game.pad(0, 1);
   await expect(album).toBeHidden();
