@@ -39,6 +39,7 @@ import {
   SLED_RUN,
   TREES,
   SNOW_PILES,
+  BUBBLE_MACHINE,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -125,6 +126,7 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   slidetogether: [[WATER_SLIDE.tower[0], WATER_SLIDE.tower[1] - 1.6 - WATER_SLIDE.stairs - 1.5]],
   snowballfight: SNOW_PILES.map(([x, z]): P => [x, z - 1.8]),
   paint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
+  bubble: [[BUBBLE_MACHINE.at[0] - 3, BUBBLE_MACHINE.at[1] - 3]],
   rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]]
 };
 

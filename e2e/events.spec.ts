@@ -49,6 +49,7 @@ test('the golden chicken runs round water, not back towards whoever chases it', 
   await game.open();
   await game.start();
   const fountain = await page.evaluate(() => (window as any).__silly.layout.FOUNTAIN as { center: [number, number]; basinRadius: number });
+  const geysers = await page.evaluate(() => (window as any).__silly.layout.GEYSERS as [number, number][]);
   const [fx, fz] = fountain.center;
   // three times over, from different sides: wait for one to turn up near the fountain (it comes out
   // somewhere different every time), then come at it from the far side, so running straight away
@@ -62,7 +63,11 @@ test('the golden chicken runs round water, not back towards whoever chases it', 
       await game.seconds(0.1);
       c = (await ev(game)).chicken;
       const d = Math.hypot(c.x - fx, c.z - fz);
-      if (d > fountain.basinRadius + 0.5 && d < fountain.basinRadius + 3) break;
+      if (d < fountain.basinRadius + 0.5 || d > fountain.basinRadius + 3) continue;
+      // (and not where we'd stand right by one of the fountain's geysers: it would throw us up
+      // onto the fountain, straight at the chicken)
+      const me = [c.x + ((c.x - fx) / d) * 3, c.z + ((c.z - fz) / d) * 3];
+      if (geysers.every(([gx, gz]) => Math.hypot(me[0] - gx, me[1] - gz) > 2.5)) break;
     }
     k += 1;
     const d0 = Math.hypot(c.x - fx, c.z - fz);
