@@ -1,7 +1,7 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import type { useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
-import { playPoof, playXylo } from '../audio';
+import { playBoing, playPoof, playXylo } from '../audio';
 import { gameNow } from '../clock';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { poof, ring } from '../fx';
@@ -15,12 +15,22 @@ import { endFlop, releaseFriend, releaseHeld, type FrameCtx } from './frame';
 // keyboard) and a ring of dots fills up round the animal, one note at a time. After
 // RESCUE_SECONDS it poofs out of wherever it was (wedged somewhere, up on a roof, stuck on a
 // ride) and pops up on clear ground next to a friend, or on its own spot in the plaza.
+//
+// Small children won't remember that, so it also happens by itself: pushing the stick for a
+// while without getting anywhere gives a big hop to wiggle free, and if that doesn't help
+// either, the animal pops out just the same.
 
 export const RESCUE_SECONDS = 5;
 /** Dots in the ring (one per note of the xylophone's scale). */
 export const RESCUE_DOTS = 8;
 /** Don't pop up next to a friend who's this close: they're probably stuck in the same place. */
 const FRIEND_TOO_CLOSE = 6;
+/** Pushing the stick this many seconds without getting anywhere: a big hop to wiggle free... */
+export const STUCK_HOP_AFTER = 3;
+/** ...and if that didn't help, popped out somewhere safe. */
+export const STUCK_RESCUE_AFTER = 7;
+/** Getting less than this far (along the ground) from where the pushing started is "nowhere". */
+const STUCK_RADIUS = 0.8;
 
 export type Rapier = ReturnType<typeof useRapier>['rapier'];
 const IDENTITY = { x: 0, y: 0, z: 0, w: 1 };
@@ -81,7 +91,7 @@ export function safeSpot(slot: number, from: THREE.Vector3, world: RAPIER.World,
 
 /** Holding the "I'm stuck" chord: fill the ring, and when it's full, pop out somewhere safe. */
 export function rescue(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
-  const { s, rb, rt } = f;
+  const { s } = f;
   if (!f.input.rescue) {
     s.rescueHold = 0;
     return;
@@ -97,7 +107,40 @@ export function rescue(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
   }
   if (s.rescueHold < RESCUE_SECONDS) return;
   s.rescueHold = -1;
+  popOut(f, world, rapier);
+}
 
+/**
+ * Pushing the stick but not getting anywhere (and not on a ride, a tongue, a back or a tree, where
+ * standing still is normal): a big hop after a few seconds, popped out after a few more. Not at
+ * the park's edge: nothing's wrong there, the hedge just stops you.
+ */
+export function autoUnstick(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
+  const { s, input, rt } = f;
+  const pushing = Math.hypot(input.x, input.z) > 0.6 && !input.rescue;
+  const free = !s.holdAt && s.ridingOn == null && rt?.grabbedBy == null && !s.flopped && s.launched <= 0 && !s.pendingLaunch && s.climbTree < 0 && !f.heavyDrag;
+  const atEdge = Math.abs(s.pos.x) > WORLD_HALF_X - 2.5 || Math.abs(s.pos.z) > WORLD_HALF_Z - 2.5;
+  if (!pushing || !free || atEdge || Math.hypot(s.pos.x - s.stuckFrom.x, s.pos.z - s.stuckFrom.z) > STUCK_RADIUS) {
+    s.stuckFor = 0;
+    s.stuckFrom.copy(s.pos);
+    return;
+  }
+  const before = s.stuckFor;
+  s.stuckFor += f.dt;
+  if (before < STUCK_HOP_AFTER && s.stuckFor >= STUCK_HOP_AFTER) {
+    s.pendingHop = 9;
+    playBoing(s.pos, 1.2);
+  }
+  if (s.stuckFor >= STUCK_RESCUE_AFTER) {
+    popOut(f, world, rapier);
+    s.stuckFor = 0;
+    s.stuckFrom.copy(s.pos);
+  }
+}
+
+/** Let go of everything and pop up somewhere safe. */
+function popOut(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
+  const { s, rb, rt } = f;
   // let go of everything: a ride, a tree, a tongue (ours or a friend's), a back to ride on
   s.holdAt = null;
   s.hidden = false;

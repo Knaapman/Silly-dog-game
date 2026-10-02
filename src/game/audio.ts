@@ -120,9 +120,36 @@ export function getBus(category: AudioCategory) {
   return { ctx: c, bus: buses[category] };
 }
 
-export function updateListener(focus: AudioPosition) {
+/** Split screen: where each view is looking (empty when the screen isn't split). */
+let viewFoci: { x: number; y: number; z: number }[] = [];
+let listenerFocus = { x: 0, y: 0, z: 0 };
+
+/**
+ * Where a sound is placed for the ears. Normally just where it happens. In split screen the one
+ * listener is at the shared focus, between children who may be far apart, so a sound is moved to
+ * sit just as far from the listener as it is from the view it's nearest to: every child hears
+ * their own bit of the park as loud as when they're all together.
+ */
+export function heardAt(p: { x: number; y: number; z: number }) {
+  if (viewFoci.length < 2) return p;
+  let best = viewFoci[0];
+  let bestD = Infinity;
+  for (const f of viewFoci) {
+    const d = (f.x - p.x) ** 2 + (f.z - p.z) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = f;
+    }
+  }
+  return { x: p.x - best.x + listenerFocus.x, y: p.y - best.y + listenerFocus.y, z: p.z - best.z + listenerFocus.z };
+}
+
+/** Put the ears over the camera's focus (and, in split screen, know where each view is). */
+export function updateListener(focus: AudioPosition, foci: AudioPosition[] = []) {
+  listenerFocus = toXYZ(focus);
+  viewFoci = foci.map(toXYZ);
   if (!ctx) return;
-  const { x, y, z } = toXYZ(focus);
+  const { x, y, z } = listenerFocus;
   const l = ctx.listener;
   const t = ctx.currentTime;
   if (l.positionX) {
@@ -174,7 +201,7 @@ function voice(category: AudioCategory, options: ChannelOptions = {}) {
   input.gain.value = options.gain ?? 1;
   const nodes: AudioNode[] = [input];
   if (options.position) {
-    const p = toXYZ(options.position);
+    const p = heardAt(toXYZ(options.position));
     const panner = c.createPanner();
     panner.panningModel = 'equalpower';
     panner.distanceModel = 'inverse';

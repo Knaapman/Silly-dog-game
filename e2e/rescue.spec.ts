@@ -95,3 +95,31 @@ test('on a keyboard: hold flop and poop together (F and G)', async ({ page }) =>
   expect(dist(await game.player(), { x: sx, z: sz })).toBeLessThan(2);
   game.expectNoErrors();
 });
+
+test('pushing against a wall and getting nowhere: a big hop after a few seconds, then out you pop by itself', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  const B = await page.evaluate(() => (window as any).__silly.layout.BARN);
+  // right up against the barn's back wall (five metres high: no hopping over that)
+  const at = { x: B.center[0], z: B.center[1] + B.depth / 2 + 0.7 };
+  await game.teleport(0, at.x, 1, at.z);
+  // standing still there is fine: nothing happens
+  await game.seconds(9);
+  expect(dist(await game.player(), at)).toBeLessThan(1);
+  // pushing into the wall (north) without getting anywhere: a hop at about three seconds...
+  await page.keyboard.down('KeyW');
+  await game.seconds(2.5);
+  const before = await game.player();
+  expect(dist(before, at)).toBeLessThan(1.2);
+  expect(await game.maxY(0, 1.2)).toBeGreaterThan(before.y + 1);
+  // ...and still stuck after seven: out it pops, back on its spot in the plaza (and off it
+  // runs, the stick still pushed)
+  await game.seconds(3.4);
+  await page.keyboard.up('KeyW');
+  const [sx, , sz] = await spawn(game, 0);
+  const p = await game.player();
+  expect(dist(p, { x: sx, z: sz })).toBeLessThan(3);
+  expect(dist(p, at)).toBeGreaterThan(20);
+  game.expectNoErrors();
+});

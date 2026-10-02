@@ -188,6 +188,9 @@ Grown-ups can switch it off.
 with that controller) holds all four shoulder buttons. A ring of dots fills up round the animal, one note at a time,
 and after five seconds it poofs out and pops up on clear ground next to a friend (or on its own spot in the plaza
 when playing alone). Rides let go of it. Only that animal moves; nothing else in the park is reset.
+It also happens by itself, since small children won't remember the buttons: pushing the stick for three seconds
+without getting anywhere gives a big hop to wiggle free, and still stuck after seven, the animal pops out just the
+same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.)
 
 The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
 tester**, the sticker album, a picture of all controls, and:
@@ -395,7 +398,7 @@ src/
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
       actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
       tricks.ts         every animal's own trick (sniff, mighty headbutt, fart jump, bouncy wool, climbing, glide, shockwave moo, rainbow jump)
-      rescue.ts         "I'm stuck": hold all four shoulder buttons, pop out onto clear ground next to a friend
+      rescue.ts         "I'm stuck": hold all four shoulder buttons (or push and get nowhere), pop out next to a friend
       piggyback.ts, movement.ts, animate.ts
       frame.ts, state.ts, constants.ts, physics.ts
       AnimalModel.tsx, Hat.tsx

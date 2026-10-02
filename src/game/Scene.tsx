@@ -18,7 +18,7 @@ import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, players, type PlayerRuntime } from './runtime';
-import { JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
+import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
 import { TEST_MODE } from './testMode';
@@ -333,7 +333,7 @@ function InputSystem() {
 
 function AudioDirector() {
   useFrame(() => {
-    updateListener(camState.focus);
+    updateListener(camState.focus, views.split ? cameraFoci() : []);
     const game = useGame.getState();
     const audio = getAudioState();
     if (game.phase === 'play' && audio.running) startMusic();
@@ -347,26 +347,29 @@ function PartyDirector() {
   const fireworkTimer = useRef(0);
   useGameFrame((_, delta) => {
     if (!isPartyTime()) return;
-    const f = camState.focus;
     confettiTimer.current -= delta;
     fireworkTimer.current -= delta;
+    // over every view in split screen (between the children, nobody would see it)
+    const foci = cameraFoci();
     if (confettiTimer.current <= 0) {
       confettiTimer.current = 0.06;
-      emit('confetti', [f.x + (Math.random() - 0.5) * 30, 14, f.z + (Math.random() - 0.5) * 20], { count: 6, speed: 1, up: 0, gravity: 3, life: 3.5 });
+      for (const f of foci) emit('confetti', [f.x + (Math.random() - 0.5) * 30, f.y + 14, f.z + (Math.random() - 0.5) * 20], { count: 6, speed: 1, up: 0, gravity: 3, life: 3.5 });
     }
     if (fireworkTimer.current <= 0) {
       fireworkTimer.current = 0.45;
       const colors = [['#ff4d5e', '#ffd23f'], ['#3b82f6', '#a855f7'], ['#22c55e', '#ffffff'], ['#ff8fd8', '#ffd23f']];
-      emit('star', [f.x + (Math.random() - 0.5) * 24, 9 + Math.random() * 5, f.z - 4 + (Math.random() - 0.5) * 10], {
-        count: 26,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        speed: 9,
-        up: 2,
-        gravity: 3,
-        drag: 2,
-        size: 0.18,
-        life: 1.3
-      });
+      for (const f of foci) {
+        emit('star', [f.x + (Math.random() - 0.5) * 24, f.y + 9 + Math.random() * 5, f.z - 4 + (Math.random() - 0.5) * 10], {
+          count: 26,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speed: 9,
+          up: 2,
+          gravity: 3,
+          drag: 2,
+          size: 0.18,
+          life: 1.3
+        });
+      }
     }
   });
   return null;

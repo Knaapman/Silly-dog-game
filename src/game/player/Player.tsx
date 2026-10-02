@@ -23,7 +23,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
-import { rescue, RESCUE_DOTS, RESCUE_SECONDS } from './rescue';
+import { autoUnstick, rescue, RESCUE_DOTS, RESCUE_SECONDS } from './rescue';
 import { climb } from './tricks';
 import { earnSticker } from '../stickers';
 
@@ -232,6 +232,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     movement(f);
     landing(f);
     rescue(f, world, rapier);
+    autoUnstick(f, world, rapier);
     respawnIfLost(f, rb, world, rapier);
     syncRuntime(f);
     animate(f, {
