@@ -29,7 +29,10 @@ export default defineConfig({
       command: `npx vite --port ${PORT} --strictPort --host 127.0.0.1`,
       url: `http://127.0.0.1:${PORT}`,
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000
+      timeout: 120_000,
+      // No hot reload: with it, any file saved in the project while the tests run (even the README)
+      // reloads the page and throws the running test back to the title screen.
+      env: { DISABLE_HMR: 'true' }
     },
     {
       command: `npx vite build --outDir .e2e-dist --emptyOutDir && npx vite preview --outDir .e2e-dist --port ${BUILT_PORT} --strictPort --host 127.0.0.1`,

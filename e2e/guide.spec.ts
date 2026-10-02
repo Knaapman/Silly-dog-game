@@ -19,7 +19,7 @@ test('sticker guide: pick a sticker in the album and an arrow shows the way ther
   await game.tap('KeyB');
   const album = page.getByTestId('sticker-album');
   await expect(album).toBeVisible();
-  await expect(album.getByTitle('needs a friend')).toHaveCount(7);
+  await expect(album.getByTitle('needs a friend')).toHaveCount(8);
   // a sticker with nowhere in particular to go (the party) just wiggles
   await album.getByTitle('party').click();
   await expect(album).toBeVisible();

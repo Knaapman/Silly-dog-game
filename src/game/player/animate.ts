@@ -7,7 +7,7 @@ import type { createRig } from './AnimalModel';
 import { MODEL_SCALE, RADIUS, UP } from './constants';
 import type { FrameCtx } from './frame';
 import { waterLevelAt } from '../terrain';
-import { addFootprint, PAINT_COLORS } from '../paint';
+import { addFootprint, paintColor } from '../paint';
 
 /** The scene objects one animal moves around every frame. */
 export type PlayerVisuals = {
@@ -184,7 +184,7 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
   if (r.paint) {
     r.paint.visible = s.paint > 0.02;
     r.paint.scale.setScalar(Math.max(0.001, 0.4 + 0.6 * s.paint));
-    r.paintMat.color.set(PAINT_COLORS[s.paintColor]);
+    r.paintMat.color.set(paintColor(s.paintColor));
   }
   // painted paws: a trail of coloured prints, left, right, left...
   if (s.paint > 0.1 && s.grounded && !s.swimming && !s.hidden && hSpeed > 1) {

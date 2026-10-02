@@ -213,6 +213,8 @@ export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, 
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
 export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7), at3(Z.winter, 11, WINTER.level + 1, -3)];
+/** Snowball fight: two snow piles with little snowballs to throw (lick one, lick again to throw). */
+export const SNOW_PILES: Vec2[] = [at(Z.winter, 4, -4), at(Z.winter, 12, -8)];
 /** Where you build your own snowman: roll a big snowball into the ring, then two more onto it. */
 export const SNOWMAN_BUILD = { center: at(Z.winter, 9, 2), radius: 1.4 };
 
