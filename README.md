@@ -85,6 +85,12 @@ step into the red slide or the blue one at the top. Whoosh: round the bends and 
 spray flying, and out over the lagoon with a splash. Two friends can go at once, side by side (a friend sticker);
 playing alone, the buddy hops into the other slide next to you. The tower's roof fades when it would hide you.
 
+**The bubble machine** 🧼 on the grass between the plaza and the beach: a wand turns round on top and blows soap
+bubbles off towards the plaza, little ones and big ones, drifting and bobbing. A little one pops when you jump at it.
+Walk into a big one and it swallows you up: you float off inside it, up over the park (push the stick to drift
+about), until it pops after a few seconds and down you plop. Jump to pop it sooner, or a friend can bump it. (A
+sticker for your first bubble ride.)
+
 **Paint buckets** 🎨 at the north end of the playground: red, yellow, blue and green. Headbutt one and over it goes,
 splashing everybody close by with paint and leaving a big puddle (walk through it to get painted too). A painted
 animal wears big blobs of the colour and leaves a trail of coloured paw prints everywhere it goes, which fade after a
@@ -255,7 +261,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 
 | Area | What is there |
 |---|---|
-| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, and the big red button (puts the park back) |
+| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
@@ -304,11 +310,11 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 72 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 73 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -430,6 +436,7 @@ src/
       WaterSlide.tsx    the water slide at the beach (two slides along a curve, ridden like the sleds)
       PaintBuckets.tsx  the paint buckets, their puddles and the paw prints (paint.ts: who's painted what colour)
       SnowballFight.tsx the snow piles and little snowballs to throw (a hit: a splat and a dusting of snow)
+      BubbleMachine.tsx the bubble machine and its bubbles (a big one carries you off; jump to pop it)
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

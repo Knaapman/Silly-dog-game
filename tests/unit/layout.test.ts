@@ -36,6 +36,7 @@ L.SNOWMEN.forEach((s, i) => add(`snowman ${i}`, s[0], s[1], 0.9, { winter: true 
 L.SNOWBALLS.forEach((s, i) => add(`snowball ${i}`, s[0], s[2], 0.5, { winter: true }));
 add('snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], 2.2, { winter: true });
 L.SNOW_PILES.forEach((s, i) => add(`snow pile ${i}`, s[0], s[1], 1.4, { winter: true }));
+add('bubble machine', L.BUBBLE_MACHINE.at[0], L.BUBBLE_MACHINE.at[1], 1.6);
 // the xylophone: a row of circles along its keys, and the songbird's post
 for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i - 2) * 3.1, L.XYLOPHONE.center[1], 1.8);
 add('songbird post', L.XYLOPHONE.bird[0], L.XYLOPHONE.bird[1], 0.5);
@@ -168,6 +169,7 @@ describe('park layout', () => {
       ['chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], L.CHICKEN_COOP.size * 0.75],
       ['water slide', L.WATER_SLIDE.tower[0], L.WATER_SLIDE.tower[1], 2.4],
       ['paint buckets', L.PAINT_BUCKETS.center[0], L.PAINT_BUCKETS.center[1], 3.2 + 1.6],
+      ['bubble machine', L.BUBBLE_MACHINE.at[0], L.BUBBLE_MACHINE.at[1], 2],
       ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4])
     ];
     const out: string[] = [];
