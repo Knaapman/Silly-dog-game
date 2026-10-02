@@ -58,12 +58,21 @@ test('playing alone: hit the buddy with a snowball and it throws one back', asyn
   const game = new Game(page);
   await game.open();
   await game.start();
-  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  // a snowball first, then the buddy comes along (called earlier, it hops over after us and our
+  // own hop to the pile can land on its back)
+  await pickUp(game);
+  // (and stands still where we put it, as something to throw at: left to itself it trots over to
+  // stand beside us)
+  await page.evaluate(() => {
+    const s = (window as any).__silly;
+    s.buddyControl.think = false;
+    s.useGame.getState().addBuddy();
+  });
   await game.seconds(1.5);
   const bot = await page.evaluate(() => [...(window as any).__silly.runtime.players.values()].find((p: any) => p.bot).slot as number);
-  await pickUp(game);
   await game.hold('KeyS', 0.3);
   await game.seconds(0.3);
+  expect((await fight(game)).held).toBe(1);
   const me = await game.player(0);
   await game.teleport(bot, me.x, 1, me.z + 5);
   await game.seconds(0.6);
