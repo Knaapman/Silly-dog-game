@@ -15,6 +15,7 @@ import {
   LAUNCH_PADS,
   MAZE,
   MUSHROOMS,
+  PAINT_BUCKETS,
   SEESAWS,
   SHIP,
   SLIDE_TOWER,
@@ -37,7 +38,8 @@ import {
   ZIPLINE,
   SLED_RUN,
   TREES,
-  TUBE_RIDE
+  TUBE_RIDE,
+  WATER_SLIDE
 } from './layout';
 import { nearestTreasure } from './hunt';
 import { flocks, parkCats } from './chase';
@@ -49,9 +51,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -117,7 +119,11 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   tune: [[XYLOPHONE.center[0], XYLOPHONE.center[1] + 3.5]],
   bigtune: [[XYLOPHONE.center[0], XYLOPHONE.center[1] + 3.5]],
   carrot: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]],
-  carrotfriends: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]]
+  carrotfriends: [[GIANT_CARROT.at[0], GIANT_CARROT.at[1] + 3.5]],
+  waterslide: [[WATER_SLIDE.tower[0], WATER_SLIDE.tower[1] - 1.6 - WATER_SLIDE.stairs - 1.5]],
+  slidetogether: [[WATER_SLIDE.tower[0], WATER_SLIDE.tower[1] - 1.6 - WATER_SLIDE.stairs - 1.5]],
+  paint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
+  rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

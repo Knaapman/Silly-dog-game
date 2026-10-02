@@ -18,8 +18,10 @@ import { lambert } from '../materials';
 import { debugInfo, players, type Surface, seesawLow } from '../runtime';
 import { SlideTower, StaticBox, useHint } from './common';
 import { Prop } from './Prop';
+import { useSeeThrough } from './seeThrough';
 import { useSurface } from './surface';
 import { Trampoline } from './Toys';
+import { PaintBuckets } from './PaintBuckets';
 import { Xylophone } from './Xylophone';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -37,6 +39,9 @@ function BouncyCastle() {
   const surface = useMemo<Surface>(() => ({ bounce: 12, onBounce: () => (lastBounce.current = gameNow()) }), []);
   useSurface(floorCol, surface);
   useHint([cx, 1, cz + half], 'jump', 5);
+  // (it's big: it fades while it stands between the camera and an animal, like the barn)
+  const whole = useRef<THREE.Group>(null);
+  useSeeThrough(whole, cx, cz, half + 1);
 
   useGameFrame(() => {
     const m = floorMesh.current;
@@ -57,7 +62,7 @@ function BouncyCastle() {
   );
   const gap = 1.3;
   return (
-    <group>
+    <group ref={whole}>
       <RigidBody type="fixed" colliders={false} position={[cx, 0, cz]}>
         <CuboidCollider ref={floorCol} args={[half, 0.25, half]} position={[0, 0.25, 0]} restitution={0.8} />
       </RigidBody>
@@ -256,6 +261,7 @@ export function Playground() {
       />
       <BouncyCastle />
       <Xylophone />
+      <PaintBuckets />
       {SEESAWS.map((_, i) => (
         <SeeSaw key={i} index={i} />
       ))}

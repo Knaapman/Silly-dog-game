@@ -84,6 +84,12 @@ export function createState(spawn: THREE.Vector3) {
     squash: 0,
     squashVel: 0,
     mud: 0,
+    /** Paint on the coat (0..1), its colour (PAINT_COLORS), every colour since the last wash, and the paw-print stride. */
+    paint: 0,
+    paintColor: 0,
+    paintColors: [] as number[],
+    pawStride: 0,
+    pawSide: 1,
     swimming: false,
     inMud: false,
     rippleTimer: 0,

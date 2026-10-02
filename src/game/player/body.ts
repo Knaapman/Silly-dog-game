@@ -6,6 +6,7 @@ import { MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { emit, poof, ring } from '../fx';
 import { rumble } from '../input';
 import { isInFountain, isInMud } from '../layout';
+import { PAINT_COLORS, paintOf, paintSplashes } from '../paint';
 import { isInWater, waterLevelAt } from '../terrain';
 import { players, propPosition, props, shakeCamera, surfaces } from '../runtime';
 import { useGame } from '../store';
@@ -114,6 +115,22 @@ export function waterAndMud(f: FrameCtx) {
     s.mud = Math.max(0, s.mud - dt * 1.2);
     if (Math.random() < 0.2) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: '#ffffff', size: 0.2, speed: 1, up: 1 });
   } else s.mud = Math.max(0, s.mud - dt * 0.015);
+
+  // paint: a splash puts it on (a fresh coat); the water washes it off; otherwise it slowly dries and flakes off
+  const splash = paintSplashes.get(f.slot);
+  if (splash != null) {
+    paintSplashes.delete(f.slot);
+    s.paint = 1;
+    s.paintColor = splash;
+    if (!s.paintColors.includes(splash)) s.paintColors.push(splash);
+    earnSticker('paint');
+    if (s.paintColors.length >= PAINT_COLORS.length) earnSticker('rainbowpaint');
+  } else if (swimming && s.paint > 0) {
+    s.paint = Math.max(0, s.paint - dt * 1.2);
+    if (Math.random() < 0.3) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: PAINT_COLORS[s.paintColor], size: 0.2, speed: 1, up: 1 });
+  } else s.paint = Math.max(0, s.paint - dt * 0.012);
+  if (s.paint <= 0) s.paintColors.length = 0;
+  paintOf.set(f.slot, { amount: s.paint, color: s.paintColor, colors: s.paintColors });
 }
 
 /** Flop (ragdoll): start, wake up, and steer the tumbling body. */

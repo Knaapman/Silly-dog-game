@@ -40,6 +40,11 @@ for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i 
 add('songbird post', L.XYLOPHONE.bird[0], L.XYLOPHONE.bird[1], 0.5);
 // the giant carrot and the ring of places to pull it from
 add('giant carrot', L.GIANT_CARROT.at[0], L.GIANT_CARROT.at[1], L.GIANT_CARROT.pull + 0.8);
+// the paint buckets in a row
+for (let i = 0; i < 4; i += 1) add(`paint bucket ${i}`, L.PAINT_BUCKETS.center[0] + (i - 1.5) * L.PAINT_BUCKETS.spacing, L.PAINT_BUCKETS.center[1], 0.8);
+// the water slide's tower and its stairs (the slides themselves run overhead)
+add('water slide 0', L.WATER_SLIDE.tower[0], L.WATER_SLIDE.tower[1], 2.4);
+for (let i = 0; i < 4; i += 1) add(`water slide ${i + 1}`, L.WATER_SLIDE.tower[0], L.WATER_SLIDE.tower[1] - 1.6 - ((i + 0.5) / 4) * L.WATER_SLIDE.stairs, 1.3);
 add('ice pond', L.ICE.center[0], L.ICE.center[1], L.ICE.radius, { winter: true });
 add('ski jump', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2], 2.2, { winter: true });
 add('ski jump ramp foot', L.SKI_JUMP.base[0], L.SKI_JUMP.base[2] - 1.6 - 7, 1.2, { winter: true });
@@ -159,7 +164,9 @@ describe('park layout', () => {
       ['xylophone', L.XYLOPHONE.center[0], L.XYLOPHONE.center[1], 7.5],
       ['snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], L.SNOWMAN_BUILD.radius + 1.5],
       ['bumper cars', L.BUMPER.center[0], L.BUMPER.center[1], Math.hypot(...L.BUMPER.size) / 2],
-      ['chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], L.CHICKEN_COOP.size * 0.75]
+      ['chicken coop', L.CHICKEN_COOP.center[0], L.CHICKEN_COOP.center[1], L.CHICKEN_COOP.size * 0.75],
+      ['water slide', L.WATER_SLIDE.tower[0], L.WATER_SLIDE.tower[1], 2.4],
+      ['paint buckets', L.PAINT_BUCKETS.center[0], L.PAINT_BUCKETS.center[1], 3.2 + 1.6]
     ];
     const out: string[] = [];
     for (const t of L.TREASURE_SPOTS) {
