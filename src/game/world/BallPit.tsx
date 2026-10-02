@@ -2,7 +2,7 @@ import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBod
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playBounce, playClack, playPoof } from '../audio';
-import { gameNow, useGameFrame } from '../clock';
+import { gameNow, seededRandom, useGameFrame } from '../clock';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { BALL_PIT } from '../layout';
@@ -38,6 +38,12 @@ const BACK_AFTER = 12000;
 
 const inPit = (x: number, z: number, margin = 0) => Math.abs(x - CX) < HALF - margin && Math.abs(z - CZ) < HALF - margin;
 
+/**
+ * The sea's own dice, for where each little ball lies and its colour: drawing those from the game's
+ * random numbers would shift everything random that comes after (a cat's run, a chicken's turn).
+ */
+const seaRandom = seededRandom(0xba11);
+
 /** For tests: splashes so far, the last one, how far the sea is stirred up, big balls brought back. */
 export const ballPit = { splashes: 0, last: null as null | { x: number; z: number; speed: number; slot: number }, stir: 0, back: 0 };
 
@@ -50,9 +56,9 @@ function BallSea() {
     for (let i = 0; i < SEA_COUNT; i += 1) {
       const gx = i % SEA_N;
       const gz = Math.floor(i / SEA_N);
-      bx[i] = CX - (SEA_N - 1) * SEA_STEP * 0.5 + gx * SEA_STEP + (Math.random() - 0.5) * 0.08;
-      bz[i] = CZ - (SEA_N - 1) * SEA_STEP * 0.5 + gz * SEA_STEP + (Math.random() - 0.5) * 0.08;
-      by[i] = SEA_Y - SEA_R + (Math.random() - 0.5) * 0.1;
+      bx[i] = CX - (SEA_N - 1) * SEA_STEP * 0.5 + gx * SEA_STEP + (seaRandom() - 0.5) * 0.08;
+      bz[i] = CZ - (SEA_N - 1) * SEA_STEP * 0.5 + gz * SEA_STEP + (seaRandom() - 0.5) * 0.08;
+      by[i] = SEA_Y - SEA_R + (seaRandom() - 0.5) * 0.1;
     }
     return { bx, by, bz, ox: new Float32Array(SEA_COUNT), oy: new Float32Array(SEA_COUNT), oz: new Float32Array(SEA_COUNT), vy: new Float32Array(SEA_COUNT) };
   }, []);
@@ -66,7 +72,7 @@ function BallSea() {
       d.position.set(sea.bx[i], sea.by[i], sea.bz[i]);
       d.updateMatrix();
       m.setMatrixAt(i, d.matrix);
-      m.setColorAt(i, c.set(PIT_COLORS[Math.floor(Math.random() * PIT_COLORS.length)]));
+      m.setColorAt(i, c.set(PIT_COLORS[Math.floor(seaRandom() * PIT_COLORS.length)]));
     }
     m.receiveShadow = true;
     return m;
@@ -81,7 +87,7 @@ function BallSea() {
     for (let i = 0; i < SEA_COUNT; i += 1) {
       const d = Math.hypot(sea.bx[i] - x, sea.bz[i] - z);
       if (d > reach) continue;
-      sea.vy[i] += (1 - d / reach) * speed * (0.5 + Math.random() * 0.5);
+      sea.vy[i] += (1 - d / reach) * speed * (0.5 + seaRandom() * 0.5);
     }
     emit('chunk', [x, SEA_Y + 0.2, z], { count: 18 + Math.round(speed * 2), color: PIT_COLORS, speed: 2 + speed * 0.4, up: 3 + speed * 0.4, size: 0.16 });
     playBounce([x, SEA_Y, z], 0.8);
