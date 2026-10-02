@@ -18,7 +18,7 @@ export type InputFrame = {
   anyPressed: boolean;
   /** The camera button (Capture on Switch-style pads): take a photo. */
   photo?: boolean;
-  /** Open the sticker album (a stick click on a controller). */
+  /** Open the sticker album (the Home button on a controller). */
   album?: boolean;
   /** Controller only: Start held long enough to open the grown-ups menu. */
   menu?: boolean;
@@ -85,8 +85,11 @@ const PAD_BUTTONS: Record<ActionName, number[]> = {
 };
 /** Capture (the camera button on Switch-style pads; Chrome puts it after Home). */
 const PAD_CAPTURE = 17;
-/** Clicking either stick opens the sticker album. */
-const PAD_ALBUM = [10, 11];
+/**
+ * Home opens the sticker album. (Not the stick clicks: small hands press the sticks in all the
+ * time while steering, and the album kept popping up mid-game.)
+ */
+const PAD_ALBUM = [16];
 
 const STICK_DEADZONE = 0.22;
 

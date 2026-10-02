@@ -162,7 +162,7 @@ Grown-ups can switch it off.
 | 🔄 Choose your animal (again: next animal) | Tap Back / Select / View | `1` or `C` | `,` | Tap your badge (top left) |
 | 🎩 Change hat | Tap Start / Menu / Options | `2` or `X` | `M` | Pink button |
 | 📷 Take a photo (for everyone) | **Capture** (Switch-style pads) | `T` | `Num 8` / `\` | Pink camera button (top right) |
-| 📒 Sticker album | Click a stick (L3 / R3) | `B` | `Num 4` | Orange album button (top right) |
+| 📒 Sticker album | Home (the round button next to Capture) | `B` | `Num 4` | Orange album button (top right) |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
 | 👋 Leave the game | Hold Select (1.5 s) | — | — | — |
 
