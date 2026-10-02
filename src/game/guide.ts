@@ -40,6 +40,8 @@ import {
   TREES,
   SNOW_PILES,
   BUBBLE_MACHINE,
+  BALL_PIT,
+  SWINGS,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -53,9 +55,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -127,7 +129,10 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   snowballfight: SNOW_PILES.map(([x, z]): P => [x, z - 1.8]),
   paint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
   bubble: [[BUBBLE_MACHINE.at[0] - 3, BUBBLE_MACHINE.at[1] - 3]],
-  rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]]
+  rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
+  ballpit: [[BALL_PIT.center[0], BALL_PIT.center[1] - BALL_PIT.size / 2 - 1.5]],
+  swing: [[SWINGS.center[0], SWINGS.center[1] + 3]],
+  swingpush: [[SWINGS.center[0], SWINGS.center[1] - 3]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

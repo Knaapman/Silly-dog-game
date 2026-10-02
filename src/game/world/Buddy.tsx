@@ -13,6 +13,7 @@ import { groundHeight } from '../terrain';
 import { settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
+import { swingHelp } from './Swings';
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -270,6 +271,12 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       if (!runUp) target.copy(me.position);
       else if (d < 0.3) target.set(kid.position.x + RUN_UP, 0, kid.position.z);
       else target.set(kid.position.x + ((me.position.x - kid.position.x) / d) * RUN_UP, 0, kid.position.z + ((me.position.z - kid.position.z) / d) * RUN_UP);
+    } else if (swingHelp.slot === me.slot) {
+      // the child is on a swing: stand behind it (the swing does the pushing, with our hop)
+      busy = true;
+      stopAt = 0.25;
+      target.copy(swingHelp.spot);
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
     } else {
       // near a see-saw? get onto the far end (pushing it down if it's up) so the child can
       // land on the other end and fling us

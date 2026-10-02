@@ -141,6 +141,8 @@ export const DINO_PAD = at3(Z.dino, -8, 0, 10.5);
 export const SLIDE_TOWER = { base: at3(Z.playground, -12, 0, -7), height: 5 };
 export const BOUNCY_CASTLE = { center: at(Z.playground, 11, -7), size: 7 };
 export const BALL_PIT = { center: at(Z.playground, 12, 7), size: 6 };
+/** The swings on the playground's east side: a beam along x with a seat for each child, swinging north–south (forwards is south, towards the camera). */
+export const SWINGS = { center: at(Z.playground, 16.5, 0), seats: 4, spacing: 2.2 };
 export const SEESAWS: { center: Vec2; angle: number }[] = [
   { center: at(Z.playground, -3, 10), angle: 0 },
   { center: at(Z.playground, 3, 4), angle: Math.PI / 2 }
