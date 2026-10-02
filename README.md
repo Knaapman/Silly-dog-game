@@ -201,7 +201,7 @@ Grown-ups can switch it off.
 | 🆘 Stuck? Pop out somewhere safe | Hold **all four** shoulder buttons (L, R, ZL, ZR) for 5 s | Hold `F` + `G` (5 s) | Hold `.` + `'` (5 s) | Hold purple + brown (5 s) |
 
 **Stuck?** If an animal ever gets wedged somewhere, stranded on a roof or stuck on a ride, its child (or a grown-up
-with that controller) holds all four shoulder buttons. A ring of dots fills up round the animal, one note at a time,
+with that controller) holds all four shoulder buttons. A ring of dots fills up round the animal, one note at a time (it stands still meanwhile: the shoulder buttons don't also flop and poop),
 and after five seconds it poofs out and pops up on clear ground next to a friend (or on its own spot in the plaza
 when playing alone). Rides let go of it. Only that animal moves; nothing else in the park is reset.
 It also happens by itself, since small children won't remember the buttons: pushing the stick for three seconds

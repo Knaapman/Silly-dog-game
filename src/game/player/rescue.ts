@@ -97,6 +97,17 @@ export function safeSpot(slot: number, from: THREE.Vector3, world: RAPIER.World,
   return new THREE.Vector3(x, groundHeight(x, z) + 2, z);
 }
 
+/**
+ * While the chord is held, the shoulder buttons don't also flop and poop, and a flop they started
+ * (one of them goes down a moment before the others) stands back up: the animal waits calmly
+ * while the ring fills, instead of tumbling off somewhere.
+ */
+export function calmForRescue(f: FrameCtx) {
+  if (!f.input.rescue) return;
+  f.input = { ...f.input, pressed: { ...f.input.pressed, flop: false, poop: false }, presses: { ...f.input.presses, flop: 0, poop: 0 } };
+  if (f.s.flopped) endFlop(f);
+}
+
 /** Holding the "I'm stuck" chord: fill the ring, and when it's full, pop out somewhere safe. */
 export function rescue(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
   const { s } = f;

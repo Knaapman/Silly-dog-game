@@ -23,7 +23,7 @@ import { movement } from './movement';
 import { pickSpawn } from './physics';
 import { piggyback } from './piggyback';
 import { createState } from './state';
-import { autoUnstick, rescue, RESCUE_DOTS, RESCUE_SECONDS } from './rescue';
+import { autoUnstick, calmForRescue, rescue, RESCUE_DOTS, RESCUE_SECONDS } from './rescue';
 import { climb } from './tricks';
 import { earnSticker } from '../stickers';
 
@@ -211,6 +211,7 @@ export function Player({ info }: { info: PlayerInfo }) {
 
     // choosing an animal: the buttons pick, the animal waits
     if (choosing(f)) f.input = NO_INPUT;
+    calmForRescue(f);
     // the body: size, what's underneath, timers, water, flopping
     powerAndSize(f);
     probeGround(f, world, ray, rapier.QueryFilterFlags.EXCLUDE_SENSORS);
