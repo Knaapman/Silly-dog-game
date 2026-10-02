@@ -7,7 +7,7 @@ import { emit, poof } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { isInFountain, TRACTOR } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, pushNoise, type Surface } from '../runtime';
+import { debugInfo, players, rider, pushNoise, type Surface } from '../runtime';
 import { earnSticker } from '../stickers';
 import { isInWater, groundHeight } from '../terrain';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
@@ -255,7 +255,7 @@ export function Tractor() {
     const now = gameNow();
 
     // who's driving?
-    let driver = s.driver != null ? players.get(s.driver) : undefined;
+    let driver = rider(s.driver);
     if (s.driver != null && !driver) s.driver = null;
     if (s.driver == null) {
       tmp.seat.set(SEAT[0], SEAT[1], SEAT[2]).applyEuler(tmp.e.set(0, s.yaw, 0)).add(tmp.v.set(s.x, groundHeight(s.x, s.z), s.z));

@@ -291,3 +291,30 @@ describe('rumble', () => {
     expect(playEffect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('"I\'m stuck" chord', () => {
+  it('needs all four shoulder buttons together (L, R, ZL, ZR), on a standard pad and a HORIPAD', async () => {
+    for (const pad of [standardPad(), horiPad()]) {
+      const t = await loadInput([pad]);
+      t.frame();
+      for (const b of [4, 5, 6]) press(pad, b, true);
+      t.tick(40);
+      expect(t.frame().rescue, pad.id).toBe(false);
+      press(pad, 7, true);
+      t.tick(40);
+      expect(t.frame().rescue, pad.id).toBe(true);
+      press(pad, 5, false);
+      t.tick(40);
+      expect(t.frame().rescue, pad.id).toBe(false);
+    }
+  });
+
+  it('flop and poop together on a keyboard', async () => {
+    const t = await loadInput([]);
+    t.key('KeyF', true);
+    expect(t.frame('kb1').rescue).toBe(false);
+    t.key('KeyG', true);
+    expect(t.frame('kb1').rescue).toBe(true);
+    expect(t.frame('kb2').rescue).toBe(false);
+  });
+});

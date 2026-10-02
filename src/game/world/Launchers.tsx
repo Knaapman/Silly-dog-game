@@ -5,7 +5,7 @@ import { playBoom, playGeyser, playWhoosh } from '../audio';
 import { emit, poof, ring } from '../fx';
 import { distXZ, type LaunchPadDef, type Vec2, type Vec3 } from '../layout';
 import { lambert } from '../materials';
-import { launchSpots, players, props, propPosition, shakeCamera } from '../runtime';
+import { launchSpots, players, rider, props, propPosition, shakeCamera } from '../runtime';
 import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -184,7 +184,7 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
       });
     } else {
       s.timer -= delta;
-      const p = players.get(s.slot);
+      const p = rider(s.slot);
       if (!p) {
         s.slot = null;
       } else if (s.timer <= 0) {

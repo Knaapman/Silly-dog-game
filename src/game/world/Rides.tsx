@@ -9,7 +9,7 @@ import { burstConfetti, emit, poof, ring } from '../fx';
 import { getInput, rumble } from '../input';
 import { distXZ, SLED_RUN, TUBE_RIDE, WATER_LEVEL } from '../layout';
 import { lambert, stripeTexture } from '../materials';
-import { debugInfo, players, type PlayerRuntime, type Surface } from '../runtime';
+import { debugInfo, players, rider, type PlayerRuntime, type Surface } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useSledding } from '../sledding';
 import { useGame } from '../store';
@@ -322,7 +322,7 @@ function Sled({ index }: { index: number }) {
         playSlideWhistle('down', p.position);
       });
     } else {
-      const p = s.rider != null ? players.get(s.rider) : undefined;
+      const p = rider(s.rider);
       if (!p) {
         away(s);
       } else {

@@ -182,6 +182,12 @@ Grown-ups can switch it off.
 | 📒 Sticker album | Home (the round button next to Capture) | `B` | `Num 4` | Orange album button (top right) |
 | ⚙️ Grown-ups menu | Hold Start (1 s) | `Esc` | `Esc` | ⚙️ button |
 | 👋 Leave the game | Hold Select (1.5 s) | — | — | — |
+| 🆘 Stuck? Pop out somewhere safe | Hold **all four** shoulder buttons (L, R, ZL, ZR) for 5 s | Hold `F` + `G` (5 s) | Hold `.` + `'` (5 s) | Hold purple + brown (5 s) |
+
+**Stuck?** If an animal ever gets wedged somewhere, stranded on a roof or stuck on a ride, its child (or a grown-up
+with that controller) holds all four shoulder buttons. A ring of dots fills up round the animal, one note at a time,
+and after five seconds it poofs out and pops up on clear ground next to a friend (or on its own spot in the plaza
+when playing alone). Rides let go of it. Only that animal moves; nothing else in the park is reset.
 
 The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
 tester**, the sticker album, a picture of all controls, and:
@@ -389,6 +395,7 @@ src/
       body.ts           size, ground probe, timers, water & mud, flop, being bumped/tugged/launched, landing
       actions.ts        the animal picker, tongue (props, food, friends), noise, poop, hat, headbutt
       tricks.ts         every animal's own trick (sniff, mighty headbutt, fart jump, bouncy wool, climbing, glide, shockwave moo, rainbow jump)
+      rescue.ts         "I'm stuck": hold all four shoulder buttons, pop out onto clear ground next to a friend
       piggyback.ts, movement.ts, animate.ts
       frame.ts, state.ts, constants.ts, physics.ts
       AnimalModel.tsx, Hat.tsx
@@ -434,7 +441,8 @@ e2e/                    Playwright browser tests in test mode
    (bottom, right, left, top) and colour, which matches Xbox, PlayStation and Switch-style pads.
 2. **Every button always does something visible and audible**, even when nothing is in range (the tongue still
    comes out, the headbutt still dashes).
-3. **No failure states.** Nothing is timed and nothing is lost. If you fall out of the world you pop back in.
+3. **No failure states.** Nothing is timed and nothing is lost. If you fall out of the world you pop back in, and an
+   animal that's stuck anywhere pops out with a five-second hold of the shoulder buttons.
 4. **Co-op first.** Drop-in with any button, one shared camera (splitting into a view each when friends wander far
    apart, or with a gentle pull that keeps them together if split screen is off), and shared
    goals (stars, party meter) with nothing competitive.

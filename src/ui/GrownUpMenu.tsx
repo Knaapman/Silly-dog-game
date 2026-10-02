@@ -465,6 +465,9 @@ export function GrownUpMenu() {
               <span className="rounded-md bg-white/20 px-2 py-1" title="Back / Select / View (hold: leave)">⧉ = {ACTION_UI.species.icon}</span>
               <span className="rounded-md bg-white/20 px-2 py-1" title="Start / Menu / Options (hold: this menu)">☰ = {ACTION_UI.hat.icon}</span>
             </div>
+            <span className="rounded-md bg-white/20 px-2 py-1 text-xs" title="Stuck? Hold all four shoulder buttons for 5 seconds to pop out somewhere safe" data-testid="rescue-legend">
+              LB RB LT RT ⏱5 = <span className="emoji">🆘</span>
+            </span>
           </div>
           <KeyboardLegend source="kb1" color="#ff4d5e" />
           <KeyboardLegend source="kb2" color="#3b82f6" />

@@ -7,7 +7,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { ZIPLINE } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players } from '../runtime';
+import { debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { StaticBox, StaticCylinder, useHint } from './common';
@@ -91,7 +91,7 @@ export function Zipline() {
     let queued = 0;
     z.handles.forEach((h, i) => {
       if (h.mode === 'ride') {
-        const p = h.rider != null ? players.get(h.rider) : undefined;
+        const p = rider(h.rider);
         const letGo = (hop: number) => {
           if (p) {
             p.hold(null);

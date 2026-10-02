@@ -8,7 +8,7 @@ import { emit, poof, ring } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { GIANT_CARROT } from '../layout';
 import { lambert } from '../materials';
-import { allocPropId, debugInfo, players, registerFood, registerProp, type PropEntry } from '../runtime';
+import { allocPropId, debugInfo, players, rider, registerFood, registerProp, type PropEntry } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
@@ -254,8 +254,8 @@ export function GiantCarrot() {
       // everyone hanging on: stick away from the carrot = pull; jump = let go
       let kidsPulling = 0;
       s.pullers.forEach((pl, slot) => {
-        const p = players.get(slot);
-        // (gone home: their place is free again)
+        const p = rider(slot);
+        // (gone home, or popped out with the "I'm stuck" buttons: their place is free again)
         if (!p) {
           s.pullers.delete(slot);
           return;
