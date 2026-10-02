@@ -45,6 +45,9 @@ describe('settings', () => {
     expect((await loadSettings('{"zoom":4}')).settings().zoom).toBe(1.6);
     expect((await loadSettings('{"zoom":"big"}')).settings().zoom).toBe(1);
     expect((await loadSettings('{"zoom":0.8}')).settings().zoom).toBe(0.8);
+    expect(s.split).toBe(true);
+    expect((await loadSettings('{"split":false}')).settings().split).toBe(false);
+    expect((await loadSettings('{"split":"no"}')).settings().split).toBe(true);
   });
 
   it('survives unreadable storage', async () => {

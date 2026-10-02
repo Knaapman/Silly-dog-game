@@ -8,6 +8,7 @@ import { perf, recordFrame } from './perf';
 import { useSettings } from './settings';
 import { isPaused } from './store';
 import { TEST_MODE } from './testMode';
+import { renderViews } from './views';
 
 /** Ticks the game clock before any other frame callback. */
 function GameClockTick() {
@@ -23,6 +24,8 @@ function GameClockTick() {
 
 /** Normal play: one frame per animation frame, never stepping more than MAX_STEP. */
 function RealtimeDriver() {
+  // (drawing is ours, so split screen can draw a view per child)
+  useFrame(({ gl, scene, camera }) => renderViews(gl, scene, camera), 1);
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
@@ -54,7 +57,7 @@ function TestDriver() {
   const get = useThree((state) => state.get);
   // Taking over rendering (priority > 0) lets steps skip the expensive draw.
   useFrame(({ gl, scene, camera }) => {
-    if (draw.current) gl.render(scene, camera);
+    if (draw.current) renderViews(gl, scene, camera);
   }, 1);
   useEffect(() => {
     let sim = 0;
@@ -79,7 +82,7 @@ function TestDriver() {
     // that would happen at an unpredictable point during loading.
     const raf = requestAnimationFrame(() => {
       const { gl, scene, camera } = get();
-      gl.render(scene, camera);
+      renderViews(gl, scene, camera);
     });
     return () => {
       cancelAnimationFrame(raf);

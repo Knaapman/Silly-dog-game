@@ -14,8 +14,10 @@ export type Settings = {
   magic: Level;
   /** How soon a poop turns into a flower: soon, normal, late. */
   sprout: Level;
-  /** How far apart friends can wander before they're gently pulled together. */
+  /** How far apart friends can wander before they're gently pulled together (only without split screen). */
   together: Level;
+  /** Split the screen when friends wander far apart (instead of pulling them back together). */
+  split: boolean;
   rumble: boolean;
   /** Park surprises now and then: rain, a runaway golden chicken, a present balloon. */
   surprises: boolean;
@@ -38,7 +40,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto', zoom: 1 };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, split: true, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto', zoom: 1 };
 
 const KEY = 'settings:v1';
 
@@ -50,6 +52,7 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     magic: level(raw?.magic, DEFAULT_SETTINGS.magic),
     sprout: level(raw?.sprout, DEFAULT_SETTINGS.sprout),
     together: level(raw?.together, DEFAULT_SETTINGS.together),
+    split: typeof raw?.split === 'boolean' ? raw.split : DEFAULT_SETTINGS.split,
     rumble: typeof raw?.rumble === 'boolean' ? raw.rumble : DEFAULT_SETTINGS.rumble,
     surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
     buddy: typeof raw?.buddy === 'boolean' ? raw.buddy : DEFAULT_SETTINGS.buddy,
@@ -76,8 +79,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality, zoom } = get();
-    saveJson(KEY, { speed, magic, sprout, together, rumble, surprises, buddy, chase, quality, zoom });
+    const { speed, magic, sprout, together, split, rumble, surprises, buddy, chase, quality, zoom } = get();
+    saveJson(KEY, { speed, magic, sprout, together, split, rumble, surprises, buddy, chase, quality, zoom });
   },
   setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));

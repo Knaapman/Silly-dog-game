@@ -117,7 +117,16 @@ function settingRows(autoLevel: Quality): ChoiceRow[] {
   const name = { low: 'Low', high: 'High', ultra: 'Ultra' };
   return [
     { key: 'speed', icon: '🏃', label: 'Running speed', options: LEVELS('Calm', 'Normal', 'Zoomy') },
-    { key: 'together', icon: '🤝', label: 'Stay together', options: LEVELS('Close', 'Normal', 'Far') },
+    {
+      key: 'split',
+      icon: '📺',
+      label: 'Split screen when far apart',
+      options: [
+        { value: false, label: 'Off' },
+        { value: true, label: 'On' }
+      ]
+    },
+    { key: 'together', icon: '🤝', label: 'Stay together (split screen off)', options: LEVELS('Close', 'Normal', 'Far') },
     {
       key: 'chase',
       icon: '🐈',

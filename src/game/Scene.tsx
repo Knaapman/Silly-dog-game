@@ -17,7 +17,8 @@ import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPre
 import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
-import { camera as camState, players } from './runtime';
+import { camera as camState, players, type PlayerRuntime } from './runtime';
+import { JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
 import { TEST_MODE } from './testMode';
@@ -82,6 +83,10 @@ function Lighting() {
 
   useEffect(() => {
     if (sun.current) scene.add(sun.current.target);
+    lightRig.sun = sun.current;
+    return () => {
+      lightRig.sun = null;
+    };
   }, [scene]);
 
   // Graphics level: sharper shadows over a wider area on a strong graphics card.
@@ -138,13 +143,81 @@ function Lighting() {
   );
 }
 
-/** One shared camera that frames every player (no split screen for little kids). */
+/**
+ * One shared camera that frames every player; when the children wander too far apart for that,
+ * a camera each in split screen (see views.ts), joining up again when they come back together.
+ */
 function CameraRig() {
   const focus = useMemo(() => new THREE.Vector3(0, 0, 4), []);
   const desiredFocus = useMemo(() => new THREE.Vector3(), []);
   const desiredPos = useMemo(() => new THREE.Vector3(), []);
   const lookAt = useMemo(() => new THREE.Vector3(0, 0, 4), []);
   const orbit = useRef(0);
+  const viewOf = useMemo(() => new Map<number, View>(), []);
+  const tmp = useMemo(() => ({ kid: new THREE.Vector3(), pos: new THREE.Vector3() }), []);
+
+  /** How far apart the children (not the buddy, not anyone napping) are, as the camera sees it. */
+  const kidSpread = (kids: PlayerRuntime[]) => {
+    tmp.kid.set(0, 0, 0);
+    kids.forEach((p) => tmp.kid.add(p.position));
+    tmp.kid.divideScalar(Math.max(1, kids.length));
+    let spread = 0;
+    kids.forEach((p) => {
+      spread = Math.max(spread, Math.abs(p.position.x - tmp.kid.x) * 0.85, Math.abs(p.position.z - tmp.kid.z) * 1.35, Math.abs(p.position.y - tmp.kid.y) * 0.9);
+    });
+    return 13 + spread * 1.4;
+  };
+
+  /** Split (or keep split) with a view for each child, or join back up. */
+  const updateSplit = (camera: THREE.Camera, width: number, height: number, dt: number) => {
+    const kids = [...players.values()].filter((p) => !p.bot && !p.asleep).sort((a, b) => a.slot - b.slot);
+    const reach = kids.length >= 2 ? kidSpread(kids) : 0;
+    const want = useSettings.getState().split && kids.length >= 2 && !(TEST_MODE && camState.override) && (views.split ? reach > JOIN_AT : reach > SPLIT_AT);
+    if (!want) {
+      if (views.split) {
+        views.split = false;
+        views.list = [];
+        viewOf.clear();
+        useViews.setState({ split: false, slots: [] });
+      }
+      return;
+    }
+    const rects = layoutRects(kids.length);
+    const zoom = useSettings.getState().zoom;
+    views.list = kids.map((p, i) => {
+      let v = viewOf.get(p.slot);
+      if (!v) {
+        // a new view starts where the shared camera is, and swoops in to its animal
+        const cam = (camera as THREE.PerspectiveCamera).clone();
+        v = { slot: p.slot, cam, focus: focus.clone(), look: lookAt.clone(), rect: rects[i] };
+        viewOf.set(p.slot, v);
+      }
+      v.rect = rects[i];
+      const aspect = (v.rect.w * width) / Math.max(1, v.rect.h * height);
+      const portraitBoost = aspect < 1.3 ? Math.min(1.7, 1.3 / aspect) : 1;
+      const up = Math.max(0, p.position.y - 0.5);
+      tmp.kid.set(p.position.x, up * 0.5 + Math.max(0, up - 3) * 0.5, p.position.z);
+      v.focus.lerp(tmp.kid, 1 - Math.exp(-5 * dt));
+      const dist = (13 * portraitBoost + (isPartyTime() ? 2.5 : 0)) * zoom;
+      tmp.pos.set(v.focus.x, v.focus.y + dist * 0.8, v.focus.z + dist * 0.78);
+      v.cam.position.lerp(tmp.pos, 1 - Math.exp(-3.5 * dt));
+      if (camState.shake > 0 && dt > 0) {
+        const s = camState.shake * camState.shake;
+        v.cam.position.x += (Math.random() - 0.5) * s;
+        v.cam.position.y += (Math.random() - 0.5) * s;
+      }
+      v.look.lerp(v.focus, 1 - Math.exp(-6 * dt));
+      v.cam.lookAt(v.look.x, v.look.y + 0.6, v.look.z);
+      return v;
+    });
+    [...viewOf.keys()].forEach((slot) => {
+      if (!kids.some((p) => p.slot === slot)) viewOf.delete(slot);
+    });
+    const slots = kids.map((p) => p.slot);
+    const ui = useViews.getState();
+    if (!views.split || !ui.split || ui.slots.join() !== slots.join()) useViews.setState({ split: true, slots });
+    views.split = true;
+  };
 
   useFrame(({ camera, size, scene }, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -200,6 +273,8 @@ function CameraRig() {
     lookAt.lerp(focus, 1 - Math.exp(-6 * dt));
     camera.lookAt(lookAt.x, lookAt.y + 0.6, lookAt.z);
     camState.focus.copy(focus);
+    if (game.phase === 'play') updateSplit(camera, size.width, size.height, dt);
+    else if (views.split) updateSplit(camera, size.width, size.height, 0);
   });
   return null;
 }
@@ -304,7 +379,7 @@ function PhotoDirector() {
     if (!usePhotos.getState().tick()) return;
     const { gl, scene, camera } = get();
     // Draw now and copy straight away: the canvas is only readable until the browser shows it.
-    gl.render(scene, camera);
+    renderViews(gl, scene, camera);
     const src = gl.domElement;
     const scale = Math.min(1, PHOTO_SIZE / Math.max(src.width, src.height));
     const out = document.createElement('canvas');
