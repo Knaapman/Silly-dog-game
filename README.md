@@ -1,5 +1,8 @@
 # Silly Park 🐶🐐🐷🐑🐱🦆🐮🦄
 
+> **Installeren en spelen:** zie **[INSTALL.md](INSTALL.md)** (stap voor stap, in het Nederlands). In short: install
+> Node.js LTS, get this repository, and double-click `play.bat` (Windows) or run `npm install && npm run play`.
+
 A Goat Simulator–style physics sandbox made for **young kids (around 5 years old)**, with local co-op for up to **4 players**.
 You play a dog, goat, pig or sheep (and later a cat, duck, cow or unicorn) in a big, busy theme park with eight themed areas. You can headbutt things, grab and
 drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
@@ -340,6 +343,9 @@ npm run build
 ```
 
 ### Playing at home without a terminal
+
+On Windows, `play.bat` (double-click) installs what's needed and runs `npm run play`; `update.bat` pulls the newest
+`main` first. The full guide for parents is [INSTALL.md](INSTALL.md).
 
 Run `npm run play` once and open the game in Chrome or Edge. The built game keeps all its files (a service worker,
 generated at build time by `sw-plugin.ts`), so it works offline, and the browser's install button (or *Put it on the
