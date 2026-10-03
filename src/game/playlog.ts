@@ -28,6 +28,8 @@ export type Session = {
   animals: string[];
   fps: { min: number; avg: number; samples: number };
   draws: { max: number; avg: number; maxTriangles: number };
+  /** Stutters once warmed up: frames over 100 ms, and the longest frame (ms). */
+  hitches?: { count: number; longestMs: number };
   /** The graphics quality, each time it changed. */
   quality: string[];
   unstuck: { hops: number; pops: number; rescues: number; where: { kind: string; x: number; z: number }[] };
@@ -45,6 +47,8 @@ type Running = {
   drawSum: number;
   drawSamples: number;
   stickersAtStart: Set<string>;
+  /** perf.hitches when the warm-up ended (-1 until then). */
+  hitchesAtWarm: number;
   unstuckAtStart: { hops: number; pops: number; chord: number };
   connected: Map<string, boolean>;
 };
@@ -86,6 +90,7 @@ function begin(now: number) {
       animals: [],
       fps: { min: 0, avg: 0, samples: 0 },
       draws: { max: 0, avg: 0, maxTriangles: 0 },
+      hitches: { count: 0, longestMs: 0 },
       quality: [effectiveQuality()],
       unstuck: { hops: 0, pops: 0, rescues: 0, where: [] },
       controllerDrops: 0,
@@ -98,6 +103,7 @@ function begin(now: number) {
     drawSum: 0,
     drawSamples: 0,
     stickersAtStart: new Set(useStickers.getState().got),
+    hitchesAtWarm: -1,
     unstuckAtStart: { hops: unstuckLog.hops, pops: unstuckLog.pops, chord: unstuckLog.chord },
     connected: new Map()
   };
@@ -127,6 +133,14 @@ export function tickPlayLog(now = performance.now()) {
     s.fps.samples += 1;
     s.fps.avg = Math.round((r.fpsSum / s.fps.samples) * 10) / 10;
     s.fps.min = s.fps.samples === 1 ? Math.round(perf.fps) : Math.min(s.fps.min, Math.round(perf.fps));
+  }
+  // stutters (once warmed up: loading and compiling the park's shaders are slow anyway)
+  if (s.seconds >= WARMUP && visible) {
+    if (r.hitchesAtWarm < 0) {
+      r.hitchesAtWarm = perf.hitches;
+      perf.longestFrame = 0;
+    }
+    s.hitches = { count: perf.hitches - r.hitchesAtWarm, longestMs: Math.round(perf.longestFrame) };
   }
   if (perf.calls > 0) {
     r.drawSum += perf.calls;
@@ -194,6 +208,8 @@ export function playLogFile() {
         gpu: s.gpu,
         screen: typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}` : ''
       },
+      // (this page: how long until the first frame was drawn, in ms after it started loading)
+      startup: { firstFrameMs: Math.round(perf.firstFrameAt) },
       sessions: loadSessions()
     },
     null,

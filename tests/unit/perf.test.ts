@@ -20,4 +20,18 @@ describe('frame rate', () => {
     for (let i = 0; i < 65; i += 1) recordFrame((t += 1000 / 60));
     expect(Math.round(perf.fps)).toBe(60);
   });
+
+  it('counts stutters (frames over 100 ms) and the longest, but not a hidden tab', () => {
+    let t = 500;
+    recordFrame(t);
+    for (let i = 0; i < 30; i += 1) recordFrame((t += 1000 / 60));
+    recordFrame((t += 150)); // a stutter
+    recordFrame((t += 1000 / 60));
+    recordFrame((t += 400)); // a bigger one
+    recordFrame((t += 5000)); // hidden for five seconds: not a stutter
+    recordFrame((t += 1000 / 60));
+    expect(perf.hitches).toBe(2);
+    expect(perf.longestFrame).toBe(400);
+    expect(perf.firstFrameAt).toBe(500);
+  });
 });
