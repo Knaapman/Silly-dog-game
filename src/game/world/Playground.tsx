@@ -22,6 +22,7 @@ import { Trampoline } from './Toys';
 import { PaintBuckets } from './PaintBuckets';
 import { Xylophone } from './Xylophone';
 import { BallPit } from './BallPit';
+import { Swings } from './Swings';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -222,6 +223,7 @@ export function Playground() {
         <SeeSaw key={i} index={i} />
       ))}
       <BallPit />
+      <Swings />
       {TRAMPOLINES.map((t, i) => (
         <Trampoline key={i} position={t.position} radius={t.radius} color={i} />
       ))}

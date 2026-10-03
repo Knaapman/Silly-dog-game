@@ -74,6 +74,8 @@ add('slide tower ramp foot', L.SLIDE_TOWER.base[0], L.SLIDE_TOWER.base[2] - 1.6 
 add('slide end', L.SLIDE_TOWER.base[0] + 1.6 + 9.5, L.SLIDE_TOWER.base[2], 1.2);
 add('bouncy castle', L.BOUNCY_CASTLE.center[0], L.BOUNCY_CASTLE.center[1], L.BOUNCY_CASTLE.size / 2 + 1);
 add('ball pit', L.BALL_PIT.center[0], L.BALL_PIT.center[1], L.BALL_PIT.size / 2 + 1);
+// the swings: a row of circles along the beam, wide enough for the seats swinging out both ways
+for (let i = 0; i < L.SWINGS.seats; i += 1) add(`swings ${i}`, L.SWINGS.center[0] + (i - (L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing, L.SWINGS.center[1], 2.6);
 add('barn', L.BARN.center[0], L.BARN.center[1], 4);
 add('silo', L.SILO.center[0], L.SILO.center[1], L.SILO.radius + 0.2);
 add('windmill', L.WINDMILL.position[0], L.WINDMILL.position[2], 2);
@@ -170,6 +172,7 @@ describe('park layout', () => {
       ['water slide', L.WATER_SLIDE.tower[0], L.WATER_SLIDE.tower[1], 2.4],
       ['paint buckets', L.PAINT_BUCKETS.center[0], L.PAINT_BUCKETS.center[1], 3.2 + 1.6],
       ['bubble machine', L.BUBBLE_MACHINE.at[0], L.BUBBLE_MACHINE.at[1], 2],
+      ['swings', L.SWINGS.center[0], L.SWINGS.center[1], ((L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing + 3],
       ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4])
     ];
     const out: string[] = [];

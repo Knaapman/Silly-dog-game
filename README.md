@@ -90,6 +90,13 @@ round you and pile up (it's slow going, like wading); jump in from up high and t
 There are big balls in among them too: lick one to pull it out and throw it. One left lying about outside the pit
 rolls back in a while later.
 
+**The swings** 🪑 on the east side of the playground: four seats on a big red and yellow frame. Walk into a seat
+and you sit down; hold the stick (any way at all, no timing needed) and you swing higher and higher. Jump and you
+let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
+ball pit (a sticker for flying off a big swing). A friend can headbutt the seat for a big push (a friend sticker),
+and a seat swinging hard bonks anyone standing in its way. Playing alone, the buddy comes round behind your swing
+and gives you a push each time you come back to it, with a little hop.
+
 **The bubble machine** 🧼 on the grass between the plaza and the beach: a wand turns round on top and blows soap
 bubbles off towards the plaza, little ones and big ones, drifting and bobbing. A little one pops when you jump at it.
 Walk into a big one and it swallows you up: you float off inside it, up over the park (push the stick to drift
@@ -270,7 +277,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
-| 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
+| 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
 | ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build, a snowball fight |
 | 🚜 Farm (south-west) | Barn with a launch pad onto the roof, windmill, mud, cows that tip over, chickens, watermelons, a tractor |
@@ -319,7 +326,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -402,6 +409,7 @@ src/
     sledding.ts         the furthest sled flight (the golden flag)
     coop.ts             the chicken round-up: which chickens are in the coop
     snowman.ts          the snowman being built: its pieces, how big a snowball has to be, where they go
+    swing.ts            a swing as a pendulum: pumping, pushes, slowing down, and the flight when you jump off
     animals.ts          each player number's animal (and coat on each animal), remembered for next time
     coats.ts            the five coats (colours) of every animal
     settings.ts         grown-ups settings and graphics quality
@@ -443,6 +451,7 @@ src/
       SnowballFight.tsx the snow piles and little snowballs to throw (a hit: a splat and a dusting of snow)
       BubbleMachine.tsx the bubble machine and its bubbles (a big one carries you off; jump to pop it)
       BallPit.tsx       the ball pit: a sea of little balls on springs that part and splash, and big real ones
+      Swings.tsx        the swings: sit, hold the stick to swing higher, jump to fly off; friends (and the buddy) push
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
