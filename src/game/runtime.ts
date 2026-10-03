@@ -29,7 +29,8 @@ export type PropKind =
   | 'poop'
   | 'giantcarrot'
   | 'hamsterball'
-  | 'fish';
+  | 'fish'
+  | 'block';
 
 export type PropEntry = {
   id: number;
@@ -45,7 +46,8 @@ export type PropEntry = {
   heldBy: number | null;
   onBonk?: (slot: number, dir: THREE.Vector3) => void;
   onGrab?: (slot: number) => boolean | void;
-  onRelease?: () => void;
+  /** Let go of (`thrown`: by licking again, not dropped). Return true if it put itself somewhere (no throw then). */
+  onRelease?: (thrown?: boolean) => boolean | void;
 };
 
 export const props = new Map<number, PropEntry>();

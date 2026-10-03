@@ -78,9 +78,9 @@ export function releaseHeld(f: FrameCtx, throwIt: boolean) {
   s.held = null;
   if (!prop) return;
   prop.heldBy = null;
-  prop.onRelease?.();
+  const placed = prop.onRelease?.(throwIt) === true;
   const pb = prop.getBody();
-  if (throwIt && pb) {
+  if (throwIt && pb && !placed) {
     const power = prop.heavy ? 7 : 13;
     pb.setLinvel({ x: tmp.fwd.x * power + s.vel.x * 0.5, y: prop.heavy ? 4 : 6.5, z: tmp.fwd.z * power + s.vel.z * 0.5 }, true);
     pb.setAngvel({ x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8, z: (Math.random() - 0.5) * 8 }, true);

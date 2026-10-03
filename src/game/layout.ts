@@ -172,6 +172,8 @@ export const SEESAWS: { center: Vec2; angle: number }[] = [
  */
 export const XYLOPHONE = { center: at(Z.playground, -3.5, -1.5), pitch: 1.62, width: 1.5, depth: [3.4, 2.5] as Vec2, top: 0.22, bird: at(Z.playground, -3.5, -4.7) };
 /** Paint buckets in a row at the north end of the playground (red, yellow, blue, green): headbutt one over. */
+/** Giant soft building blocks on the playground floor: a little tower of `tower` in the middle, the rest in a ring round it. */
+export const BLOCKS = { center: [49.5, 20.5] as Vec2, count: 12, size: 0.9, tower: 3, ring: 2.2 };
 export const PAINT_BUCKETS = { center: at(Z.playground, 6, -13), spacing: 2.1 };
 export const TRAMPOLINES: { position: Vec3; radius: number }[] = [
   { position: at3(Z.playground, -16, 0, 4), radius: 1.8 },

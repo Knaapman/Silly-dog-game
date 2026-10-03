@@ -196,8 +196,15 @@ test('catching the cats: easy, tricky, and auto that learns from each chase', as
   expect(quick.seconds).toBeLessThan(5);
   const up = (await skill(game))[0];
   expect(up).toBeGreaterThan(0.5);
-  // chase cat 3 for a bit, then give up: it calms down and counts as an escape
-  await chase(game, 3, 6, 9);
+  // chase cat 3 for a bit, then give up: it calms down and counts as an escape (out on the open
+  // lawn too: chased about near its home, by the playground, the child can end up in the balloon)
+  await game.page.evaluate(() => {
+    const b = (window as any).__silly.chase.parkCats[3].getBody();
+    b.setTranslation({ x: 12, y: 1, z: -3 }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  });
+  await game.seconds(0.3);
+  await chase(game, 3, 9, 4);
   await game.teleport(0, -74, 1, -34);
   await game.seconds(3.5);
   expect((await cat(game, 3)).mode).toBe('idle');
