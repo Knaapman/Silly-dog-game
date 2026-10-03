@@ -24,6 +24,7 @@ import { Xylophone } from './Xylophone';
 import { BallPit } from './BallPit';
 import { Swings } from './Swings';
 import { Blocks } from './Blocks';
+import { Roundabout } from './Roundabout';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -226,6 +227,7 @@ export function Playground() {
       <BallPit />
       <Swings />
       <Blocks />
+      <Roundabout />
       {TRAMPOLINES.map((t, i) => (
         <Trampoline key={i} position={t.position} radius={t.radius} color={i} />
       ))}

@@ -161,6 +161,8 @@ export const BOUNCY_CASTLE = { center: at(Z.playground, 11, -7), size: 7 };
 export const BALL_PIT = { center: at(Z.playground, 12, 7), size: 6 };
 /** The swings on the playground's east side: a beam along x with a seat for each child, swinging north–south (forwards is south, towards the camera). */
 export const SWINGS = { center: at(Z.playground, 16.5, 0), seats: 4, spacing: 2.2 };
+/** The roundabout: a big turning deck at the playground's east edge, north of the swings. */
+export const ROUNDABOUT = { center: [75, 28] as Vec2, radius: 2.4 };
 export const SEESAWS: { center: Vec2; angle: number }[] = [
   { center: at(Z.playground, -3, 10), angle: 0 },
   { center: at(Z.playground, 3, 4), angle: Math.PI / 2 }

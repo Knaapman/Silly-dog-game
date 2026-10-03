@@ -5,7 +5,7 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { distXZ, MOLES, SEESAWS } from '../layout';
+import { distXZ, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
@@ -17,6 +17,7 @@ import { swingHelp } from './Swings';
 import { hamster } from './HamsterBalls';
 import { moles } from './Moles';
 import { blocks, kidBuilding } from './Blocks';
+import { roundabout } from './Roundabout';
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -320,6 +321,17 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         target.set(MOLES.center[0] - ((kid.position.x - MOLES.center[0]) / kd) * 3, 0, MOLES.center[1] - ((kid.position.z - MOLES.center[1]) / kd) * 3);
         stopAt = 0.5;
       }
+    } else if (roundabout.riders.includes(kid.slot) && !roundabout.riders.includes(me.slot)) {
+      // the child is riding the roundabout: run round beside it, pushing it faster and faster
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const [rx, rz] = ROUNDABOUT.center;
+      const a = Math.atan2(me.position.z - rz, me.position.x - rx);
+      // (it turns the way the angle goes down: run that way, a little way ahead)
+      const ahead = a - (roundabout.spin >= 0 ? 0.7 : -0.7);
+      const r = ROUNDABOUT.radius + 0.6;
+      target.set(rx + Math.cos(ahead) * r, 0, rz + Math.sin(ahead) * r);
+      stopAt = 0.05;
     } else if (kidBuilding(kid, now)) {
       // the child is building a tower: fetch blocks for it
       busy = true;
