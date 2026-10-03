@@ -829,6 +829,27 @@ export function playRoar(position?: AudioPosition) {
   v.finish();
 }
 
+/** A little giggle (a tickle!); `pitch` below 1 for something big. */
+export function playGiggle(position?: AudioPosition, pitch = 1) {
+  if (throttled('giggle', 150)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  for (let i = 0; i < 3; i += 1) v.tone({ type: 'triangle', at: i * 0.09, from: 520 * pitch, to: 660 * pitch, dur: 0.07, gain: 0.09 });
+  v.finish();
+}
+
+/** "Ah... ah... CHOO!": the big moment comes SNEEZE_AT seconds in. */
+export const SNEEZE_AT = 1.1;
+export function playSneeze(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.3 });
+  if (!v) return;
+  v.tone({ type: 'triangle', from: 200, to: 300, dur: 0.35, gain: 0.13, attack: 0.05, vibrato: [6, 8] });
+  v.tone({ type: 'triangle', at: 0.5, from: 240, to: 400, dur: 0.4, gain: 0.15, attack: 0.05, vibrato: [6, 10] });
+  v.noise({ at: SNEEZE_AT, dur: 0.4, gain: 0.4, attack: 0.005, filter: { type: 'highpass', freq: 1600 } });
+  v.tone({ type: 'sawtooth', at: SNEEZE_AT, from: 320, to: 110, dur: 0.32, gain: 0.16, filter: { type: 'lowpass', freq: 1500 } });
+  v.finish();
+}
+
 export function playMoo(position?: AudioPosition) {
   if (throttled('moo', 400)) return;
   const v = voice('world', { position });
