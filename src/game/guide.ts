@@ -46,6 +46,7 @@ import {
   BALLOON,
   HAMSTER,
   FISHING_SPOT,
+  PENGUIN_SHY,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -144,7 +145,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   hamsterbump: [[HAMSTER.homes[0][0] - 2.5, HAMSTER.homes[0][1]]],
   fish: [FISHING_SPOT],
   fishslap: [FISHING_SPOT],
-  catfish: [FISHING_SPOT]
+  catfish: [FISHING_SPOT],
+  penguins: [[PENGUIN_SHY.center[0] - 5, PENGUIN_SHY.center[1] - 2]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

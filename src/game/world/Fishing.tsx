@@ -41,9 +41,13 @@ const bodies: (() => RapierRigidBody | null)[] = [];
 const entries: (PropEntry | null)[] = [];
 const goAway: (() => void)[] = [];
 
-/** The nearest fish lying about on dry land (not held, not in the water) within `max` m of (x, z). */
-export function nearestFish(x: number, z: number, max: number) {
-  let best: { index: number; x: number; z: number } | null = null;
+/**
+ * The nearest fish about on dry land (not held, not in the water) within `max` m of (x, z).
+ * `landed`: only one lying on the ground (not one flying past overhead, just thrown or leaping out
+ * of the water); otherwise one in a little flop counts too (`landed` in the answer says which).
+ */
+export function nearestFish(x: number, z: number, max: number, landed = true) {
+  let best: { index: number; x: number; z: number; landed: boolean } | null = null;
   let bestD = max;
   fishing.fish.forEach((f, i) => {
     const e = entries[i];
@@ -51,13 +55,17 @@ export function nearestFish(x: number, z: number, max: number) {
     if (!f || !f.active || !e || e.heldBy != null || !rb) return;
     const t = rb.translation();
     if (isInWater(t.x, t.z)) return;
+    const v = rb.linvel();
+    const down = t.y - groundHeight(t.x, t.z) < R + 0.35 && Math.hypot(v.x, v.y, v.z) < 4;
+    const low = t.y - groundHeight(t.x, t.z) < R + 1.2;
+    if (landed ? !down : !low) return;
     const d = Math.hypot(t.x - x, t.z - z);
     if (d < bestD) {
       bestD = d;
-      best = { index: i, x: t.x, z: t.z };
+      best = { index: i, x: t.x, z: t.z, landed: down };
     }
   });
-  return best as { index: number; x: number; z: number } | null;
+  return best as { index: number; x: number; z: number; landed: boolean } | null;
 }
 
 /** A cat eats fish `index`: munch, hearts, gone. */

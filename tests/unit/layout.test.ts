@@ -36,6 +36,8 @@ L.SNOWMEN.forEach((s, i) => add(`snowman ${i}`, s[0], s[1], 0.9, { winter: true 
 L.SNOWBALLS.forEach((s, i) => add(`snowball ${i}`, s[0], s[2], 0.5, { winter: true }));
 add('snowman build', L.SNOWMAN_BUILD.center[0], L.SNOWMAN_BUILD.center[1], 2.2, { winter: true });
 L.SNOW_PILES.forEach((s, i) => add(`snow pile ${i}`, s[0], s[1], 1.4, { winter: true }));
+// the penguin shy: its counter and back board (and room behind for the penguins to fall)
+add('penguin shy', L.PENGUIN_SHY.center[0] + 0.5, L.PENGUIN_SHY.center[1], 2.4, { winter: true });
 add('bubble machine', L.BUBBLE_MACHINE.at[0], L.BUBBLE_MACHINE.at[1], 1.6);
 // the xylophone: a row of circles along its keys, and the songbird's post
 for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i - 2) * 3.1, L.XYLOPHONE.center[1], 1.8);
@@ -193,7 +195,8 @@ describe('park layout', () => {
       ...L.HAMSTER.homes.map(([x, z], i): [string, number, number, number] => [`hamster ball ${i}`, x, z, L.HAMSTER.radius + 0.6]),
       ['balloon pad', L.BALLOON.pad[0], L.BALLOON.pad[1], 2.5],
       ['swings', L.SWINGS.center[0], L.SWINGS.center[1], ((L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing + 3],
-      ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4])
+      ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4]),
+      ['penguin shy', L.PENGUIN_SHY.center[0] + 0.5, L.PENGUIN_SHY.center[1], 3]
     ];
     const out: string[] = [];
     for (const t of L.TREASURE_SPOTS) {

@@ -349,8 +349,8 @@ function Cat({ index }: { index: number }) {
         const from = heard ?? kid!.position;
         c.facing = Math.atan2(t.x - from.x, t.z - from.z);
       } else if (m === 'stalk' && c.stalk === FISH) {
-        // a fish flopping about: run over and eat it, then lick your lips
-        const fish = nearestFish(t.x, t.z, 16);
+        // a fish flopping about: run over and eat it (once it's down on the ground), then lick your lips
+        const fish = nearestFish(t.x, t.z, 16, false);
         if (!fish) {
           setMode('idle');
           c.idle = 'sit';
@@ -359,7 +359,7 @@ function Cat({ index }: { index: number }) {
         } else {
           const d = distXZ(fish.x, fish.z, t.x, t.z);
           c.facing = Math.atan2(fish.x - t.x, fish.z - t.z);
-          if (d < 0.75 && onGround) {
+          if (d < 0.75 && onGround && fish.landed) {
             eatFish(fish.index);
             playCatSound('meow', t);
             earnSticker('catfish');
@@ -509,12 +509,17 @@ function Cat({ index }: { index: number }) {
         setMode('conga');
         c.congaMeow = now + 500;
       } else if (c.timer <= 0) {
-        // off to the nearest free tree (not a palm), faster than anyone can run
+        // off to the nearest free tree (not a palm), faster than anyone can run (but not one past the
+        // child who just caught it: that would mean running straight into them)
         let best = -1;
         let bestD = 35;
         TREES.forEach((tr, i) => {
           if (tr.kind === 'palm' || parkCats.some((o) => o !== rt && o.tree === i)) return;
-          const d = distXZ(tr.at[0], tr.at[1], t.x, t.z);
+          let d = distXZ(tr.at[0], tr.at[1], t.x, t.z);
+          if (kid && childD < 4 && d > childD) {
+            const toward = ((tr.at[0] - t.x) * (kid.position.x - t.x) + (tr.at[1] - t.z) * (kid.position.z - t.z)) / Math.max(0.01, d * childD);
+            if (toward > 0.3) d += 20;
+          }
           if (d < bestD) {
             bestD = d;
             best = i;
@@ -551,6 +556,14 @@ function Cat({ index }: { index: number }) {
         const d = distXZ(tr.at[0], tr.at[1], t.x, t.z);
         c.facing = Math.atan2(tr.at[0] - t.x, tr.at[1] - t.z);
         speed = 11;
+        // something (somebody) in the way: hop over it
+        if (Math.hypot(v.x, v.z) < 4 && onGround) c.stuckFor += dt;
+        else c.stuckFor = 0;
+        if (c.stuckFor > 0.3) {
+          c.stuckFor = 0;
+          c.jumpAt = now;
+          vy = 7.5;
+        }
         if (c.timer <= 0 && d >= 6) {
           // couldn't get there: just run off instead
           c.tree = -1;

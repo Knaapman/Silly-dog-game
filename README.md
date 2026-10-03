@@ -154,6 +154,11 @@ sticker. A snowball hits things just like a headbutt does: it knocks a snowman d
 bucket, even opens the hat box, from afar. Playing alone? Hit the buddy and it throws one right back. Thrown
 snowballs burst when they land and grow back on their pile; nothing is counted, it's just for fun.
 
+**The penguin shy** 🐧 on the mountain top, east of the snow piles: five little penguins stand on a striped
+wooden counter. Throw snowballs at them from a few steps away and each one you hit tumbles off backwards with a
+squawk (walk up and bump one and it only wobbles and squeaks: this is a throwing game). Knock all five off for a cheer,
+a bell and a party (and a sticker); a few seconds later they hop back up one after the other, ready to go again.
+
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). There's a handle for every child (four, each bar
@@ -356,7 +361,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -486,6 +491,7 @@ src/
       HotAirBalloon.tsx the hot air balloon: climb in, up, round a loop over the park, down; jump out on the way
       HamsterBalls.tsx  hamster balls: climb in, roll with the stick, bump; they float, and pop home when left
       Fishing.tsx       fishing: lick the water and a fish leaps out onto the bank, flops, swims off, slaps friends
+      PenguinShy.tsx    the penguin shy: knock the penguins off their counter with snowballs (from a few steps away)
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
