@@ -360,7 +360,9 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   with a star above them are still to be found. Start (and the party) only picks from unlocked hats. Progress is
   remembered on this device.
 - **The camera button** 📷: three beeps, everybody jumps, flash! The photo pops up for a moment and is kept for the
-  grown-ups (see the grown-ups menu).
+  grown-ups (see the grown-ups menu). The last five also go up on the **photo wall**: big wooden frames on the rock
+  face of the mesa, at the north edge of the plaza behind the hat rack, the newest on the left, arriving with a twinkle.
+  Frames still waiting for a photo show a camera.
 - **12 golden stars**, each marked by a beam of light: on top of the fountain, at the top of the ferris wheel, in the
   soccer goal, above the volcano, on the slide tower, on the lighthouse balcony, on the snow hill, on the barn roof,
   above the tallest mushroom, in the middle of the maze, on the brontosaurus's head and on the train's roof. When all
@@ -512,6 +514,7 @@ src/
       PenguinShy.tsx    the penguin shy: knock the penguins off their counter with snowballs (from a few steps away)
       Moles.tsx         whack-a-mole: moles pop up while a child is near; bonk ten and a golden one comes up
       Blocks.tsx        giant building blocks: carry with your tongue, lick to put one on the tower, headbutt it down
+      PhotoWall.tsx     the photo wall: the last five photos in frames on the mesa's south face
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

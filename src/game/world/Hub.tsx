@@ -11,6 +11,7 @@ import { gameClock, useGameFrame } from '../clock';
 import { HatRack } from './HatRack';
 import { HotAirBalloon } from './HotAirBalloon';
 import { Moles } from './Moles';
+import { PhotoWall } from './PhotoWall';
 
 function Fountain() {
   const [cx, cz] = FOUNTAIN.center;
@@ -124,6 +125,7 @@ export function Hub() {
       <Toilet />
       <HotAirBalloon />
       <Moles />
+      <PhotoWall />
       {LAMP_POSTS.map((p, i) => (
         <LampPost key={i} position={[p[0], 0, p[1]] as Vec3} />
       ))}

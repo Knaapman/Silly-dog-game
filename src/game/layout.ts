@@ -341,6 +341,8 @@ export const MESA = {
   rampFrom: [-14, 0, -38] as Vec3,
   rampTo: [-14, 5.5, -28.4] as Vec3
 };
+/** The photo wall: the last few photos from the camera button, in big frames on the mesa's south face (facing the plaza). */
+export const PHOTO_WALL = { x: MESA.center[0], z: MESA.center[1] + MESA.halfWidth, frames: 5, spacing: 3.4, size: [2.7, 1.7] as Vec2, y: 2.7 };
 
 /**
  * A footbridge over the west straight, on the way to the farm: up the ramp from the hub side,

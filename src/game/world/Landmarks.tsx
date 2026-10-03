@@ -55,9 +55,10 @@ function Mesa() {
   const boulder = lambert('#8f8a82');
   useHint([MESA.rampFrom[0], groundHeight(MESA.rampFrom[0], MESA.rampFrom[2]) + 0.5, MESA.rampFrom[2]], 'walk', 4);
   // in the mesa's own frame: local z runs along the tunnel, local x across it
+  // ([x, z, y, radius])
   const boulders: [number, number, number, number][] = [
-    [-hw - 1, 0.7, 5, 0.9],
-    [-hw - 0.8, 0.5, -3, 0.6],
+    [-hw - 1, 5, 0.7, 0.9],
+    [-hw - 0.8, -3, 0.5, 0.6],
     [4, hl + 2.2, 0.55, 0.8],
     [-4.2, -hl - 2, 0.6, 0.85],
     [-3.5, 4.5, top + 0.5, 0.6],
