@@ -214,7 +214,9 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     b.pending = [];
   } else if (me.ridingOn != null) {
     // riding on the child's back: enjoy it for a bit, then hop off (up high: only onto a spot
-    // the child stood on, never into thin air)
+    // the child stood on, never into thin air). A jump still queued from before (copying the
+    // child, or being silly) would throw us straight off again: forget those.
+    b.pending = b.pending.filter((p) => p.action !== 'jump');
     if (b.rodeSince < 0) b.rodeSince = now;
     if (now - b.rodeSince > 5000) {
       const spot = kid.position.y - groundHeight(kid.position.x, kid.position.z) > UP_HIGH ? footstep(b.trail, kid, 1.2, 3.5) : null;
