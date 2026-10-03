@@ -122,7 +122,18 @@ export const BOWLING = {
   ] as Vec2[]
 };
 
+/** Hamster balls: four giant clear balls waiting in a row on the grass at the top of the bowling lane (roll down it!). */
+export const HAMSTER = { radius: 1.1, homes: [0, 1, 2, 3].map((i): Vec2 => [LANE_X, Z.sports[1] + 28 + (i - 1.5) * 2.6]) };
 export const CRATE_TOWER = { base: at3(Z.sports, -12, 0, 14), size: 1.2, rows: 4 };
+/**
+ * Giant dominoes: a winding row on the grass north of the soccer field, one every `spacing`
+ * metres along a smooth line through `points` (first to last). The bell stands past the last one.
+ */
+export const DOMINOES = {
+  points: ([[-2, 18], [5, 18], [8, 15], [5, 12], [-1, 12], [-3, 9], [0, 6.5], [7, 6.5]] as Vec2[]).map(([x, z]): Vec2 => [Z.sports[0] + x, Z.sports[1] + z]),
+  spacing: 1,
+  height: 1.8
+};
 export const CONES: Vec3[] = [at3(Z.sports, -9, 0.4, 5), at3(Z.sports, 9, 0.4, 5), at3(Z.sports, -9, 0.4, -12), at3(Z.sports, 9, 0.4, -12), at3(Z.sports, -18, 0.4, 16), at3(Z.sports, -15, 0.4, 18)];
 
 // ---------------------------------------------------------------------------
@@ -211,6 +222,16 @@ export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.
  * to a pole in the lagoon. `platform`: how high the platform stands; `cable`: the cable's height
  * above the platform. The end is `endHeight` above the water, so you drop in with a splash.
  */
+/**
+ * The hot air balloon: it waits on its pad on the grass by the T-rex, between the plaza and the
+ * playground (off the lawn next to the plaza, where everybody walks past). Its flight is a loop
+ * through `route` (east of the zipline, so it never crosses the cable) at `height` above the sea.
+ */
+export const BALLOON = {
+  pad: [41, 14.5] as Vec2,
+  height: 16,
+  route: [[41, 14.5], [52, 24], [60, 40], [42, 50], [20, 42], [14, 24], [24, 10], [41, 14.5]] as Vec2[]
+};
 export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, to: [-4, 38] as Vec2, endHeight: 4 };
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);

@@ -32,6 +32,7 @@ import { Forest } from './world/Forest';
 import { Hints } from './world/Hints';
 import { Hub } from './world/Hub';
 import { BubbleMachine } from './world/BubbleMachine';
+import { HamsterBalls } from './world/HamsterBalls';
 import { LaunchPad } from './world/Launchers';
 import { Playground } from './world/Playground';
 import { Sports } from './world/Sports';
@@ -456,6 +457,7 @@ export function Scene() {
         <Zipline />
         <Hub />
         <BubbleMachine />
+        <HamsterBalls />
         <Carnival />
         <SkyCourse />
         <BumperCars />
