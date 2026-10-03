@@ -35,7 +35,7 @@ const PRINT_FOR = 22;
 type Bucket = { tippedAt: number; dir: number; puddle: { x: number; z: number; at: number } | null; tips: number };
 
 /** A little paw: a pad and three toes. */
-function pawGeometry() {
+export function pawGeometry() {
   const pad = new THREE.CircleGeometry(0.09, 10);
   const toes = [-1, 0, 1].map((k) => {
     const g = new THREE.CircleGeometry(0.04, 8);

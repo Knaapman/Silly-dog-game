@@ -1,10 +1,14 @@
-import { useMemo, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { hints, players, type Hint } from '../runtime';
+import { debugInfo, hints, players, type Hint } from '../runtime';
 import { gameClock, useGameFrame } from '../clock';
+import { hintLayer, seeAllHelp } from '../views';
 
 // Floating "press this button" bubbles above interactive things when a player is near.
-// Colour + position match the controller face buttons, so no reading is needed.
+// Colour + position match the controller face buttons, so no reading is needed. A hint can be
+// for the players who need it only (`wants`), and for one child only (`slot`: in split screen,
+// only that child's view shows it).
 
 const STYLE: Record<Hint['action'], { color: string; icon: string }> = {
   jump: { color: '#22c55e', icon: 'arrow' },
@@ -59,7 +63,13 @@ function hintTexture(action: Hint['action']) {
 
 const POOL = 12;
 
+/** For the tests: the hints showing now (mostly faded in), and whose they are. */
+export const hintsShown: { id: number; action: Hint['action']; slot: number | null }[] = [];
+
 export function Hints() {
+  const camera = useThree((s) => s.camera);
+  useEffect(() => seeAllHelp(camera), [camera]);
+  debugInfo.hintsShown = hintsShown;
   const sprites = useRef<(THREE.Sprite | null)[]>([]);
   const fades = useMemo(() => new Map<number, number>(), []);
   const materials = useMemo(
@@ -73,7 +83,8 @@ export function Hints() {
     hints.forEach((h) => {
       let near = false;
       players.forEach((p) => {
-        if (!near && !p.bot && !p.isLaunched() && p.position.distanceTo(h.position) < h.radius) near = true;
+        if (near || p.bot || p.isLaunched() || (h.slot != null && p.slot !== h.slot)) return;
+        if (p.position.distanceTo(h.position) < h.radius && (!h.wants || h.wants(p))) near = true;
       });
       const f = fades.get(h.id) ?? 0;
       const next = THREE.MathUtils.clamp(f + (near ? delta * 4 : -delta * 3), 0, 1);
@@ -81,10 +92,15 @@ export function Hints() {
       else fades.delete(h.id);
     });
     let i = 0;
+    hintsShown.length = 0;
     fades.forEach((f, id) => {
       const h = hints.get(id);
       const s = sprites.current[i];
       if (!h || !s || i >= POOL) return;
+      if (f > 0.5) hintsShown.push({ id, action: h.action, slot: h.slot ?? null });
+      // (one child's hint on that child's layer: only their view draws it)
+      if (h.slot != null) s.layers.set(hintLayer(h.slot));
+      else s.layers.set(0);
       const m = materials[i];
       const tex = hintTexture(h.action);
       if (m.map !== tex) {

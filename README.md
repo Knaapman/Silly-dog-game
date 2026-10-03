@@ -110,7 +110,9 @@ and you sit down; hold the stick (any way at all, no timing needed) and you swin
 let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
 ball pit (a sticker for flying off a big swing). A friend can headbutt the seat for a big push (a friend sticker),
 and a seat swinging hard bonks anyone standing in its way. Playing alone, the buddy comes round behind your swing
-and gives you a push each time you come back to it, with a little hop.
+and gives you a push each time you come back to it, with a little hop. With a friend sitting on a swing, a child
+nearby who has never pushed one sees paw prints from the gap beside the seat round to behind it, and the headbutt
+bubble once there; after their first push, no more prints for them. Getting off is always the rider's own jump.
 
 **Giant dominoes** 🧱 on the grass in the sports area, north of the soccer field: a long winding row of tall
 rainbow dominoes. Bump into one (or headbutt it, or roll a ball or throw a snowball at it) and over it goes, away from
@@ -146,7 +148,10 @@ friend sticker for going up together. Playing alone, the buddy hops in with you 
 it. Lick a spool to pick it up and run: the wind takes the kite out on its string, and the faster you run the higher
 it climbs (when you stop, it sinks back down). With it flying high, a jump turns into a slow, floaty glide; from the
 top of the hill, a long one. A kite way up is a sticker, and two friends' kites up high at once a friend sticker.
-Spools carried off and left lying about go home after a while.
+Spools carried off and left lying about go home after a while. Help without words, only when it seems needed: holding
+a spool and standing still a moment, white paw prints appear ahead of you ("run!"), fading as soon as you do; with the
+kite high and no jump yet, the jump bubble shows over you until you jump. Once it has worked, that help doesn't come
+back for that child.
 
 **Whack-a-mole** 🦫 on the meadow just west of the plaza, on the way to the forest: seven molehills, and while a
 child is about, cheeky moles pop up out of them, one after another (a bit quicker with friends). Bonk one (a headbutt,
@@ -580,7 +585,9 @@ e2e/                    Playwright browser tests in test mode
 ### Design rules
 
 1. **No reading required.** The UI uses icons, colours and animation. Controller hints show the button position
-   (bottom, right, left, top) and colour, which matches Xbox, PlayStation and Switch-style pads.
+   (bottom, right, left, top) and colour, which matches Xbox, PlayStation and Switch-style pads. Hints show only to
+   the children who need them (not to one already holding the spool, not to the one on the swing), and help meant for
+   one child is drawn on that child's layer: in split screen only their own view shows it (`Hints.tsx`, `helpPaws.ts`).
 2. **Every button always does something visible and audible**, even when nothing is in range (the tongue still
    comes out, the headbutt still dashes).
 3. **No failure states.** Nothing is timed and nothing is lost. If you fall out of the world you pop back in, and an

@@ -7,11 +7,12 @@ import { getInput, rumble, type SourceId } from '../input';
 import { distXZ, SWINGS } from '../layout';
 import { lambert } from '../materials';
 import { RADIUS } from '../player/constants';
-import { debugInfo, players, registerStatic, rider, type PlayerRuntime } from '../runtime';
+import { debugInfo, players, registerHint, registerStatic, rider, type Hint, type PlayerRuntime } from '../runtime';
 import { earnSticker } from '../stickers';
 import { amplitude, fling, pushSwing, seatOffset, seatSpeed, stepSwing, SWING_LENGTH, SWING_PIVOT, type Swing } from '../swing';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
+import { HelpPaws } from './helpPaws';
 import { randomStream } from '../rng';
 
 const random = randomStream('swings');
@@ -41,6 +42,15 @@ const BUDDY_PUSH = 1.2;
 const BUDDY_AFTER = 0.6;
 const BUDDY_GIVE_UP = 8;
 const SEAT_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#ffd23f'];
+/** Help for a friend: once a child has sat this long (s), paw prints behind the swing show another
+ * child (within PUSH_HELP_NEAR m, who's never pushed one yet) where to stand to give a push. */
+const PUSH_HELP_AFTER = 2;
+const PUSH_HELP_NEAR = 12;
+
+/** Where to stand to push seat `s` (hanging at x): just behind where it swings back to. */
+function pushSpot(s: Swing, x: number, g: number, cz: number, out: THREE.Vector3) {
+  return out.set(x, g, cz - SWING_LENGTH * Math.sin(Math.min(amplitude(s), BUDDY_MAX)) - 1.05);
+}
 
 type Seat = Swing & { rider: number | null; since: number; prev: number; knocked: Map<number, number>; lastWhoosh: number };
 
@@ -58,6 +68,10 @@ export function Swings() {
     flights: 0,
     pushes: 0,
     friendPushes: 0,
+    /** Children who've given a friend a push (they know how: no more paw prints for them). */
+    pushers: new Set<number>(),
+    /** For the tests: how far the push-here prints are shown at each seat, and for whom. */
+    help: [] as { shown: number; slots: number[]; mask: number }[],
     knocks: 0,
     last: null as null | { amp: number; along: number; seat: number }
   });
@@ -69,7 +83,33 @@ export function Swings() {
     const [along, up] = seatOffset(st.current.seats[i], down);
     return out.set(xs[i], g + SWING_PIVOT + up, cz + along);
   };
-  useHint([cx, g + 1, cz], 'walk', 5);
+  // (not for a child already on a swing)
+  useHint([cx, g + 1, cz], 'walk', 5, (p) => !st.current.seats.some((s) => s.rider === p.slot));
+
+  // help for a friend: where to stand to push (paw prints), and the headbutt bubble once there
+  const pushHelp = useMemo(() => xs.map(() => ({ paws: new HelpPaws(4, 2.4, true, 0.75), spot: new THREE.Vector3(), slots: [] as number[] })), [xs]);
+  const canPush = (i: number, p: PlayerRuntime, now: number) => {
+    const z = st.current;
+    const s = z.seats[i];
+    const on = rider(s.rider);
+    if (!on || on.bot || p.bot || p.asleep || p.slot === on.slot || z.pushers.has(p.slot)) return false;
+    if (z.seats.some((o) => o.rider === p.slot) || now - s.since < PUSH_HELP_AFTER * 1000) return false;
+    return distXZ(p.position.x, p.position.z, xs[i], cz) < PUSH_HELP_NEAR;
+  };
+  const bonkHints = useMemo(
+    () =>
+      xs.flatMap((_, i) =>
+        [0, 1, 2, 3].map(
+          (slot): Hint => ({ id: 9800 + i * 4 + slot, position: pushHelp[i].spot, radius: 1.4, action: 'bonk', slot, wants: (p) => canPush(i, p, gameNow()) })
+        )
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [xs, pushHelp]
+  );
+  useEffect(() => {
+    const offs = bonkHints.map((h) => registerHint(h));
+    return () => offs.forEach((off) => off());
+  }, [bonkHints]);
 
   // a headbutt (or a snowball) on a seat: a big push, the way it was pushed
   const bonkSpots = useMemo(() => xs.map((x) => new THREE.Vector3(x, g + SWING_PIVOT - SWING_LENGTH, cz)), [xs, g, cz]);
@@ -89,6 +129,7 @@ export function Swings() {
           const on = rider(s.rider);
           if (on && on.slot !== slot && from && !from.bot && !on.bot) {
             z.friendPushes += 1;
+            z.pushers.add(slot);
             earnSticker('swingpush');
           }
           playBoing(bonkSpots[i], 1.2);
@@ -176,6 +217,34 @@ export function Swings() {
 
       const arm = arms.current[i];
       if (arm) arm.rotation.x = -s.theta;
+
+      // where a friend can stand to push (for the children who could, and only their views)
+      const help = pushHelp[i];
+      pushSpot(s, xs[i], g, cz, help.spot);
+      const slots: number[] = [];
+      for (const o of players.values()) if (canPush(i, o, now)) slots.push(o.slot);
+      // (fading out, they stay in the views they were in)
+      if (slots.length) help.slots = slots;
+      // (a trail from the gap beside the seat round to behind it: the way to get there without
+      // walking through the seat's swing, as the buddy goes. The last print faces the seat; the
+      // headbutt bubble takes over there. Drawn over the beam and chains, which hide that ground
+      // from the camera; right behind the seat, prints would land on the rider in the picture)
+      const side = Math.sign(xs[i] - (xs[0] + xs[xs.length - 1]) / 2) || 1;
+      const trail = [
+        [xs[i] + side * 1.1, cz + 0.3],
+        [xs[i] + side * 1.1, cz - 0.4],
+        [xs[i] + side * 0.85, help.spot.z - 0.55],
+        [xs[i] + side * 0.35, help.spot.z - 0.4]
+      ];
+      if (slots.length || help.paws.shown > 0)
+        help.paws.place(
+          trail.map(([px, pz], n) => {
+            const next = trail[n + 1];
+            return { x: px, z: pz, angle: next ? Math.atan2(next[0] - px, next[1] - pz) : 0 };
+          })
+        );
+      help.paws.update(slots.length > 0, dt, help.slots);
+      z.help[i] = { shown: help.paws.shown, slots: help.slots, mask: help.paws.mask };
     });
 
     buddyPushes(z.seats, xs, g, cz, now);
@@ -186,6 +255,9 @@ export function Swings() {
   const ends = [xs[0] - SWINGS.spacing / 2 - 0.2, (xs[0] + xs[xs.length - 1]) / 2, xs[xs.length - 1] + SWINGS.spacing / 2 + 0.2];
   return (
     <group>
+      {pushHelp.map((h, i) => (
+        <primitive key={`push${i}`} object={h.paws.group} />
+      ))}
       {/* the frame: an A at each end and one in the middle, and the beam along the top */}
       {ends.map((x) =>
         [-1, 1].map((side) => (
@@ -258,7 +330,7 @@ function buddyPushes(seats: Seat[], xs: number[], g: number, cz: number, now: nu
   const b = players.get(h.slot!)!;
   // stand just behind where the seat swings back to (further back as it swings higher)
   const amp = amplitude(s);
-  h.spot.set(xs[h.seat], g, cz - SWING_LENGTH * Math.sin(Math.min(amp, BUDDY_MAX)) - 1.05);
+  pushSpot(s, xs[h.seat], g, cz, h.spot);
   // coming from the front: round by the gap next to the seat, not through the swing's way
   const middle = (xs[0] + xs[xs.length - 1]) / 2;
   if (b.position.z > cz - 0.3) h.goto.set(middle + Math.sign(xs[h.seat] - middle) * SWINGS.spacing, g, cz - 0.9);
