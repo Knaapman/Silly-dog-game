@@ -9,7 +9,11 @@ test('one part of the park throwing every frame is switched off; everything else
   await game.open();
   await game.start();
   // break the kites: their per-frame code now throws every frame
-  await page.evaluate(() => ((window as any).__silly.runtime.debugInfo.kites.list = null));
+  await page.evaluate(() => {
+    const k = (window as any).__silly.runtime.debugInfo.kites;
+    (window as any).__kiteList = k.list;
+    k.list = null;
+  });
   await page.evaluate(() => (window as any).__silly.playlog.tickPlayLog(0));
   const before = await game.player(0);
   await page.keyboard.down('KeyD');
@@ -30,4 +34,49 @@ test('one part of the park throwing every frame is switched off; everything else
   expect(log.sessions[0].errors.some((e: string) => e.startsWith('game frame: '))).toBe(true);
   // nothing else went wrong
   expect(game.errors.filter((e) => !e.includes('[silly park]'))).toEqual([]);
+
+  // mended while it rests: a few seconds later it runs again by itself (it sets kites.high each frame)
+  await page.evaluate(() => {
+    const k = (window as any).__silly.runtime.debugInfo.kites;
+    k.list = (window as any).__kiteList;
+    k.high = 99;
+  });
+  await game.seconds(1);
+  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.kites.high)).toBe(99);
+  await game.seconds(4.5);
+  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.kites.high)).toBe(0);
+  expect((await page.evaluate(() => (window as any).__silly.faults)).count).toBe(30);
+});
+
+test('a broken sticker album closes itself (the game isn\'t left paused behind it) and opens fine once mended', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await page.evaluate(() => {
+    const s = (window as any).__silly;
+    (window as any).__got = s.useStickers.getState().got;
+    s.useStickers.setState({ got: null });
+    s.useGame.getState().setAlbumOpen(true);
+  });
+  await game.seconds(0.5);
+  const state = await page.evaluate(() => {
+    const s = (window as any).__silly;
+    return { open: s.useGame.getState().albumOpen, paused: s.clock.gameClock.paused, messages: s.faults.messages as string[] };
+  });
+  expect(state.open).toBe(false);
+  expect(state.paused).toBe(false);
+  expect(state.messages.some((m) => m.startsWith('sticker album was left out'))).toBe(true);
+  // the park plays on
+  const t0 = await page.evaluate(() => (window as any).__silly.clock.gameClock.time);
+  await game.seconds(1);
+  expect(await page.evaluate(() => (window as any).__silly.clock.gameClock.time)).toBeGreaterThan(t0 + 0.9);
+  // mended, the album opens as usual
+  await page.evaluate(() => {
+    const s = (window as any).__silly;
+    s.useStickers.setState({ got: (window as any).__got });
+    s.useGame.getState().setAlbumOpen(true);
+  });
+  await game.seconds(0.5);
+  expect(await page.evaluate(() => (window as any).__silly.useGame.getState().albumOpen)).toBe(true);
+  await expect(page.getByLabel(/of \d+/).first()).toBeVisible();
 });

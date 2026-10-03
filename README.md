@@ -593,7 +593,9 @@ e2e/                    Playwright browser tests in test mode
    are real hinges. Where honest physics would be too subtle for a 5-year-old (a see-saw only lifts a friend by half a
    metre), the game boosts the effect.
 7. **One broken part never stops the park** (`faults.ts`). Each part's per-frame code runs on its own: if it throws,
-   the rest of the frame still runs, and one that throws 30 frames in a row is switched off. A part that fails while
-   it's being built or drawn is left out (an error boundary per attraction, `Contained.tsx`). If the graphics card
-   drops out (a driver reset, waking from sleep) the picture comes back by itself, or the page reloads after 3 s;
-   stickers, stars and settings are saved. Each kind of fault is reported once, to the console and the play log.
+   the rest of the frame still runs, and one that throws 30 frames in a row rests for about 5 s, then tries again. A
+   part that fails while it's being built or drawn is left out (an error boundary per attraction and per piece of
+   the screen, `Contained.tsx`); a broken grown-ups menu or sticker album closes, so the game isn't left paused behind
+   it. If the graphics card drops out (a driver reset, waking from sleep) the picture comes back by itself, or the
+   page reloads after 3 s (at most once every two minutes); stickers, stars and settings are saved. Each kind of fault
+   is reported once, to the console and the play log.

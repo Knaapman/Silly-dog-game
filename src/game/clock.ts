@@ -68,34 +68,46 @@ export function resetGameClock() {
   timers = [];
 }
 
-/** After this many frames in a row with an error, a frame callback is switched off. */
+/** After this many frames in a row with an error, a frame callback is switched off for a while... */
 export const GIVE_UP_FRAMES = 30;
+/** ...this many frames (about 5 s), then it gets another go (whatever upset it may have passed). */
+const REST_FRAMES = 300;
+
+type Health = { fails: number; rest: number };
 
 /**
  * Runs one frame callback so that an error stays inside it: the rest of the frame (every other
- * part of the park, the drawing) still runs. One that keeps failing is switched off.
+ * part of the park, the drawing) still runs. One that keeps failing rests, then tries again.
  */
-function contained(fails: { current: number }, where: string, fn: () => void) {
-  if (fails.current >= GIVE_UP_FRAMES) return;
+function contained(h: Health, where: string, fn: () => void) {
+  if (h.rest > 0) {
+    h.rest -= 1;
+    return;
+  }
   try {
     fn();
-    fails.current = 0;
+    h.fails = 0;
   } catch (e) {
-    fails.current += 1;
-    reportFault(fails.current >= GIVE_UP_FRAMES ? `${where}, switched off after ${GIVE_UP_FRAMES} frames in a row with errors` : where, e);
+    h.fails += 1;
+    if (h.fails < GIVE_UP_FRAMES) reportFault(where, e);
+    else {
+      h.fails = 0;
+      h.rest = REST_FRAMES;
+      reportFault(`${where}, switched off after ${GIVE_UP_FRAMES} frames in a row with errors (tries again in a few seconds)`, e);
+    }
   }
 }
 
 /** useFrame for game logic: dt is game time (0 while paused, never more than MAX_STEP). */
 export function useGameFrame(callback: (state: RootState, dt: number) => void, priority = 0) {
-  const fails = useRef(0);
-  useFrame((state) => contained(fails, 'game frame', () => callback(state, gameClock.dt)), priority);
+  const health = useRef<Health>({ fails: 0, rest: 0 });
+  useFrame((state) => contained(health.current, 'game frame', () => callback(state, gameClock.dt)), priority);
 }
 
 /** useFrame with real time (the camera, the sky, sounds), with errors kept inside it too. */
 export function useSafeFrame(callback: (state: RootState, delta: number) => void, priority = 0) {
-  const fails = useRef(0);
-  useFrame((state, delta) => contained(fails, 'frame', () => callback(state, delta)), priority);
+  const health = useRef<Health>({ fails: 0, rest: 0 });
+  useFrame((state, delta) => contained(health.current, 'frame', () => callback(state, delta)), priority);
 }
 
 /** A small seeded random generator (mulberry32), so test runs are repeatable. */
