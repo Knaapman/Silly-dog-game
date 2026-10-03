@@ -127,6 +127,13 @@ pad, where everyone steps out. Jump to climb out on the way and down you drop: i
 castle, wherever you like. An empty balloon finishes its loop and comes home by itself. A sticker for going up, and a
 friend sticker for going up together. Playing alone, the buddy hops in with you (and jumps out after you).
 
+**Whack-a-mole** 🦫 on the meadow just west of the plaza, on the way to the forest: seven molehills, and while a
+child is about, cheeky moles pop up out of them, one after another (a bit quicker with friends). Bonk one (a headbutt,
+a jump on its head (boing!), a snowball, or just bump into it) and down it goes, seeing stars. A mole nobody bonks
+just giggles and pops down again: nothing is timed, nothing is lost. After every ten a golden mole with a crown comes
+up and waits for you: bonk it for a cheer and a party (and a sticker; a friend sticker when two children bonked moles
+together). Playing alone, the buddy bonks some too (not the ones right by you), but it leaves the golden one for you.
+
 **The bubble machine** 🧼 on the grass between the plaza and the beach: a wand turns round on top and blows soap
 bubbles off towards the plaza, little ones and big ones, drifting and bobbing. A little one pops when you jump at it.
 Walk into a big one and it swallows you up: you float off inside it, up over the park (push the stick to drift
@@ -361,10 +368,12 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
-  counts, except for the three-animal tower and riding in the tractor's trailer.
+  remembered on this device. Thirteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
+  counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
+  rest (the three-animal tower, the tractor's trailer, pushing a swing, the balloon together, hamster balls bumping,
+  a fish slap and the moles together) need two children.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
@@ -492,6 +501,7 @@ src/
       HamsterBalls.tsx  hamster balls: climb in, roll with the stick, bump; they float, and pop home when left
       Fishing.tsx       fishing: lick the water and a fish leaps out onto the bank, flops, swims off, slaps friends
       PenguinShy.tsx    the penguin shy: knock the penguins off their counter with snowballs (from a few steps away)
+      Moles.tsx         whack-a-mole: moles pop up while a child is near; bonk ten and a golden one comes up
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
