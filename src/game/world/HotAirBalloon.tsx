@@ -29,6 +29,8 @@ const SPEED = 3.5;
 /** Seconds on the pad after landing before anyone can climb in again. */
 const REST = 3;
 const REACH = 1.1;
+/** How long (ms) the buddy's hop into the basket gets before it tries again. */
+const BUDDY_RETRY = 1200;
 /** The four places in the basket (from its middle). */
 const SPOTS: [number, number][] = [
   [-0.42, -0.42],
@@ -112,13 +114,13 @@ export function HotAirBalloon() {
           z.mode = 'boarding';
           z.t = 0;
         }
-        // playing alone: the buddy hops in too
-        if (!p.bot) {
-          for (const b of players.values()) {
-            if (!b.bot || z.riders.includes(b.slot) || b.isLaunched() || b.ridingOn != null || distXZ(b.position.x, b.position.z, px, pz) > 30) continue;
-            z.buddyAt = now;
-            b.launchTo(new THREE.Vector3(px + 0.3, g, pz + 0.3), g + 3.5);
-          }
+      }
+      // playing alone: the buddy hops in too (and tries again if it was busy mid-jump or missed)
+      if (z.mode === 'boarding' && kidsAboard() > 0 && z.riders.includes(null) && now - z.buddyAt > BUDDY_RETRY) {
+        for (const b of players.values()) {
+          if (!b.bot || z.riders.includes(b.slot) || b.isLaunched() || b.ridingOn != null || b.grabbedBy != null || distXZ(b.position.x, b.position.z, px, pz) > 30) continue;
+          z.buddyAt = now;
+          b.launchTo(new THREE.Vector3(px + 0.3, g, pz + 0.3), g + 3.5);
         }
       }
     }
