@@ -136,3 +136,39 @@ test('a fish on the grass: a cat comes running and eats it (a sticker)', async (
   expect(await stickers(game)).toContain('catfish');
   game.expectNoErrors();
 });
+
+test('a cat only eats a fish once it has landed, not one flying past overhead', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await catchOne(game);
+  // drop the fish from high up, right over the nearest cat (the child well away)
+  await page.evaluate(() => {
+    const s = (window as any).__silly;
+    const fish = [...s.runtime.props.values()].find((p: any) => p.kind === 'fish' && p.enabled);
+    let best: any = null;
+    let bestD = Infinity;
+    const ft = fish.getBody().translation();
+    for (const c of s.chase.parkCats) {
+      if (!c || c.mode === 'tree') continue;
+      const d = Math.hypot(c.position.x - ft.x, c.position.z - ft.z);
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    const { x, z } = best.position;
+    fish.getBody().setTranslation({ x: x + 0.3, y: s.terrain.groundHeight(x, z) + 3.2, z }, true);
+    fish.getBody().setLinvel({ x: 0, y: 0, z: 0 }, true);
+    s.runtime.players.get(0).getBody().setTranslation({ x: x - 25, y: s.terrain.groundHeight(x - 25, z) + 1, z }, true);
+  });
+  const eaten = () => page.evaluate(() => (window as any).__silly.runtime.debugInfo.fishing.eaten as number);
+  // still up in the air: not eaten
+  await game.seconds(0.3);
+  expect(await eaten()).toBe(0);
+  expect((await fishState(game)).fish[0].y).toBeGreaterThan(1);
+  // down on the ground: gobbled up
+  for (let i = 0; i < 40 && (await eaten()) === 0; i += 1) await game.seconds(0.1);
+  expect(await eaten()).toBe(1);
+  game.expectNoErrors();
+});

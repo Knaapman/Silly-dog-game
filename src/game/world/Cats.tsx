@@ -349,8 +349,8 @@ function Cat({ index }: { index: number }) {
         const from = heard ?? kid!.position;
         c.facing = Math.atan2(t.x - from.x, t.z - from.z);
       } else if (m === 'stalk' && c.stalk === FISH) {
-        // a fish flopping about: run over and eat it, then lick your lips
-        const fish = nearestFish(t.x, t.z, 16);
+        // a fish flopping about: run over and eat it (once it's down on the ground), then lick your lips
+        const fish = nearestFish(t.x, t.z, 16, false);
         if (!fish) {
           setMode('idle');
           c.idle = 'sit';
@@ -359,7 +359,7 @@ function Cat({ index }: { index: number }) {
         } else {
           const d = distXZ(fish.x, fish.z, t.x, t.z);
           c.facing = Math.atan2(fish.x - t.x, fish.z - t.z);
-          if (d < 0.75 && onGround) {
+          if (d < 0.75 && onGround && fish.landed) {
             eatFish(fish.index);
             playCatSound('meow', t);
             earnSticker('catfish');
