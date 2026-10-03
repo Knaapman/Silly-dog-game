@@ -1,4 +1,5 @@
-import type { RapierRigidBody } from '@react-three/rapier';
+import type * as RAPIER from '@dimforge/rapier3d-compat';
+import type { RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { gameNow } from './clock';
 
@@ -293,3 +294,6 @@ export const debugInfo: Record<string, unknown> = {};
 
 /** Which end of each see-saw rests low right now (+1 / -1 along its length, 0 = level). */
 export const seesawLow: number[] = [];
+
+/** The physics world, for code that runs outside it (the buddy looking where there's room). */
+export const physics: { world: RAPIER.World | null; rapier: ReturnType<typeof useRapier>['rapier'] | null } = { world: null, rapier: null };

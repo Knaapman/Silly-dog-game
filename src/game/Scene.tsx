@@ -18,7 +18,7 @@ import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPre
 import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
-import { camera as camState, keepAwake, players, type PlayerRuntime } from './runtime';
+import { camera as camState, keepAwake, physics, players, type PlayerRuntime } from './runtime';
 import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
@@ -415,10 +415,12 @@ function DevHook() {
   return null;
 }
 
-/** Dev/test only: the physics world, for poking at colliders. */
+/** The physics world for code outside it (runtime.physics), and in dev/test for poking at colliders. */
 function PhysicsHook() {
   const { world, rapier } = useRapier();
   useEffect(() => {
+    physics.world = world;
+    physics.rapier = rapier;
     if (!import.meta.env.DEV && !TEST_MODE) return;
     const w = window as unknown as { __silly?: Record<string, unknown> };
     if (w.__silly) Object.assign(w.__silly, { world, rapier });

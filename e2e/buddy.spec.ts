@@ -151,3 +151,30 @@ test('the buddy follows the child up high: the same way, or with a big boing', a
   expect(b.y).toBeLessThan(1.5);
   game.expectNoErrors();
 });
+
+test('the buddy never heads for a spot inside a wall: out of the tunnel to the child, without getting stuck', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await page.evaluate(() => ((window as any).__silly.buddyControl.auto = true));
+  await game.seconds(5);
+  const buddy = (await roster(game)).find((p) => p.bot)!.slot;
+  // the child stands just past the east end of the mesa, by the wall beside the tunnel; the buddy
+  // is in the tunnel mouth. (Its "trot beside the child" spot used to land inside that wall, and
+  // it pushed against the wall till it was popped out.)
+  const M = await page.evaluate(() => (window as any).__silly.layout.MESA);
+  const east = M.center[0] + M.halfLength;
+  const kid = { x: east + 0.5, z: M.center[1] - 3.8 };
+  const inTunnel = (x: number, z: number) => x < east && Math.abs(z - M.center[1]) < M.opening / 2;
+  const unstuck0 = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.unstuck.where.length);
+  for (let round = 0; round < 6; round += 1) {
+    await game.teleport(0, kid.x, 0.5, kid.z);
+    await game.teleport(buddy, east - 1.5, 0.5, M.center[1] - 1.7);
+    await game.seconds(4);
+    const b = await rt(game, buddy);
+    expect(inTunnel(b.x, b.z)).toBe(false);
+    expect(Math.hypot(b.x - kid.x, b.z - kid.z)).toBeLessThan(4.5);
+  }
+  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.unstuck.where.length)).toBe(unstuck0);
+  game.expectNoErrors();
+});
