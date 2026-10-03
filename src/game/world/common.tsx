@@ -2,7 +2,6 @@ import {
   ConvexHullCollider,
   CuboidCollider,
   CylinderCollider,
-  RigidBody,
   type RapierCollider
 } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
@@ -45,14 +44,14 @@ export function StaticBox({ position, size, rotation, color, surface, shadow = t
   const col = useRef<RapierCollider>(null);
   useSurface(col, surface ?? EMPTY_SURFACE);
   return (
-    <RigidBody type="fixed" colliders={false} position={position} rotation={rotation}>
+    <group position={position} rotation={rotation}>
       {/* only pass what was given: an undefined friction or restitution becomes NaN in the
           physics, and a NaN contact lets a running animal sink straight through the box */}
       <CuboidCollider ref={col} args={[size[0] / 2, size[1] / 2, size[2] / 2]} {...(friction != null ? { friction } : {})} {...(restitution != null ? { restitution } : {})} />
       <mesh castShadow={shadow} receiveShadow material={material ?? lambert(color)}>
         <boxGeometry args={size} />
       </mesh>
-    </RigidBody>
+    </group>
   );
 }
 
@@ -78,12 +77,12 @@ export function StaticCylinder({
   const col = useRef<RapierCollider>(null);
   useSurface(col, surface ?? EMPTY_SURFACE);
   return (
-    <RigidBody type="fixed" colliders={false} position={position}>
+    <group position={position}>
       <CylinderCollider ref={col} args={[height / 2, Math.max(radius, radiusTop ?? radius)]} />
       <mesh castShadow receiveShadow material={lambert(color)}>
         <cylinderGeometry args={[radiusTop ?? radius, radius, height, segments]} />
       </mesh>
-    </RigidBody>
+    </group>
   );
 }
 
@@ -155,12 +154,12 @@ export function Ramp({
   return (
     <>
     {base && (
-      <RigidBody type="fixed" colliders={false}>
+      <group>
         <ConvexHullCollider args={[base.vertices]} />
         <mesh castShadow receiveShadow geometry={base.geometry} material={lambert(solid!)} />
-      </RigidBody>
+      </group>
     )}
-    <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
+    <group position={center} quaternion={quaternion}>
       <CuboidCollider ref={col} args={[width / 2, thickness / 2, length / 2]} {...(friction != null ? { friction } : {})} />
       <mesh castShadow receiveShadow material={lambert(color)}>
         <boxGeometry args={[width, thickness, length]} />
@@ -174,7 +173,7 @@ export function Ramp({
             </mesh>
           </group>
         ))}
-    </RigidBody>
+    </group>
     </>
   );
 }
@@ -195,7 +194,7 @@ export function HedgeSegment({ from, to, y0 = 0, y1 = 0, height = 1.8, thickness
     return { len, quaternion: q, center: [(from[0] + to[0]) / 2, (y0 + y1) / 2, (from[1] + to[1]) / 2] as Vec3 };
   }, [from, to, y0, y1, thickness]);
   return (
-    <RigidBody type="fixed" colliders={false} position={center} quaternion={quaternion}>
+    <group position={center} quaternion={quaternion}>
       <CuboidCollider args={[len / 2, height / 2, thickness / 2]} position={[0, height / 2, 0]} />
       <mesh castShadow receiveShadow position={[0, height / 2 - 0.1, 0]} material={lambert('#3f9a3f')}>
         <boxGeometry args={[len, height - 0.2, thickness]} />
@@ -203,7 +202,7 @@ export function HedgeSegment({ from, to, y0 = 0, y1 = 0, height = 1.8, thickness
       <mesh castShadow position={[0, height - 0.2, 0]} rotation={[0, 0, Math.PI / 2]} material={lambert('#4fae47')}>
         <cylinderGeometry args={[thickness / 2, thickness / 2, len, 10]} />
       </mesh>
-    </RigidBody>
+    </group>
   );
 }
 
