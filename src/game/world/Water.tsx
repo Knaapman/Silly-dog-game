@@ -233,7 +233,8 @@ function Buoyancy() {
         return;
       }
       const rb = prop.getBody();
-      if (!rb) return;
+      // (one lying still isn't falling in: and a floating one never sleeps, its bobbing keeps it awake)
+      if (!rb || rb.isSleeping()) return;
       const t = rb.translation();
       const level = isInWater(t.x, t.z) ? waterLevelAt(t.x, t.z) : -Infinity;
       const inside = t.y - prop.radius < level;

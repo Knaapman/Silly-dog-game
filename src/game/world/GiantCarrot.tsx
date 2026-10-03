@@ -8,7 +8,7 @@ import { emit, poof, ring } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { GIANT_CARROT } from '../layout';
 import { lambert } from '../materials';
-import { allocPropId, debugInfo, players, rider, registerFood, registerProp, type PropEntry } from '../runtime';
+import { allocPropId, debugInfo, keepAwake, players, rider, registerFood, registerProp, type PropEntry } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
@@ -57,6 +57,15 @@ export function GiantCarrot() {
     dirt: 0
   });
   const handle = useRef<RapierRigidBody>(null);
+  // (it moves up as the carrot comes out: keep it awake so its picture follows)
+  useEffect(() => {
+    const h = handle.current?.handle;
+    if (h == null) return;
+    keepAwake.add(h);
+    return () => {
+      keepAwake.delete(h);
+    };
+  }, []);
   const loose = useRef<RapierRigidBody>(null);
   const carrot = useRef<THREE.Group>(null);
   const leaves = useRef<THREE.Group>(null);
