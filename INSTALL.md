@@ -112,6 +112,9 @@ stil zolang het menu open is. Het menu is in het Engels; dit zit erin:
   - **Surprises**, **Controller rumble** en **Graphics** (*Auto* / *Low* / *High* / *Ultra*).
 - **Progress** (sterren, hoedjes en stickers), **Photos** (de foto's die de kinderen maakten, met **Save** om op te
   slaan) en **Put it on the desktop** (zie hieronder).
+- **Play log**: een kort verslag van de laatste tien speelsessies op deze pc: hoe soepel het spel liep, of er dieren
+  vast kwamen te zitten, of een controller wegviel, en eventuele fouten. Met **Save** sla je het op als bestand, om
+  mee te sturen als er iets niet goed gaat; **Clear** maakt het leeg. Er wordt nooit vanzelf iets verstuurd.
 - Een plaatje met alle knoppen van controller en toetsenbord.
 
 ## Als app op het bureaublad (werkt ook zonder internet)
@@ -155,6 +158,8 @@ Alles wordt in de **browser** op deze pc bewaard, bij het adres `http://localhos
 | Het spel hapert | Zet in het ouder-menu **Graphics** op *Low*. Op *Auto* gaat het spel na een paar seconden zelf omlaag. Een gesplitst scherm met drie of vier kinderen is zwaarder; dat kun je uitzetten met **Split screen when far apart**. |
 | Een controller doet niets | Druk op een knop (browsers zien hem pas na een druk). Probeer een andere USB-poort. Kijk bij **Test controllers** in het ouder-menu wat het spel binnenkrijgt. |
 | Een kind is "weg" (💤 bij zijn badge) | De controller is losgeraakt of de batterij is leeg. Sluit hem weer aan en druk op een knop: het dier wordt wakker. |
+| Het beeld wordt zwart en het spel begint na een paar seconden opnieuw | De videokaart viel even weg (bijvoorbeeld na de slaapstand of een update van het stuurprogramma). Het spel start dan vanzelf opnieuw; stickers, sterren en instellingen blijven bewaard, de kinderen drukken op een knop om weer mee te doen. Gebeurt het vaak, werk dan het stuurprogramma van de videokaart bij. |
+| Iets gaat steeds mis, of een deel van het park doet het niet | Open het ouder-menu en klik bij **Play log** op **Save**. Stuur dat bestand mee met wat je zag: daarin staat hoe soepel het spel liep, waar dieren vastzaten en welke fouten er waren. (Gaat er iets mis in één deel van het park, dan speelt de rest gewoon door.) |
 | De oude versie na een update | Sluit alles, start `play.bat` opnieuw en druk op **Ctrl+F5** in de browser. |
 | `update.bat` zegt dat de map geen Git-kopie is | Je hebt het spel als ZIP gedownload. Werk bij door de ZIP opnieuw te downloaden (zie *Bijwerken*), of haal het één keer opnieuw binnen met Git (stap 2A). |
 
