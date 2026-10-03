@@ -149,11 +149,23 @@ test('birds: run at a flock and it flies off, then lands somewhere else', async 
   expect(after.landed).toBe(true);
   expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeGreaterThan(10);
 
-  // a bark scares them too
+  // a bark scares them too (walk up quietly first; if they happen to fly off by themselves
+  // while we do, they've stayed as long as they wanted: wait for them to land and try again)
   const k = await game.player(0);
-  await game.teleport(0, after.x, after.y + 1, after.z + 6);
-  await game.seconds(1.2);
-  expect((await flock(game, 0)).landed).toBe(true);
+  for (let tries = 0; tries < 3; tries += 1) {
+    for (let i = 0; i < 30 && !after.landed; i += 1) {
+      await game.seconds(0.5);
+      after = await flock(game, 0);
+    }
+    const at = { x: after.x, z: after.z };
+    await game.teleport(0, at.x, after.y + 1, at.z + 6);
+    await game.seconds(1.2);
+    after = await flock(game, 0);
+    if (after.landed && Math.hypot(after.x - at.x, after.z - at.z) < 1) break;
+  }
+  expect(after.landed).toBe(true);
+  const me = await game.player(0);
+  expect(Math.hypot(me.x - after.x, me.z - after.z)).toBeLessThan(8);
   await game.tap('KeyR');
   await game.seconds(0.2);
   expect((await flock(game, 0)).landed).toBe(false);
