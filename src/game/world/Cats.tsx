@@ -14,6 +14,10 @@ import { settings, SPEED_FACTOR } from '../settings';
 import { earnSticker } from '../stickers';
 import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
+import { eatFish, nearestFish } from './Fishing';
+
+/** `stalk` when a cat is after a fish rather than a flock of birds. */
+const FISH = -2;
 
 // Park cats: the thing to chase. They nap, groom and stalk the birds. Come close (or bark) and
 // they bolt, a little slower than you and slower still once they're tired, so a child who keeps
@@ -322,7 +326,8 @@ function Cat({ index }: { index: number }) {
     } else if (m === 'idle' || m === 'stalk') {
       const prm = chaseParams(kid?.slot ?? -1);
       const fast = kid ? Math.hypot(kid.velocity.x, kid.velocity.z) > 5 : false;
-      const range = c.idle === 'nap' && m === 'idle' ? prm.notice[1] : prm.notice[0] * (fast ? 1.35 : 1);
+      // (a cat on its way to a fish is braver: it lets a child come much closer)
+      const range = (c.idle === 'nap' && m === 'idle' ? prm.notice[1] : prm.notice[0] * (fast ? 1.35 : 1)) * (m === 'stalk' && c.stalk === FISH ? 0.45 : 1);
       if (!truce && (heard || (kid && childD < range))) {
         // eek! up in the air, back arched, then run
         setMode('alert');
@@ -343,6 +348,31 @@ function Cat({ index }: { index: number }) {
         });
         const from = heard ?? kid!.position;
         c.facing = Math.atan2(t.x - from.x, t.z - from.z);
+      } else if (m === 'stalk' && c.stalk === FISH) {
+        // a fish flopping about: run over and eat it, then lick your lips
+        const fish = nearestFish(t.x, t.z, 16);
+        if (!fish) {
+          setMode('idle');
+          c.idle = 'sit';
+          c.timer = 2;
+          c.stalk = -1;
+        } else {
+          const d = distXZ(fish.x, fish.z, t.x, t.z);
+          c.facing = Math.atan2(fish.x - t.x, fish.z - t.z);
+          if (d < 0.75 && onGround) {
+            eatFish(fish.index);
+            playCatSound('meow', t);
+            earnSticker('catfish');
+            setMode('idle');
+            c.idle = 'groom';
+            c.timer = 4;
+            c.stalk = -1;
+            c.pounceAt = now;
+            return;
+          }
+          speed = 3.6;
+          steer = true;
+        }
       } else if (m === 'stalk') {
         const f = flocks[c.stalk];
         if (!f || !f.landed) {
@@ -377,7 +407,14 @@ function Cat({ index }: { index: number }) {
             if (f.landed && f.center.y - groundHeight(f.center.x, f.center.z) < 0.5 && distXZ(f.center.x, f.center.z, t.x, t.z) < 14 && distXZ(f.center.x, f.center.z, home.x, home.z) < 22) bird = i;
           });
         }
-        if (bird >= 0) {
+        // a fish lying about beats any bird (a napping cat only wakes for one right by its nose)
+        const fish = now - c.pounceAt > 3000 ? nearestFish(t.x, t.z, c.idle === 'nap' ? 5 : 14) : null;
+        if (fish && distXZ(fish.x, fish.z, home.x, home.z) < 26) {
+          setMode('stalk');
+          c.stalk = FISH;
+          c.idle = 'sit';
+          playCatSound('meow', t);
+        } else if (bird >= 0) {
           setMode('stalk');
           c.stalk = bird;
         } else if (c.idle === 'walk') {
@@ -704,7 +741,7 @@ function Cat({ index }: { index: number }) {
     const running = hs > 3;
     const sitting = (c.mode === 'idle' && (c.idle === 'sit' || c.idle === 'groom')) || c.mode === 'tree';
     const napping = c.mode === 'idle' && c.idle === 'nap';
-    const crouch = c.mode === 'stalk';
+    const crouch = c.mode === 'stalk' && c.stalk !== FISH;
     const held = c.mode === 'held';
     const pz = pose.current;
     if (pz) {

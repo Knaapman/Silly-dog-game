@@ -102,3 +102,37 @@ test('throw a fish at a friend: SLAP (a friend sticker)', async ({ page }) => {
   expect(await stickers(game)).toContain('fishslap');
   game.expectNoErrors();
 });
+
+test('a fish on the grass: a cat comes running and eats it (a sticker)', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await catchOne(game);
+  // put the fish down a few steps from the nearest cat, and walk well away
+  const placed = await page.evaluate(() => {
+    const s = (window as any).__silly;
+    const fish = [...s.runtime.props.values()].find((p: any) => p.kind === 'fish' && p.enabled);
+    const ft = fish.getBody().translation();
+    let best: any = null;
+    let bestD = Infinity;
+    for (const c of s.chase.parkCats) {
+      if (!c || c.mode === 'tree') continue;
+      const d = Math.hypot(c.position.x - ft.x, c.position.z - ft.z);
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    const x = best.position.x + 3;
+    const z = best.position.z;
+    fish.getBody().setTranslation({ x, y: s.terrain.groundHeight(x, z) + 0.4, z }, true);
+    fish.getBody().setLinvel({ x: 0, y: 0, z: 0 }, true);
+    return { x, z };
+  });
+  await game.teleport(0, placed.x - 25, 0.1, placed.z);
+  for (let i = 0; i < 60 && (await page.evaluate(() => (window as any).__silly.runtime.debugInfo.fishing.eaten)) === 0; i += 1) await game.seconds(0.25);
+  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.fishing.eaten)).toBe(1);
+  expect((await fishState(game)).fish.length).toBe(0);
+  expect(await stickers(game)).toContain('catfish');
+  game.expectNoErrors();
+});

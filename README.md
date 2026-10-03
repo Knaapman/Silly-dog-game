@@ -108,7 +108,9 @@ few seconds, the fallen ones stand back up one after the other, with a twinkle e
 lick the water. Now and then (always by the third lick) a fish leaps out with a splash, up over your head, and lands
 flopping on the bank behind you. Pick it up with your tongue and throw it: back into the water and it swims off, or
 at a friend: SLAP (a friend sticker). A fish left flopping about for a while flops off home by itself. The lagoon's
-north shore is a good spot (a sticker for your first fish).
+north shore is a good spot (a sticker for your first fish), and a cat lives just along the shore: leave a fish on
+the grass (or throw it), step back, and the cat comes running and gobbles it up (a cat after a fish is braver
+than usual, but not *that* brave), licking its lips, with hearts (a sticker).
 
 **Hamster balls** 🐹 wait in a row on the grass at the top of the bowling lane: four giant see-through balls, each
 with coloured hoops. Walk into one and you're inside; push the stick and it rolls, faster and faster (and down a slope
@@ -354,7 +356,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
