@@ -90,6 +90,15 @@ round you and pile up (it's slow going, like wading); jump in from up high and t
 There are big balls in among them too: lick one to pull it out and throw it. One left lying about outside the pit
 rolls back in a while later.
 
+**Giant building blocks** 🟥🟦 on the grass at the north-west corner of the playground, by the slide's stairs: a
+little tower of three and a ring of soft coloured blocks round it. Lick a block to pick it up and carry it about (a
+carried block passes through things, so you can't knock your tower over on the way to it). Lick again in front of
+the tower and the block hops onto the top, lined up; with no tower in reach, you just set it down there (start a new
+tower!). You can reach about four blocks high from the ground; stand on something, or on a friend's back, to build
+higher. Five high is a cheer and a sticker (a friend sticker when two children built it), and then the best bit:
+headbutt it and down it all comes, CRASH. Blocks carried off and left lying about far away hop back home after a while.
+Playing alone, the buddy fetches blocks for your tower.
+
 **The swings** 🪑 on the east side of the playground: four seats on a big red and yellow frame. Walk into a seat
 and you sit down; hold the stick (any way at all, no timing needed) and you swing higher and higher. Jump and you
 let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
@@ -242,7 +251,7 @@ Grown-ups can switch it off.
 | Move | Left stick or D-pad | `W A S D` | Arrow keys | Drag anywhere on the left half |
 | ⬆️ Jump (press again in the air to flip) | **A** / ✕ (bottom) | `Space` or `K` | `Enter` / `Num 0` | Green button |
 | 💥 Headbutt | **B** / ◯ (right) | `E` or `L` | `Right Shift` / `Num 2` | Red button |
-| 👅 Lick & grab (or eat, or grab a friend, or fish in the water), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
+| 👅 Lick & grab (or eat, or grab a friend, or fish in the water), press again to throw (a block: onto the tower) | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
 | 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
 | 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
@@ -368,12 +377,12 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Thirteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
+  remembered on this device. Fourteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
   counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
   rest (the three-animal tower, the tractor's trailer, pushing a swing, the balloon together, hamster balls bumping,
-  a fish slap and the moles together) need two children.
+  a fish slap, the moles together and a tower of blocks built together) need two children.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
@@ -502,6 +511,7 @@ src/
       Fishing.tsx       fishing: lick the water and a fish leaps out onto the bank, flops, swims off, slaps friends
       PenguinShy.tsx    the penguin shy: knock the penguins off their counter with snowballs (from a few steps away)
       Moles.tsx         whack-a-mole: moles pop up while a child is near; bonk ten and a golden one comes up
+      Blocks.tsx        giant building blocks: carry with your tongue, lick to put one on the tower, headbutt it down
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

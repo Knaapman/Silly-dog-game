@@ -48,6 +48,7 @@ import {
   FISHING_SPOT,
   PENGUIN_SHY,
   MOLES,
+  BLOCKS,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -61,9 +62,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends', 'hamsterbump', 'fishslap', 'molefriends'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends', 'hamsterbump', 'fishslap', 'molefriends', 'blockfriends'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends', 'hamsterbump', 'fishslap', 'molefriends'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends', 'hamsterbump', 'fishslap', 'molefriends', 'blockfriends'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -149,7 +150,9 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   catfish: [FISHING_SPOT],
   penguins: [[PENGUIN_SHY.center[0] - 5, PENGUIN_SHY.center[1] - 2]],
   moles: [[MOLES.center[0] + 3.5, MOLES.center[1]]],
-  molefriends: [[MOLES.center[0] + 3.5, MOLES.center[1]]]
+  molefriends: [[MOLES.center[0] + 3.5, MOLES.center[1]]],
+  blocks: [[BLOCKS.center[0], BLOCKS.center[1] - 3.5]],
+  blockfriends: [[BLOCKS.center[0], BLOCKS.center[1] - 3.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

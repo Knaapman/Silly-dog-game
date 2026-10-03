@@ -16,6 +16,7 @@ import { TEST_MODE } from '../testMode';
 import { swingHelp } from './Swings';
 import { hamster } from './HamsterBalls';
 import { moles } from './Moles';
+import { blocks, kidBuilding } from './Blocks';
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -319,6 +320,53 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         target.set(MOLES.center[0] - ((kid.position.x - MOLES.center[0]) / kd) * 3, 0, MOLES.center[1] - ((kid.position.z - MOLES.center[1]) / kd) * 3);
         stopAt = 0.5;
       }
+    } else if (kidBuilding(kid, now)) {
+      // the child is building a tower: fetch blocks for it
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const fx = Math.sin(me.facing);
+      const fz = Math.cos(me.facing);
+      /** How the tongue would rate something (lower is better, Infinity: out of reach), like actions.ts does. */
+      const tongue = (p: THREE.Vector3, radius: number) => {
+        const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
+        const reach = d - radius;
+        const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
+        return reach > 2.6 || (facing < 0.15 && reach > 0.8) ? Infinity : reach - facing + 1;
+      };
+      /** Walk up to `p` and stop a step short, facing it; lick when there (and it's the block the tongue would get, not the child). */
+      const fetch = (p: THREE.Vector3, grab: boolean) => {
+        const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
+        target.set(p.x + ((me.position.x - p.x) / d) * 1.1, 0, p.z + ((me.position.z - p.z) / d) * 1.1);
+        stopAt = 0.25;
+        const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
+        const ok = !grab || tongue(p, 0.55) < tongue(kid.position, RADIUS) - 0.2;
+        if (ok && d < 1.7 && facing > 0.8 && now > b.nextHop) {
+          b.nextHop = now + 1000;
+          press.lick = true;
+        }
+      };
+      const mine = blocks.list.findIndex((bl) => bl.holder === me.slot);
+      const tower = blocks.kidTop;
+      if (mine >= 0) {
+        // carrying one: onto the child's tower (if there's room up there for one more)
+        if (tower >= 0 && tower !== mine) fetch(blocks.pos[tower], false);
+        else target.copy(me.position);
+      } else {
+        // a block lying loose (not in the child's tower, nothing on it), nearest first
+        let pick = -1;
+        let pd = 1e9;
+        const base = tower >= 0 ? blocks.pos[tower] : kid.position;
+        blocks.list.forEach((bl, j) => {
+          const p = blocks.pos[j];
+          if (bl.holder != null || bl.height > 1 || bl.above >= 0 || distXZ(p.x, p.z, base.x, base.z) < 1.5) return;
+          const d = distXZ(me.position.x, me.position.z, p.x, p.z);
+          if (d < pd && d < 14) {
+            pd = d;
+            pick = j;
+          }
+        });
+        if (pick >= 0) fetch(blocks.pos[pick], true);
+      }
     } else {
       // near a see-saw? get onto the far end (pushing it down if it's up) so the child can
       // land on the other end and fling us
@@ -373,6 +421,11 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         b.circle += dt * 0.3;
         target.set(kid.position.x + Math.cos(b.circle) * FOLLOW, 0, kid.position.z + Math.sin(b.circle) * FOLLOW);
       }
+    }
+    // still carrying a block, and the child's stopped building: put it down
+    if (!kidBuilding(kid, now) && blocks.list.some((bl) => bl.holder === me.slot) && now > b.nextHop) {
+      b.nextHop = now + 1000;
+      press.lick = true;
     }
     const td = distXZ(me.position.x, me.position.z, target.x, target.z);
     if (td > stopAt && !me.isLaunched()) {
