@@ -295,7 +295,8 @@ tester**, the sticker album, a picture of all controls, and:
   stuttered). Ultra means 4096 px shadows over a wider area and supersampling: it draws up to a 4K-wide picture and
   scales it down, so edges are smooth on a 1080p or 1440p screen (never less sharp than the screen itself). The frame
   rate is shown under the settings, with the number of draw calls and triangles in a frame (how much work the
-  graphics card is given).
+  graphics card is given). The ground is drawn in 20 m chunks, so only the part in view is drawn (as one mesh it
+  was a quarter of a million triangles in every frame, wherever you looked).
 - **Play log** 📋: a small record of each play session, kept on this computer only (the last ten). For each session:
   how long it lasted, how many children played and which animals, the frame rate (lowest and average, once warmed up),
   the most draw calls in a frame, any change of graphics level, how often an animal got stuck (and where) or needed

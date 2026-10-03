@@ -51,3 +51,17 @@ test('the play log keeps track of a session, and the grown-ups menu saves it as 
   await expect(page.getByTestId('playlog')).toContainText('0 sessions');
   game.expectNoErrors();
 });
+
+test('the ground is drawn in chunks: only the part the camera can see', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await game.join('kb2');
+  await page.evaluate(() => (window as any).__silly.useSettings.setState({ quality: 'low' }));
+  await game.seconds(1, true);
+  // (as one mesh, the ground alone was about 250k triangles in every frame; the whole hub view was ~360k)
+  const triangles = await page.evaluate(() => (window as any).__silly.perf.triangles);
+  expect(triangles).toBeGreaterThan(20_000);
+  expect(triangles).toBeLessThan(260_000);
+  game.expectNoErrors();
+});
