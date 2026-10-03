@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import { unlockAudio } from './game/audio';
 import { consumeKeyPresses, installInput, onAnyKey } from './game/input';
+import { Safe } from './game/Contained';
 import { Scene } from './game/Scene';
 import { detectQuality, effectiveQuality, qualityDpr, useSettings } from './game/settings';
 import { useGame } from './game/store';
@@ -94,11 +95,33 @@ export default function App() {
           }}
         />
       )}
-      {phase === 'play' && <SplitFrames />}
-      {phase === 'play' && <Hud onOpenMenu={() => setMenuOpen(true)} />}
-      {phase === 'play' && touchUi && !menuOpen && !albumOpen && <TouchControls />}
-      {menuOpen && <GrownUpMenu />}
-      {albumOpen && <StickerAlbum />}
+      {/* (each on its own: one that breaks is left out, and a broken menu or album closes, so the
+          game isn't left paused behind it; see faults.ts) */}
+      {phase === 'play' && (
+        <Safe name="split-screen frames">
+          <SplitFrames />
+        </Safe>
+      )}
+      {phase === 'play' && (
+        <Safe name="HUD">
+          <Hud onOpenMenu={() => setMenuOpen(true)} />
+        </Safe>
+      )}
+      {phase === 'play' && touchUi && !menuOpen && !albumOpen && (
+        <Safe name="touch controls">
+          <TouchControls />
+        </Safe>
+      )}
+      {menuOpen && (
+        <Safe name="grown-ups menu" onFail={() => setMenuOpen(false)}>
+          <GrownUpMenu />
+        </Safe>
+      )}
+      {albumOpen && (
+        <Safe name="sticker album" onFail={() => useGame.getState().setAlbumOpen(false)}>
+          <StickerAlbum />
+        </Safe>
+      )}
     </div>
   );
 }

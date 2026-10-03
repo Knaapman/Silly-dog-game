@@ -1,13 +1,13 @@
-import { useFrame } from '@react-three/fiber';
+import { interactionGroups } from '@react-three/rapier';
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { playBoing } from '../audio';
-import { gameClock, gameNow } from '../clock';
+import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
 import { distXZ, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
-import { launchSpots, players, seesawLow, type PlayerRuntime } from '../runtime';
+import { launchSpots, physics, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
 import { groundHeight } from '../terrain';
 import { settings } from '../settings';
@@ -108,7 +108,7 @@ export function Buddy() {
   });
 
   // after the input is read (priority -10), before the animals move (0)
-  useFrame(() => {
+  useSafeFrame(() => {
     const game = useGame.getState();
     const b = brain.current;
     const now = gameNow();
@@ -271,6 +271,8 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     let stopAt = 1.2;
     /** Standing somewhere on purpose (no wandering, no silliness). */
     let busy = false;
+    /** Trotting along beside the child. */
+    let circling = false;
     if (b.via) {
       // off to the launcher the child took; wait on it (a geyser takes a moment), and if it
       // doesn't take us, boing over instead
@@ -432,9 +434,16 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         // nowhere known to stand but right where the child is: stay close, or come closer
         target.copy(d < 3 ? me.position : kid.position);
       } else {
-        // trot along beside the child, slowly circling round
+        // trot along beside the child, slowly circling round: on the side where there's room
+        // (never a spot inside a wall, which it would push against for ever), going round till there is
+        circling = true;
         b.circle += dt * 0.3;
-        target.set(kid.position.x + Math.cos(b.circle) * FOLLOW, 0, kid.position.z + Math.sin(b.circle) * FOLLOW);
+        let r = roomToward(kid, b.circle);
+        for (let k = 1; k < 8 && r < 1.5; k += 1) {
+          b.circle += Math.PI / 4;
+          r = roomToward(kid, b.circle);
+        }
+        target.set(kid.position.x + Math.cos(b.circle) * r, 0, kid.position.z + Math.sin(b.circle) * r);
       }
     }
     // still carrying a block, and the child's stopped building: put it down
@@ -452,6 +461,8 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     const moving = Math.hypot(x, z) > 0.4;
     if (moving && me.position.distanceTo(b.lastPos) < dt * 1.5) b.stuckFor += dt;
     else b.stuckFor = Math.max(0, b.stuckFor - dt * 2);
+    // (trotting beside the child and stuck anyway: try another side)
+    if (circling && b.stuckFor > 0.5 && b.stuckFor - dt <= 0.5) b.circle += Math.PI / 2;
     if (b.stuckFor > 0.8 && b.stuckFor - dt <= 0.8) press.jump = true;
     if (b.stuckFor > 5) {
       b.stuckFor = 0;
@@ -471,6 +482,24 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
   for (const p of due) press[p.action] = true;
   return makeInputFrame(x, z, press);
 }
+
+/**
+ * How far (up to FOLLOW) the buddy can stand from the child in direction `angle` before something
+ * solid is in the way (a wall, a fence, a tree), leaving room for itself.
+ */
+function roomToward(kid: PlayerRuntime, angle: number) {
+  const { world, rapier } = physics;
+  if (!world || !rapier) return FOLLOW;
+  roomRay.origin = { x: kid.position.x, y: kid.position.y + 0.1, z: kid.position.z };
+  roomRay.dir = { x: Math.cos(angle), y: 0, z: Math.sin(angle) };
+  const hit = world.castRay(roomRay as never, FOLLOW + ROOM, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS, NOT_ANIMALS);
+  return hit ? Math.max(0, Math.min(FOLLOW, hit.timeOfImpact - ROOM)) : FOLLOW;
+}
+/** Room the buddy needs between where it stands and a wall (its size, and a bit). */
+const ROOM = 0.8;
+const roomRay = { origin: { x: 0, y: 0, z: 0 }, dir: { x: 1, y: 0, z: 0 } };
+/** A ray that sees everything solid except animals (the child and the buddy themselves). */
+const NOT_ANIMALS = interactionGroups(0, [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
 /** The newest spot the child stood on, `min`..`max` metres from them at their height. */
 function footstep(trail: THREE.Vector3[], kid: PlayerRuntime, min: number, max: number) {

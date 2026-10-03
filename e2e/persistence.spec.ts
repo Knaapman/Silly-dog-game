@@ -65,3 +65,43 @@ test('settings, stars and photos are still there after a reload (old photos move
   await ready(page);
   await page.waitForFunction(() => (window as any).__silly.usePhotos.getState().photos.length === 1, null, { timeout: 10_000 });
 });
+
+test('a broken save never stops the game: junk in every saved thing, and it starts and plays as new', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/');
+  await ready(page);
+  // every key the game saves, filled with something it didn't write: half-written JSON, wrong types, nulls
+  const keys = ['animals:v1', 'coats:v1', 'hunt:v1', 'photos:v1', 'playlog:v1', 'progress:v1', 'settings:v1', 'sled:v1', 'stickers:v1'];
+  const junk = ['{"half', 'null', '42', '"text"', '[null,{"start":5},[1,2]]', '{"round":"x","found":7,"starsEver":-3,"best":"far","speed":9,"quality":"max"}'];
+  await page.evaluate(
+    ([keys, junk]) => keys.forEach((k, i) => localStorage.setItem('silly-park:' + k, junk[i % junk.length])),
+    [keys, junk] as const
+  );
+  await page.reload();
+  await ready(page);
+  await page.evaluate(() => {
+    const s = (window as any).__silly;
+    s.useGame.getState().start('kb1');
+  });
+  await page.waitForTimeout(3000);
+  const state = await page.evaluate(() => {
+    const s = (window as any).__silly;
+    s.playlog.tickPlayLog(performance.now());
+    return {
+      players: s.useGame.getState().players.length,
+      stars: s.useProgress.getState().starsEver,
+      stickers: s.useStickers.getState().got.length,
+      speed: s.useSettings.getState().speed,
+      quality: s.useSettings.getState().quality,
+      log: JSON.parse(s.playlog.playLogFile()).sessions.length
+    };
+  });
+  expect(state.players).toBe(1);
+  expect(state.stars).toBe(0);
+  expect(state.stickers).toBe(0);
+  expect(state.speed).toBe(1);
+  expect(state.quality).toBe('auto');
+  expect(state.log).toBeLessThanOrEqual(1);
+  expect(errors).toEqual([]);
+});

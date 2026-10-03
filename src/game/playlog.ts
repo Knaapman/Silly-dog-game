@@ -1,3 +1,4 @@
+import { onFault } from './faults';
 import { isSourceConnected, type SourceId } from './input';
 import { ZONES } from './layout';
 import { perf } from './perf';
@@ -54,10 +55,16 @@ const pendingErrors: string[] = [];
 /** The sessions, kept in memory too (storage can be missing, and test mode never uses it). */
 let kept: Session[] | null = null;
 
+/** A saved session that looks whole (storage can hold anything: an old version, a half-written save). */
+function isSession(s: unknown): s is Session {
+  const q = s as Session | null;
+  return !!q && typeof q === 'object' && typeof q.start === 'string' && typeof q.seconds === 'number' && !!q.fps && !!q.draws && !!q.unstuck && Array.isArray(q.errors);
+}
+
 export function loadSessions(): Session[] {
   if (!kept) {
-    const s = loadJson<Session[]>(KEY);
-    kept = Array.isArray(s) ? s : [];
+    const s = loadJson<unknown>(KEY);
+    kept = Array.isArray(s) ? s.filter(isSession).slice(-MAX_SESSIONS) : [];
   }
   return kept;
 }
@@ -205,6 +212,8 @@ export function startPlayLog(test: boolean) {
   if (typeof window === 'undefined') return;
   window.addEventListener('error', (e) => logError(String(e.message || e.error)));
   window.addEventListener('unhandledrejection', (e) => logError(`unhandled: ${String(e.reason)}`));
+  // (and whatever went wrong but was kept from stopping the game: see faults.ts)
+  onFault(logError);
   if (!test) window.setInterval(() => tickPlayLog(), 1000);
   window.addEventListener('pagehide', save);
 }

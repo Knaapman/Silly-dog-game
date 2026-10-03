@@ -4,6 +4,7 @@ import { unstable_IdlePriority, unstable_scheduleCallback } from 'scheduler';
 import { gameClock, MAX_STEP, TEST_STEP, tickGameClock } from './clock';
 import { setInputClock } from './input';
 import { adaptQuality, newAdaptState } from './adaptive';
+import { reportFault } from './faults';
 import { perf, recordFrame } from './perf';
 import { useSettings } from './settings';
 import { isPaused } from './store';
@@ -32,9 +33,15 @@ function RealtimeDriver() {
     let sim = 0;
     const adapt = newAdaptState(last / 1000);
     const loop = (now: number) => {
+      // (the next frame first: nothing that goes wrong in this one may stop the game)
+      raf = requestAnimationFrame(loop);
       sim += Math.min(Math.max(0, (now - last) / 1000), MAX_STEP);
       last = now;
-      advance(sim);
+      try {
+        advance(sim);
+      } catch (e) {
+        reportFault('frame', e);
+      }
       if (recordFrame(now) && !document.hidden) {
         // Auto graphics: follow the frame rate (see adaptive.ts)
         const s = useSettings.getState();
@@ -43,7 +50,6 @@ function RealtimeDriver() {
           if (next !== s.autoLevel) useSettings.setState({ autoLevel: next });
         } else adapt.ignoreUntil = now / 1000 + 5;
       }
-      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);

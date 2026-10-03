@@ -302,7 +302,8 @@ tester**, the sticker album, a picture of all controls, and:
   the most draw calls in a frame, any change of graphics level, how often an animal got stuck (and where) or needed
   the rescue buttons, controllers dropping out, any errors, the stickers earned (which things got played with) and
   how long the animals spent in each part of the park. **Save** downloads it as a file, to send along with what you
-  noticed; **Clear** empties it. Nothing is sent anywhere by itself.
+  noticed; **Clear** empties it. Nothing is sent anywhere by itself. Broken saved data (a half-written save, an
+  old version) is ignored: a fresh park starts instead.
 - **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
 - **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
   without internet.
@@ -432,7 +433,7 @@ npm run play       # build and open the fast, installable version at http://loca
 npm run dev        # development server at http://localhost:3000
 npm run lint       # type-check (also flags unused code)
 npm test           # unit tests (vitest): input, clock, settings, progress, adaptive graphics, the park layout
-npm run test:e2e   # browser tests (Playwright, starts its own servers)
+npm run test:e2e   # browser tests (Playwright, starts its own servers; two at a time, PW_WORKERS=1 for one)
 npm run check      # lint + unit tests + build
 npm run ci         # everything GitHub Actions runs: check + browser tests
 npm run build
@@ -463,10 +464,16 @@ shifts what every other part does. A test can also leave out the roaming animals
 that the cats roam exactly the same with or without the birds and chickens. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
-and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
+and the built game starting offline (and a broken save: junk in every saved key still starts a fresh park). Those
+watch the real clock, so `npm run test:e2e` (`scripts/e2e.mjs`) runs them first, on their own, and then the test-mode
+tests two at a time (they give the same results however busy the machine is). GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
 build, then the browser tests; `npm run ci` runs the same locally. Two "chaos" tests play the game with robot
 players mashing random buttons (four players for three minutes, and one child with the buddy) and fail on any error,
-broken position or animal leaving the world; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more.
+broken position or animal leaving the world; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more (and `SOLO_SEEDS=1,2,3` more solo runs).
+The **soak test** plays for much longer, with four robots and a surprise every 40 s, hopping round the park: once a
+minute it collects the garbage and counts memory, three.js geometries and textures, objects in the scene, physics
+bodies and the registries, and fails if any of them keeps growing after the first few minutes (a leak would make an
+hour of play slowly stutter). It is too long for every run: `SOAK_MINUTES=20 npx playwright test e2e/soak.spec.ts`.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are
@@ -502,6 +509,7 @@ src/
     chase.ts            the chase: park cats and bird flocks register here; the cat tally
     storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
+    faults.ts, Contained.tsx  one broken part never stops the park: errors kept inside it, graphics drop-outs
     playlog.ts          the play log: a record of each session on this computer, saved from the grown-ups menu
     install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
@@ -584,3 +592,10 @@ e2e/                    Playwright browser tests in test mode
 6. **Physics you can feel, exaggerated where it matters.** Rides are real kinematic bodies that carry you, and see-saws
    are real hinges. Where honest physics would be too subtle for a 5-year-old (a see-saw only lifts a friend by half a
    metre), the game boosts the effect.
+7. **One broken part never stops the park** (`faults.ts`). Each part's per-frame code runs on its own: if it throws,
+   the rest of the frame still runs, and one that throws 30 frames in a row rests for about 5 s, then tries again. A
+   part that fails while it's being built or drawn is left out (an error boundary per attraction and per piece of
+   the screen, `Contained.tsx`); a broken grown-ups menu or sticker album closes, so the game isn't left paused behind
+   it. If the graphics card drops out (a driver reset, waking from sleep) the picture comes back by itself, or the
+   page reloads after 3 s (at most once every two minutes); stickers, stars and settings are saved. Each kind of fault
+   is reported once, to the console and the play log.

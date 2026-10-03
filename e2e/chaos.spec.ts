@@ -151,7 +151,11 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   game.expectNoErrors();
 });
 
-test('chaos: one child mashing everything, with the buddy along', async ({ page }) => {
+/** The solo run's button-mashing seeds (SOLO_SEEDS=1,2,3 for more). */
+const SOLO_SEEDS = (process.env.SOLO_SEEDS ?? '2024').split(',').map(Number);
+
+for (const soloSeed of SOLO_SEEDS)
+test(`chaos: one child mashing everything, with the buddy along${soloSeed === 2024 ? '' : ` (seed ${soloSeed})`}`, async ({ page }) => {
   test.setTimeout(600_000);
   const game = new Game(page);
   await game.open(5);
@@ -160,7 +164,7 @@ test('chaos: one child mashing everything, with the buddy along', async ({ page 
   await page.evaluate(() => (window as any).__silly.runtime.debugInfo.bubbles.setAuto(true));
   await game.seconds(5);
   expect(await game.state<number>('(g) => g.players.filter((p) => p.bot).length')).toBe(1);
-  const r = rng(2024);
+  const r = rng(soloSeed);
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const held = new Set<string>();
   const problems: string[] = [];
@@ -200,8 +204,8 @@ test('chaos: one child mashing everything, with the buddy along', async ({ page 
     }
   }
   for (const k of held) await page.keyboard.up(k);
-  console.log(`solo chaos: the buddy was at most ${farthest.toFixed(1)} m away; stickers ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
-  console.log(`solo chaos unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
+  console.log(`solo chaos${soloSeed === 2024 ? '' : ` (seed ${soloSeed})`}: the buddy was at most ${farthest.toFixed(1)} m away; stickers ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
+  console.log(`solo chaos${soloSeed === 2024 ? '' : ` (seed ${soloSeed})`} unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
   expect(problems, problems.join('\n')).toEqual([]);
   // it never wanders off (it pops back when more than 24 m away)
   expect(farthest).toBeLessThan(30);
