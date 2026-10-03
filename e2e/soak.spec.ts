@@ -36,6 +36,10 @@ const ACTS = [
 type Counts = Record<string, number>;
 
 test.skip(MINUTES <= 0, 'set SOAK_MINUTES to run the soak test');
+// (with the sound really playing: a test browser normally keeps it off until someone clicks)
+test.use({
+  launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] }
+});
 
 test(`soak: four robots play for ${MINUTES} minutes and nothing keeps growing`, async ({ page }) => {
   test.setTimeout((MINUTES * 90 + 120) * 1000);
@@ -53,6 +57,7 @@ test(`soak: four robots play for ${MINUTES} minutes and nothing keeps growing`, 
   await game.pad(0, 0);
   await game.pad(1, 1);
   await game.seconds(1.5);
+  await page.evaluate(() => (window as any).__silly.audio.unlockAudio());
 
   const count = async (): Promise<Counts> => {
     await cdp.send('HeapProfiler.collectGarbage');
@@ -81,7 +86,9 @@ test(`soak: four robots play for ${MINUTES} minutes and nothing keeps growing`, 
         props: r.props.size,
         statics: r.statics.size,
         foods: r.foods.size,
-        surfaces: r.surfaces?.size ?? 0
+        surfaces: r.surfaces?.size ?? 0,
+        voices: s.audio.getAudioState().voices,
+        views: s.views.views.split ? s.views.views.list.length : 1
       };
     });
   };
@@ -125,11 +132,16 @@ test(`soak: four robots play for ${MINUTES} minutes and nothing keeps growing`, 
       [r() * 2 - 1, r() * 2 - 1, r() * 2 - 1, r() * 2 - 1, r() < 0.6 ? pick([0, 1, 2, 3, 4, 5, 6, 7, 17]) : -1, r() < 0.6 ? pick([0, 1, 2, 3, 4, 5, 6, 7, 13]) : -1] as const
     );
     if (sec % 40 === 10) await page.evaluate((k) => (window as any).__silly.events.useEvents.getState().start(k), surprises[(sec / 40) % surprises.length | 0]);
-    // every couple of minutes everyone moves to another part of the park (so the soak plays all of it)
+    // every couple of minutes everyone moves to another part of the park (so the soak plays all of
+    // it); every other time to four different parts, so the screen splits
     if (sec % 120 === 119) {
       const zones = await page.evaluate(() => Object.values((window as any).__silly.layout.ZONES) as [number, number][]);
-      const [x, z] = zones[Math.floor(r() * zones.length)];
-      for (let slot = 0; slot < 4; slot += 1) await game.teleport(slot, x + slot, 1, z);
+      const apart = (sec / 120) % 2 >= 1;
+      const first = Math.floor(r() * zones.length);
+      for (let slot = 0; slot < 4; slot += 1) {
+        const [x, z] = zones[apart ? (first + slot * 2) % zones.length : first];
+        await game.teleport(slot, x + (apart ? 0 : slot), 1, z);
+      }
     }
     await game.seconds(1);
     if (sec % 60 === 59) {
@@ -147,6 +159,9 @@ test(`soak: four robots play for ${MINUTES} minutes and nothing keeps growing`, 
   const allow: Counts = { heapMB: base.heapMB * 0.25 + 5, sceneGeometries: 100, textures: 10, programs: 5, objects: 300, bodies: 20, colliders: 30, props: 20, statics: 5, foods: 10, surfaces: 10 };
   for (const k of Object.keys(allow)) if (end[k] - base[k] > allow[k]) growth.push(`${k}: ${base[k]} -> ${end[k]}`);
   for (const c of log) if (c.geometries > c.sceneGeometries + 50) growth.push(`geometries not in the scene: ${c.geometries} held, ${c.sceneGeometries} in the scene`);
+  // (sound playing all along, and its voices given back: never stuck near the limit of 48)
+  if (!log.some((c) => c.voices > 0) && log.every((c) => c.voices === 0)) console.log('(no sound was playing at the minute marks)');
+  for (const c of log) if (c.voices > 40) growth.push(`sound voices stuck at ${c.voices}`);
   expect(growth).toEqual([]);
   game.expectNoErrors();
 });
