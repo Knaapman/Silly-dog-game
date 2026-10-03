@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playSpin, playWhoosh } from '../audio';
 import { gameNow, useGameFrame } from '../clock';
-import { PARTY_POINTS } from '../config';
+import { PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { emit } from '../fx';
 import { distXZ, ROUNDABOUT } from '../layout';
 import { lambert } from '../materials';
@@ -29,6 +29,8 @@ const PUSH_GAIN = 1.2;
 /** Turning at least this fast (rad/s), riders out past FLING_R (m from the middle) fly off. */
 export const FLING_SPIN = 2.5;
 const FLING_R = 1.1;
+/** Flung riders land at least this far inside the park's edge (the border hedge is 1.3 m thick). */
+const FLING_EDGE = 2.5;
 /** How high the deck's top is above the ground (m), and how thick it is. */
 const DECK_TOP = 0.32;
 const DECK = 0.2;
@@ -130,8 +132,9 @@ export function Roundabout() {
       st.flings += 1;
       // out and along the way it's turning
       const s = Math.sign(st.spin);
-      const tx = p.position.x + (rx / r) * 4.5 + (rz / r) * s * 2;
-      const tz = p.position.z + (rz / r) * 4.5 - (rx / r) * s * 2;
+      // (but never into the border hedge: the roundabout is near the east edge of the park)
+      const tx = THREE.MathUtils.clamp(p.position.x + (rx / r) * 4.5 + (rz / r) * s * 2, -WORLD_HALF_X + FLING_EDGE, WORLD_HALF_X - FLING_EDGE);
+      const tz = THREE.MathUtils.clamp(p.position.z + (rz / r) * 4.5 - (rx / r) * s * 2, -WORLD_HALF_Z + FLING_EDGE, WORLD_HALF_Z - FLING_EDGE);
       p.launchTo(new THREE.Vector3(tx, groundHeight(tx, tz), tz), p.position.y + 1.8);
       playWhoosh(p.position);
       emit('puff', [p.position.x, top + 0.1, p.position.z], { count: 6, color: '#ffffff', speed: 2, up: 0.5, size: 0.3 });

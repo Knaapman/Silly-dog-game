@@ -84,3 +84,25 @@ test('playing alone, the buddy runs round pushing while you ride', async ({ page
   expect(s.lastPusher).toBe(buddy);
   game.expectNoErrors();
 });
+
+test('a rider flung off the east side lands on the grass, not in the border hedge', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  const { center } = await layout(game);
+  const [cx, cz] = center;
+  const half = 80; // (WORLD_HALF_X: the border hedge stands just inside it)
+  // spinning fast, and a rider dropped onto its east rim: off they go, eastwards towards the hedge
+  await page.evaluate(() => ((window as any).__silly.runtime.debugInfo.roundabout.spin = 3.5));
+  await game.teleport(0, cx + 2.1, 0.7, cz);
+  for (let k = 0; k < 20 && (await ra(game)).flings === 0; k += 1) await game.seconds(1 / 30);
+  expect((await ra(game)).flings).toBe(1);
+  for (let k = 0; k < 40 && (await game.player(0)).launched; k += 1) await game.seconds(0.1);
+  await game.seconds(0.5);
+  const p = await game.player(0);
+  expect(p.launched).toBe(false);
+  expect(p.x).toBeGreaterThan(cx + 1.5); // (it went east)
+  expect(p.x).toBeLessThan(half - 1.6);
+  expect(p.y).toBeLessThan(1.5);
+  game.expectNoErrors();
+});
