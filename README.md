@@ -85,6 +85,11 @@ step into the red slide or the blue one at the top. Whoosh: round the bends and 
 spray flying, and out over the lagoon with a splash. Two friends can go at once, side by side (a friend sticker);
 playing alone, the buddy hops into the other slide next to you. The tower's roof fades when it would hide you.
 
+**The ball pit** 🔴🟡 in the playground is full to the brim with little coloured balls. Wade through and they part
+round you and pile up (it's slow going, like wading); jump in from up high and they splash up everywhere (a sticker).
+There are big balls in among them too: lick one to pull it out and throw it. One left lying about outside the pit
+rolls back in a while later.
+
 **The bubble machine** 🧼 on the grass between the plaza and the beach: a wand turns round on top and blows soap
 bubbles off towards the plaza, little ones and big ones, drifting and bobbing. A little one pops when you jump at it.
 Walk into a big one and it swallows you up: you float off inside it, up over the park (push the stick to drift
@@ -310,11 +315,11 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 73 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 74 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -437,6 +442,7 @@ src/
       PaintBuckets.tsx  the paint buckets, their puddles and the paw prints (paint.ts: who's painted what colour)
       SnowballFight.tsx the snow piles and little snowballs to throw (a hit: a splat and a dusting of snow)
       BubbleMachine.tsx the bubble machine and its bubbles (a big one carries you off; jump to pop it)
+      BallPit.tsx       the ball pit: a sea of little balls on springs that part and splash, and big real ones
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

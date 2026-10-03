@@ -38,8 +38,12 @@ const UP_HIGH = 2.6;
 /** How many of the child's recent footsteps to remember. */
 const TRAIL = 24;
 
-/** Automatic buddy (off in test mode unless a test switches it on). */
-export const buddyControl = { auto: !TEST_MODE };
+/**
+ * Automatic buddy: `auto` makes it come and go by itself (off in test mode unless a test switches
+ * it on); `think` lets it move about once it's here (a test can switch that off to have it stand
+ * still, e.g. as something to throw at).
+ */
+export const buddyControl = { auto: !TEST_MODE, think: true };
 
 type Brain = {
   /** Caught up with what the child did before the buddy arrived. */
@@ -119,6 +123,10 @@ export function Buddy() {
       }
     }
     if (!botInfo) return;
+    if (!buddyControl.think) {
+      setInputFrame('bot', NO_INPUT);
+      return;
+    }
 
     const me = players.get(botInfo.slot);
     const kidInfo = kids[0];

@@ -1,19 +1,17 @@
 import {
   CuboidCollider,
   CylinderCollider,
-  InstancedRigidBodies,
   RigidBody,
   useRevoluteJoint,
-  type InstancedRigidBodyProps,
   type RapierCollider,
   type RapierRigidBody
 } from '@react-three/rapier';
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playBoing } from '../audio';
 import { MOVE } from '../config';
 import { emit } from '../fx';
-import { at3, BALL_PIT, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES, ZONES } from '../layout';
+import { at3, BOUNCY_CASTLE, SEESAWS, SLIDE_TOWER, TRAMPOLINES, ZONES } from '../layout';
 import { lambert } from '../materials';
 import { debugInfo, players, type Surface, seesawLow } from '../runtime';
 import { SlideTower, StaticBox, useHint } from './common';
@@ -23,6 +21,7 @@ import { useSurface } from './surface';
 import { Trampoline } from './Toys';
 import { PaintBuckets } from './PaintBuckets';
 import { Xylophone } from './Xylophone';
+import { BallPit } from './BallPit';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -200,49 +199,6 @@ function SeeSaw({ index }: { index: number }) {
           </mesh>
         ))}
       </RigidBody>
-    </group>
-  );
-}
-
-const PIT_BALLS = 50;
-const PIT_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e', '#a855f7', '#ff8fd8'];
-
-function BallPit() {
-  const [cx, cz] = BALL_PIT.center;
-  const half = BALL_PIT.size / 2;
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const instances = useMemo<InstancedRigidBodyProps[]>(
-    () =>
-      Array.from({ length: PIT_BALLS }, (_, i) => ({
-        key: `pit-${i}`,
-        position: [cx + ((i % 7) - 3) * 0.75, 0.3 + Math.floor(i / 49) * 0.5 + (i % 3) * 0.12, cz + (Math.floor(i / 7) % 7 - 3) * 0.75] as [number, number, number]
-      })),
-    [cx, cz]
-  );
-  useLayoutEffect(() => {
-    const m = mesh.current;
-    if (!m) return;
-    const c = new THREE.Color();
-    for (let i = 0; i < PIT_BALLS; i += 1) m.setColorAt(i, c.set(PIT_COLORS[i % PIT_COLORS.length]));
-    if (m.instanceColor) m.instanceColor.needsUpdate = true;
-  }, []);
-  useHint([cx, 1, cz + half], 'jump', 4.5);
-  const wall = 0.3;
-  return (
-    <group>
-      <mesh position={[cx, 0.02, cz]} rotation={[-Math.PI / 2, 0, 0]} material={lambert('#ffffff')}>
-        <planeGeometry args={[BALL_PIT.size, BALL_PIT.size]} />
-      </mesh>
-      <StaticBox position={[cx, 0.4, cz - half]} size={[BALL_PIT.size + wall, 0.8, wall]} color="#ff8fd8" />
-      <StaticBox position={[cx, 0.4, cz + half]} size={[BALL_PIT.size + wall, 0.8, wall]} color="#ff8fd8" />
-      <StaticBox position={[cx - half, 0.4, cz]} size={[wall, 0.8, BALL_PIT.size + wall]} color="#8fd3ff" />
-      <StaticBox position={[cx + half, 0.4, cz]} size={[wall, 0.8, BALL_PIT.size + wall]} color="#8fd3ff" />
-      <InstancedRigidBodies instances={instances} colliders="ball" restitution={0.5} friction={0.4} linearDamping={0.3} angularDamping={0.3}>
-        <instancedMesh ref={mesh} args={[undefined, undefined, PIT_BALLS]} castShadow frustumCulled={false}>
-          <sphereGeometry args={[0.24, 10, 8]} />
-          <meshLambertMaterial />
-        </instancedMesh>
-      </InstancedRigidBodies>
     </group>
   );
 }

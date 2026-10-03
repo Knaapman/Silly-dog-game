@@ -649,6 +649,12 @@ export function distXZ(ax: number, az: number, bx: number, bz: number) {
   return Math.hypot(ax - bx, az - bz);
 }
 
+/** Down among the balls in the ball pit (wading is slow). */
+export function isInBallPit(x: number, y: number, z: number) {
+  const half = BALL_PIT.size / 2;
+  return Math.abs(x - BALL_PIT.center[0]) < half && Math.abs(z - BALL_PIT.center[1]) < half && y < 1.2;
+}
+
 export function isInMud(x: number, z: number) {
   return distXZ(x, z, MUD.center[0], MUD.center[1]) < MUD.radius - 0.3;
 }
