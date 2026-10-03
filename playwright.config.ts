@@ -5,6 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = 4173;
 /** The built game (for the offline test), in its own folder so it never touches dist/. */
 export const BUILT_PORT = 4174;
+/** Tests that run the normal game against the real clock: they must have the machine to themselves. */
+const REAL_CLOCK = /(realtime|persistence|offline)\.spec\.ts/;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -23,7 +25,12 @@ export default defineConfig({
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
     }
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 960, height: 540 } } }],
+  // (scripts/e2e.mjs runs these one after the other: the real-clock tests alone, then the test-mode
+  // ones on two workers)
+  projects: [
+    { name: 'realtime', testMatch: REAL_CLOCK, use: { ...devices['Desktop Chrome'], viewport: { width: 960, height: 540 } } },
+    { name: 'sim', testIgnore: REAL_CLOCK, use: { ...devices['Desktop Chrome'], viewport: { width: 960, height: 540 } } }
+  ],
   webServer: [
     {
       command: `npx vite --port ${PORT} --strictPort --host 127.0.0.1`,

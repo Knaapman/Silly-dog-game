@@ -433,7 +433,7 @@ npm run play       # build and open the fast, installable version at http://loca
 npm run dev        # development server at http://localhost:3000
 npm run lint       # type-check (also flags unused code)
 npm test           # unit tests (vitest): input, clock, settings, progress, adaptive graphics, the park layout
-npm run test:e2e   # browser tests (Playwright, starts its own servers)
+npm run test:e2e   # browser tests (Playwright, starts its own servers; two at a time, PW_WORKERS=1 for one)
 npm run check      # lint + unit tests + build
 npm run ci         # everything GitHub Actions runs: check + browser tests
 npm run build
@@ -464,10 +464,16 @@ shifts what every other part does. A test can also leave out the roaming animals
 that the cats roam exactly the same with or without the birds and chickens. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
-and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
+and the built game starting offline (and a broken save: junk in every saved key still starts a fresh park). Those
+watch the real clock, so `npm run test:e2e` (`scripts/e2e.mjs`) runs them first, on their own, and then the test-mode
+tests two at a time (they give the same results however busy the machine is). GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
 build, then the browser tests; `npm run ci` runs the same locally. Two "chaos" tests play the game with robot
 players mashing random buttons (four players for three minutes, and one child with the buddy) and fail on any error,
 broken position or animal leaving the world; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more.
+The **soak test** plays for much longer, with four robots and a surprise every 40 s, hopping round the park: once a
+minute it collects the garbage and counts memory, three.js geometries and textures, objects in the scene, physics
+bodies and the registries, and fails if any of them keeps growing after the first few minutes (a leak would make an
+hour of play slowly stutter). It is too long for every run: `SOAK_MINUTES=20 npx playwright test e2e/soak.spec.ts`.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are
