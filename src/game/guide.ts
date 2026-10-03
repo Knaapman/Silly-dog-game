@@ -43,6 +43,7 @@ import {
   BALL_PIT,
   SWINGS,
   DOMINOES,
+  BALLOON,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -56,9 +57,9 @@ import { useGame } from './store';
 // points the way to where it can be earned, with a beam of light there. No reading needed.
 
 /** Stickers that need a friend playing too. */
-export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush'];
+export const FRIEND_STICKERS: StickerId[] = ['ride', 'tower', 'throw', 'seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends'];
 /** Friend stickers that happen somewhere in particular (the guide goes there, not to the nearest friend). */
-const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush'];
+const FRIEND_PLACES: StickerId[] = ['seesaw', 'trailer', 'carrotfriends', 'slidetogether', 'snowballfight', 'swingpush', 'hotairfriends'];
 
 type P = [number, number];
 const snack = (kind: string): P[] => SNACKS.filter((s) => s.kind === kind).map((s) => [s.position[0], s.position[2]]);
@@ -134,7 +135,9 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   ballpit: [[BALL_PIT.center[0], BALL_PIT.center[1] - BALL_PIT.size / 2 - 1.5]],
   swing: [[SWINGS.center[0], SWINGS.center[1] + 3]],
   swingpush: [[SWINGS.center[0], SWINGS.center[1] - 3]],
-  dominoes: [[DOMINOES.points[0][0] - 1.5, DOMINOES.points[0][1]]]
+  dominoes: [[DOMINOES.points[0][0] - 1.5, DOMINOES.points[0][1]]],
+  hotair: [[BALLOON.pad[0], BALLOON.pad[1] + 2.5]],
+  hotairfriends: [[BALLOON.pad[0], BALLOON.pad[1] + 2.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

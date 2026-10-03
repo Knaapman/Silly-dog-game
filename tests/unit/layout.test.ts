@@ -83,6 +83,8 @@ add('ball pit', L.BALL_PIT.center[0], L.BALL_PIT.center[1], L.BALL_PIT.size / 2 
   add('dominoes 99 button', e.x + e.dx * 1.35, e.z + e.dz * 1.35, 1.2);
   add('dominoes 99 bell', e.x + e.dx * 2.8, e.z + e.dz * 2.8, 0.5);
 }
+// the hot air balloon on its pad (it's big: the envelope is wider than the basket)
+add('balloon pad', L.BALLOON.pad[0], L.BALLOON.pad[1], 3.4);
 for (let i = 0; i < L.SWINGS.seats; i += 1) add(`swings ${i}`, L.SWINGS.center[0] + (i - (L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing, L.SWINGS.center[1], 2.6);
 add('barn', L.BARN.center[0], L.BARN.center[1], 4);
 add('silo', L.SILO.center[0], L.SILO.center[1], L.SILO.radius + 0.2);
@@ -186,6 +188,7 @@ describe('park layout', () => {
         for (let s = 0; s <= c.length; s += 2) out.push([`dominoes ${s}`, c.at(s).x, c.at(s).z, 1.5]);
         return out;
       })(),
+      ['balloon pad', L.BALLOON.pad[0], L.BALLOON.pad[1], 2.5],
       ['swings', L.SWINGS.center[0], L.SWINGS.center[1], ((L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing + 3],
       ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4])
     ];
@@ -342,6 +345,32 @@ describe('park layout', () => {
       const nearLanding = blocking.filter((s) => s.x < nearest + 1 + s.r && s.x > furthestX - 2 - s.r && Math.abs(s.z - sz) < laneHalfWidth + 2 + s.r).map((s) => s.name);
       expect(nearLanding, `at the landing of the sled at z ${sz}`).toEqual([]);
     }
+  });
+
+  it('the hot air balloon flies its loop high over the park, well clear of the zipline cable', () => {
+    const c = makeCourse(L.BALLOON.route);
+    const [ax, az] = L.ZIPLINE.from;
+    const [bx, bz] = L.ZIPLINE.to;
+    const a = [ax, groundHeight(ax, az) + L.ZIPLINE.platform + L.ZIPLINE.cable, az];
+    const b = [bx, L.ZIPLINE.endHeight, bz];
+    const out: string[] = [];
+    for (let s = 0; s <= c.length; s += 1) {
+      const p = c.at(s);
+      if (L.BALLOON.height - groundHeight(p.x, p.z) < 12) out.push(`low over (${p.x.toFixed(1)}, ${p.z.toFixed(1)})`);
+      // the nearest point of the cable (in 3D), from the balloon (the basket at the bottom, the envelope up to 11 m above)
+      for (let k = 0; k <= 100; k += 1) {
+        const t = k / 100;
+        const cx = a[0] + (b[0] - a[0]) * t;
+        const cy = a[1] + (b[1] - a[1]) * t;
+        const cz = a[2] + (b[2] - a[2]) * t;
+        const dy = cy < L.BALLOON.height ? L.BALLOON.height - cy : cy > L.BALLOON.height + 11 ? cy - L.BALLOON.height - 11 : 0;
+        if (Math.hypot(p.x - cx, dy, p.z - cz) < 6) out.push(`near the zipline at (${p.x.toFixed(1)}, ${p.z.toFixed(1)})`);
+      }
+    }
+    expect([...new Set(out)]).toEqual([]);
+    // it starts and ends on its pad
+    expect(L.BALLOON.route[0]).toEqual(L.BALLOON.pad);
+    expect(L.BALLOON.route[L.BALLOON.route.length - 1]).toEqual(L.BALLOON.pad);
   });
 
   it('every zone is a reasonable way from its neighbours', () => {

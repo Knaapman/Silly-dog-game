@@ -104,6 +104,13 @@ it goes both ways at once. At the far end the last one lands on a big red button
 party (and a sticker). A domino falling on someone standing in its way bonks them. When it has all gone quiet for a
 few seconds, the fallen ones stand back up one after the other, with a twinkle each, ready for another go.
 
+**The hot air balloon** 🎈 waits on its pad on the grass east of the plaza, a big striped balloon with a wicker
+basket. Climb in (there's room for four); a moment later the burner roars and up it goes, high over the park, and
+floats slowly round a big loop over the playground, the beach and the lagoon (about a minute), then back down onto its
+pad, where everyone steps out. Jump to climb out on the way and down you drop: into the lagoon, onto the bouncy
+castle, wherever you like. An empty balloon finishes its loop and comes home by itself. A sticker for going up, and a
+friend sticker for going up together. Playing alone, the buddy hops in with you (and jumps out after you).
+
 **The bubble machine** 🧼 on the grass between the plaza and the beach: a wand turns round on top and blows soap
 bubbles off towards the plaza, little ones and big ones, drifting and bobbing. A little one pops when you jump at it.
 Walk into a big one and it swallows you up: you float off inside it, up over the park (push the stick to drift
@@ -280,7 +287,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 
 | Area | What is there |
 |---|---|
-| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
+| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), the **bubble machine** on the grass to the south-east, and the **hot air balloon** to the east |
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, and a long row of **giant dominoes** |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
@@ -333,7 +340,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -460,6 +467,7 @@ src/
       BallPit.tsx       the ball pit: a sea of little balls on springs that part and splash, and big real ones
       Swings.tsx        the swings: sit, hold the stick to swing higher, jump to fly off; friends (and the buddy) push
       Dominoes.tsx      the giant dominoes: bump one and the chain runs along the row to the bell; they stand back up
+      HotAirBalloon.tsx the hot air balloon: climb in, up, round a loop over the park, down; jump out on the way
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

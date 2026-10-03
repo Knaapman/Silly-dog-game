@@ -220,6 +220,15 @@ export const SNOWMEN: Vec2[] = [at(Z.winter, -16, 6), at(Z.winter, 6, -2), at(Z.
  * to a pole in the lagoon. `platform`: how high the platform stands; `cable`: the cable's height
  * above the platform. The end is `endHeight` above the water, so you drop in with a splash.
  */
+/**
+ * The hot air balloon: it waits on its pad on the grass east of the plaza. Its flight is a loop
+ * through `route` (east of the zipline, so it never crosses the cable) at `height` above the sea.
+ */
+export const BALLOON = {
+  pad: [11.5, -6] as Vec2,
+  height: 16,
+  route: [[11.5, -6], [28, 6], [48, 22], [58, 40], [40, 50], [18, 40], [14, 20], [11.5, -6]] as Vec2[]
+};
 export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, to: [-4, 38] as Vec2, endHeight: 4 };
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
