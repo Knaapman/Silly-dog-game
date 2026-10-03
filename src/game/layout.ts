@@ -77,6 +77,11 @@ export const TOILET = { position: at3(Z.hub, 10.8, 0, -2), seatHeight: 1.05 };
 export const PICNIC = { center: [3, 23] as Vec2, size: 2.8 };
 /** The lawn east of the plaza: a level, open patch of grass to run about on (and the cats' favourite hunting ground). */
 export const LAWN = { center: [12, -4] as Vec2, radius: 8 };
+/** Whack-a-mole: seven molehills (one in the middle, six round it) on the meadow between the plaza and the forest. */
+export const MOLES = {
+  center: [-21, -4] as Vec2,
+  holes: [[0, 0], ...Array.from({ length: 6 }, (_, i) => [Math.cos((i * Math.PI) / 3) * 1.7, Math.sin((i * Math.PI) / 3) * 1.7])].map(([x, z]): Vec2 => [-21 + x, -4 + z])
+};
 
 // ---------------------------------------------------------------------------
 // Carnival

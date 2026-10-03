@@ -5,7 +5,7 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { distXZ, SEESAWS } from '../layout';
+import { distXZ, MOLES, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
@@ -15,6 +15,7 @@ import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { swingHelp } from './Swings';
 import { hamster } from './HamsterBalls';
+import { moles } from './Moles';
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -289,6 +290,35 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0.25;
       target.copy(swingHelp.goto);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (moles.active && distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]) < 6) {
+      // the child is bonking moles: bonk some too. Not the ones right by the child (those are
+      // theirs), not one that's only just come up, and never the golden one: that's for the child.
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      let best = -1;
+      let bd = 1e9;
+      moles.list.forEach((m, i) => {
+        const [hx, hz] = MOLES.holes[i];
+        if (m.state !== 'up' || m.golden || m.t < 0.5 || distXZ(kid.position.x, kid.position.z, hx, hz) < 1.5) return;
+        const md = distXZ(me.position.x, me.position.z, hx, hz);
+        if (md < bd) {
+          bd = md;
+          best = i;
+        }
+      });
+      if (best >= 0) {
+        target.set(MOLES.holes[best][0], 0, MOLES.holes[best][1]);
+        stopAt = 0.1;
+        if (bd < 1.5 && now > b.nextHop) {
+          b.nextHop = now + 900;
+          press.bonk = true;
+        }
+      } else {
+        // waiting at the edge of the molehills, across from the child
+        const kd = Math.max(0.01, distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]));
+        target.set(MOLES.center[0] - ((kid.position.x - MOLES.center[0]) / kd) * 3, 0, MOLES.center[1] - ((kid.position.z - MOLES.center[1]) / kd) * 3);
+        stopAt = 0.5;
+      }
     } else {
       // near a see-saw? get onto the far end (pushing it down if it's up) so the child can
       // land on the other end and fling us
