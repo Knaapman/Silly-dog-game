@@ -143,7 +143,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   hamster: [[HAMSTER.homes[0][0] - 2.5, HAMSTER.homes[0][1]]],
   hamsterbump: [[HAMSTER.homes[0][0] - 2.5, HAMSTER.homes[0][1]]],
   fish: [FISHING_SPOT],
-  fishslap: [FISHING_SPOT]
+  fishslap: [FISHING_SPOT],
+  catfish: [FISHING_SPOT]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

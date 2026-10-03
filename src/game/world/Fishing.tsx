@@ -1,7 +1,7 @@
 import { BallCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { playBounce, playPoof, playSplash, playSplat } from '../audio';
+import { playBounce, playChomp, playPoof, playSplash, playSplat } from '../audio';
 import { gameNow, seededRandom, useGameFrame } from '../clock';
 import { GRAVITY } from '../config';
 import { emit, poof, ring } from '../fx';
@@ -36,9 +36,43 @@ type Fish = { active: boolean; since: number; wetFor: number; flopAt: number; th
 
 /** Each fish's leap out of the water, from `from` to land at `to` (set by the fish itself). */
 const leaps: ((from: THREE.Vector3, to: THREE.Vector3) => void)[] = [];
+/** Each fish's body and prop entry, and how it goes away (eaten by a cat, say). */
+const bodies: (() => RapierRigidBody | null)[] = [];
+const entries: (PropEntry | null)[] = [];
+const goAway: (() => void)[] = [];
+
+/** The nearest fish lying about on dry land (not held, not in the water) within `max` m of (x, z). */
+export function nearestFish(x: number, z: number, max: number) {
+  let best: { index: number; x: number; z: number } | null = null;
+  let bestD = max;
+  fishing.fish.forEach((f, i) => {
+    const e = entries[i];
+    const rb = bodies[i]?.();
+    if (!f || !f.active || !e || e.heldBy != null || !rb) return;
+    const t = rb.translation();
+    if (isInWater(t.x, t.z)) return;
+    const d = Math.hypot(t.x - x, t.z - z);
+    if (d < bestD) {
+      bestD = d;
+      best = { index: i, x: t.x, z: t.z };
+    }
+  });
+  return best as { index: number; x: number; z: number } | null;
+}
+
+/** A cat eats fish `index`: munch, hearts, gone. */
+export function eatFish(index: number) {
+  const rb = bodies[index]?.();
+  if (!rb || !fishing.fish[index]?.active) return;
+  const t = rb.translation();
+  emit('heart', [t.x, t.y + 0.6, t.z], { count: 8, color: ['#ff4d8d', '#ff8fb5'], speed: 2, up: 2.5 });
+  playChomp([t.x, t.y, t.z]);
+  fishing.eaten += 1;
+  goAway[index]?.();
+}
 
 /** The fish (for tests): who has caught how many, slaps, and the pool. */
-export const fishing = { fish: [] as Fish[], bites: 0, licks: 0, slaps: 0, swamOff: 0, wentHome: 0, tries: new Map<number, { n: number; at: number }>() };
+export const fishing = { fish: [] as Fish[], bites: 0, licks: 0, slaps: 0, swamOff: 0, wentHome: 0, eaten: 0, tries: new Map<number, { n: number; at: number }>() };
 
 function FishBody({ index }: { index: number }) {
   const body = useRef<RapierRigidBody>(null);
@@ -67,6 +101,8 @@ function FishBody({ index }: { index: number }) {
       }
     };
     entry.current = e;
+    entries[index] = e;
+    bodies[index] = () => body.current;
     // (a fish waiting in the pool is switched off: no falling forever under the park)
     body.current?.setEnabled(false);
     return registerProp(e);
@@ -85,6 +121,8 @@ function FishBody({ index }: { index: number }) {
       rb.setEnabled(false);
     }
   };
+
+  goAway[index] = putAway;
 
   // the fishing hands this fish out: leap from the water at `from` to land at `to`
   useEffect(() => {
