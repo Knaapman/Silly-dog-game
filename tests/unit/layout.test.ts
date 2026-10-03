@@ -83,6 +83,8 @@ add('ball pit', L.BALL_PIT.center[0], L.BALL_PIT.center[1], L.BALL_PIT.size / 2 
   add('dominoes 99 button', e.x + e.dx * 1.35, e.z + e.dz * 1.35, 1.2);
   add('dominoes 99 bell', e.x + e.dx * 2.8, e.z + e.dz * 2.8, 0.5);
 }
+// the hamster balls in their row
+L.HAMSTER.homes.forEach(([x, z], i) => add(`hamster ball ${i}`, x, z, L.HAMSTER.radius + 0.4));
 // the hot air balloon on its pad (it's big: the envelope is wider than the basket)
 add('balloon pad', L.BALLOON.pad[0], L.BALLOON.pad[1], 3.4);
 for (let i = 0; i < L.SWINGS.seats; i += 1) add(`swings ${i}`, L.SWINGS.center[0] + (i - (L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing, L.SWINGS.center[1], 2.6);
@@ -188,6 +190,7 @@ describe('park layout', () => {
         for (let s = 0; s <= c.length; s += 2) out.push([`dominoes ${s}`, c.at(s).x, c.at(s).z, 1.5]);
         return out;
       })(),
+      ...L.HAMSTER.homes.map(([x, z], i): [string, number, number, number] => [`hamster ball ${i}`, x, z, L.HAMSTER.radius + 0.6]),
       ['balloon pad', L.BALLOON.pad[0], L.BALLOON.pad[1], 2.5],
       ['swings', L.SWINGS.center[0], L.SWINGS.center[1], ((L.SWINGS.seats - 1) / 2) * L.SWINGS.spacing + 3],
       ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4])

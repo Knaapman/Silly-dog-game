@@ -27,7 +27,8 @@ export type PropKind =
   | 'throwball'
   | 'pitball'
   | 'poop'
-  | 'giantcarrot';
+  | 'giantcarrot'
+  | 'hamsterball';
 
 export type PropEntry = {
   id: number;

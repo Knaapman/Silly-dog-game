@@ -122,6 +122,8 @@ export const BOWLING = {
   ] as Vec2[]
 };
 
+/** Hamster balls: four giant clear balls waiting in a row on the grass at the top of the bowling lane (roll down it!). */
+export const HAMSTER = { radius: 1.1, homes: [0, 1, 2, 3].map((i): Vec2 => [LANE_X, Z.sports[1] + 28 + (i - 1.5) * 2.6]) };
 export const CRATE_TOWER = { base: at3(Z.sports, -12, 0, 14), size: 1.2, rows: 4 };
 /**
  * Giant dominoes: a winding row on the grass north of the soccer field, one every `spacing`

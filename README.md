@@ -104,6 +104,14 @@ it goes both ways at once. At the far end the last one lands on a big red button
 party (and a sticker). A domino falling on someone standing in its way bonks them. When it has all gone quiet for a
 few seconds, the fallen ones stand back up one after the other, with a twinkle each, ready for another go.
 
+**Hamster balls** 🐹 wait in a row on the grass at the top of the bowling lane: four giant see-through balls, each
+with coloured hoops. Walk into one and you're inside; push the stick and it rolls, faster and faster (and down a slope
+it really goes). Roll down the bowling lane and knock the pins flying, or into the dominoes. Roll fast into a friend
+on foot and they get bonked; roll into a friend's ball and you both bounce off with a boing (a friend sticker). Jump
+to climb out. A ball floats in the water, a headbutt sends it rolling (with whoever is inside), and an empty one left
+somewhere pops back into its row after a while. Playing alone, the buddy climbs into the next ball and rolls after
+you. (A sticker for a good long roll.)
+
 **The hot air balloon** 🎈 waits on its pad on the grass east of the plaza, a big striped balloon with a wicker
 basket. Climb in (there's room for four); a moment later the burner roars and up it goes, high over the park, and
 floats slowly round a big loop over the playground, the beach and the lagoon (about a minute), then back down onto its
@@ -289,7 +297,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 |---|---|
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), the **bubble machine** on the grass to the south-east, and the **hot air balloon** to the east |
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
-| ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, and a long row of **giant dominoes** |
+| ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
@@ -340,7 +348,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -435,7 +443,7 @@ src/
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
     install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
-    collision.ts        collision groups (animals walk through poops)
+    collision.ts        collision groups (animals walk through poops and climb into hamster balls)
     audio.ts, music.ts  synthesised sound effects and background music (Web Audio)
     fx.ts, FxRenderer   pooled particles (instanced) and shockwave rings
     Scene.tsx           lights, sky, shared camera (and a camera per child in split screen), input loop, party director
@@ -468,6 +476,7 @@ src/
       Swings.tsx        the swings: sit, hold the stick to swing higher, jump to fly off; friends (and the buddy) push
       Dominoes.tsx      the giant dominoes: bump one and the chain runs along the row to the bell; they stand back up
       HotAirBalloon.tsx the hot air balloon: climb in, up, round a loop over the park, down; jump out on the way
+      HamsterBalls.tsx  hamster balls: climb in, roll with the stick, bump; they float, and pop home when left
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)

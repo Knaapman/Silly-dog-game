@@ -14,6 +14,7 @@ import { settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { swingHelp } from './Swings';
+import { hamster } from './HamsterBalls';
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -198,7 +199,16 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
   }
 
   const riddenByKid = kid.ridingOn === me.slot;
-  if (me.grabbedBy != null || kid.asleep) {
+  if (hamster.balls.some((b) => b && b.rider === me.slot)) {
+    // in a hamster ball: roll along after the child (and bump into them now and then)
+    const d = distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z);
+    if (d > 3) {
+      const k = Math.min(1, (d - 2) / 4) / d;
+      x = (kid.position.x - me.position.x) * k;
+      z = (kid.position.z - me.position.z) * k;
+    }
+    b.pending = [];
+  } else if (me.grabbedBy != null || kid.asleep) {
     // dangling from a tongue (giggle now and then), or waiting for a napping friend
     if (me.grabbedBy != null && Math.random() < dt * 0.6) press.noise = true;
     b.pending = [];
