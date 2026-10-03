@@ -7,6 +7,7 @@ import { Safe } from './game/Contained';
 import { Scene } from './game/Scene';
 import { detectQuality, effectiveQuality, qualityDpr, useSettings } from './game/settings';
 import { useGame } from './game/store';
+import { TEST_MODE } from './game/testMode';
 import { GrownUpMenu } from './ui/GrownUpMenu';
 import { Hud } from './ui/Hud';
 import { TitleScreen } from './ui/TitleScreen';
@@ -77,6 +78,10 @@ export default function App() {
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
+          // Checking each shader for errors right after it's linked makes the page wait for the
+          // graphics card to finish compiling it (seconds, all told, on Windows): only while
+          // developing and testing, where a broken shader must show up.
+          gl.debug.checkShaderErrors = import.meta.env.DEV || TEST_MODE;
           // "Auto" graphics: pick a level from the graphics card's name.
           const ctx = gl.getContext();
           const info = ctx.getExtension('WEBGL_debug_renderer_info');

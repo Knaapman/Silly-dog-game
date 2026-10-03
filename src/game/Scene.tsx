@@ -18,7 +18,7 @@ import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPre
 import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
-import { camera as camState, keepAwake, physics, players, type PlayerRuntime } from './runtime';
+import { camera as camState, keepAwake, physics, players, props as runtimeProps, type PlayerRuntime } from './runtime';
 import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
@@ -404,6 +404,28 @@ function PhotoDirector() {
   return null;
 }
 
+/**
+ * Once the park has been built, compile every material's shaders in the background (while the
+ * title screen is up), so the first time a child sees something new isn't a stutter.
+ */
+function Precompile() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    if (TEST_MODE) return;
+    let done = false;
+    const timer = window.setInterval(() => {
+      if (done || runtimeProps.size < 50) return;
+      done = true;
+      window.clearInterval(timer);
+      gl.compileAsync(scene, camera).catch(() => {});
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [gl, scene, camera]);
+  return null;
+}
+
 function DevHook() {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -463,6 +485,7 @@ export function Scene() {
     <>
       <FrameLoop />
       <GraphicsWatch />
+      <Precompile />
       <DevHook />
       <SkyDome />
       <fog attach="fog" args={['#d6f1ff', 100, 260]} />
