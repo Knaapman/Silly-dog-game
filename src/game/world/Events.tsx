@@ -1,14 +1,15 @@
-import { BallCollider, RigidBody, useRapier, type RapierRigidBody } from '@react-three/rapier';
+import { BallCollider, RigidBody, useRapier, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { create } from 'zustand';
-import { playCheer, playCollect, playFanfare, playPop, playRainPatter, playSplash, playSquawk } from '../audio';
+import { playBoing, playCheer, playCollect, playFanfare, playPop, playRainPatter, playSplash, playSquawk, playThud } from '../audio';
 import { gameClock, gameNow, useGameFrame } from '../clock';
-import { PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
+import { MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { burstConfetti, emit, poof, ring } from '../fx';
 import { distXZ } from '../layout';
 import { lambert } from '../materials';
-import { players, playersCentroid, registerFood, type PlayerRuntime } from '../runtime';
+import { allocPropId, debugInfo, players, playersCentroid, registerFood, registerProp, shakeCamera, type PlayerRuntime, type Surface } from '../runtime';
+import { useSurface } from './surface';
 import { settings } from '../settings';
 import { earnSticker } from '../stickers';
 import { groundHeight, isInWater } from '../terrain';
@@ -20,9 +21,9 @@ import { cameraFoci } from '../views';
 // words needed: a golden chicken to chase, a present floating by on a balloon, or a rain
 // shower with puddles to jump in (and a rainbow after).
 
-export type EventKind = 'chicken' | 'present' | 'rain';
-export const EVENT_ICON: Record<EventKind, string> = { chicken: '🐔', present: '🎁', rain: '☔' };
-const KINDS: EventKind[] = ['chicken', 'present', 'rain'];
+export type EventKind = 'chicken' | 'present' | 'rain' | 'ball';
+export const EVENT_ICON: Record<EventKind, string> = { chicken: '🐔', present: '🎁', rain: '☔', ball: '🏐' };
+const KINDS: EventKind[] = ['chicken', 'present', 'rain', 'ball'];
 
 /** Seconds of play before the first surprise, and between surprises. */
 const FIRST_AFTER = 60;
@@ -30,6 +31,9 @@ const GAP = [70, 110] as const;
 const CHICKEN_TIME = 40;
 const PRESENT_TIME = 45;
 const RAIN_TIME = 40;
+const BALL_TIME = 60;
+/** The giant beach ball's radius (m). */
+export const GIANT_BALL_R = 2.2;
 const DRY_TIME = 12;
 export const RAINBOW_TIME = 25;
 
@@ -56,7 +60,7 @@ export const useEvents = create<EventStore>((set) => ({
 /** Non-reactive state other parts of the game read every frame. */
 export const weather = { rain: 0 };
 /** Where the current surprise is (for tests and the camera-free hint). */
-export const eventSpot = { chicken: new THREE.Vector3(), present: new THREE.Vector3(), puddles: [] as THREE.Vector3[] };
+export const eventSpot = { chicken: new THREE.Vector3(), present: new THREE.Vector3(), ball: new THREE.Vector3(), puddles: [] as THREE.Vector3[] };
 
 const tmp = new THREE.Vector3();
 
@@ -529,6 +533,119 @@ function RainShower() {
 }
 
 // ---------------------------------------------------------------------------
+// A giant beach ball bounces into the park
+
+/** Red, yellow, blue, green, orange and white panels, with white caps top and bottom. */
+function beachBall() {
+  const geo = new THREE.SphereGeometry(GIANT_BALL_R, 24, 16).toNonIndexed();
+  const pos = geo.getAttribute('position');
+  const colors = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  const panels = ['#ef4444', '#ffd23f', '#3b82f6', '#22c55e', '#f97316', '#ffffff'];
+  for (let i = 0; i < pos.count; i += 3) {
+    const x = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3;
+    const y = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
+    const z = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3;
+    c.set(Math.abs(y) > GIANT_BALL_R * 0.88 ? '#ffffff' : panels[Math.floor(((Math.atan2(z, x) + Math.PI) / (Math.PI * 2)) * 6) % 6]);
+    for (let k = 0; k < 3; k += 1) colors.set([c.r, c.g, c.b], (i + k) * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return { geo, mat: new THREE.MeshLambertMaterial({ vertexColors: true }) };
+}
+
+function GiantBall() {
+  const body = useRef<RapierRigidBody>(null);
+  const col = useRef<RapierCollider>(null);
+  const id = useMemo(() => allocPropId(), []);
+  const look = useMemo(() => beachBall(), []);
+  const start = useMemo(() => {
+    const at = spotNearPlayers(9, new THREE.Vector3());
+    at.y += 22;
+    eventSpot.ball.copy(at);
+    return at;
+  }, []);
+  const startedAt = useEvents((s) => s.startedAt);
+  const st = useRef({ done: false, landed: false, bonks: 0, bounces: 0, popped: false });
+  debugInfo.giantBall = st.current;
+  // bouncy on top: jump on it, boing!
+  const top = useMemo<Surface>(
+    () => ({
+      bounce: MOVE.trampolineVelocity * 0.75,
+      onBounce: () => {
+        st.current.bounces += 1;
+        playBoing(eventSpot.ball, 0.6);
+      }
+    }),
+    []
+  );
+  useSurface(col, top);
+
+  useEffect(
+    () =>
+      registerProp({
+        id,
+        kind: 'giantball',
+        getBody: () => body.current,
+        radius: GIANT_BALL_R,
+        launch: 9,
+        heavy: false,
+        grabbable: false,
+        enabled: true,
+        heldBy: null,
+        onBonk: (slot) => {
+          st.current.bonks += 1;
+          playBoing(eventSpot.ball, 0.45);
+          if (!players.get(slot)?.bot) earnSticker('giantball');
+        }
+      }),
+    [id]
+  );
+
+  const pop = () => {
+    const s = st.current;
+    if (s.done) return;
+    s.done = true;
+    s.popped = true;
+    const p = eventSpot.ball;
+    burstConfetti([p.x, p.y, p.z], 140, 10);
+    emit('star', [p.x, p.y, p.z], { count: 24, color: ['#ef4444', '#ffd23f', '#3b82f6', '#22c55e'], speed: 8, up: 4 });
+    ring([p.x, groundHeight(p.x, p.z) + 0.1, p.z], { color: '#ffffff', radius: GIANT_BALL_R * 2, duration: 0.6 });
+    playPop(p);
+    playCheer();
+    shakeCamera(0.3);
+    players.forEach((pl) => {
+      if (pl.position.distanceTo(p) < GIANT_BALL_R + 3) pl.hop(9);
+    });
+    useGame.getState().addParty(PARTY_POINTS.goal);
+    useEvents.getState().end();
+  };
+
+  useGameFrame(() => {
+    const s = st.current;
+    const rb = body.current;
+    if (s.done || !rb) return;
+    const t = rb.translation();
+    eventSpot.ball.set(t.x, t.y, t.z);
+    // the first time it comes down out of the sky: BOOM
+    if (!s.landed && t.y - groundHeight(t.x, t.z) < GIANT_BALL_R + 0.4) {
+      s.landed = true;
+      playThud([t.x, t.y, t.z]);
+      shakeCamera(0.35);
+      emit('puff', [t.x, groundHeight(t.x, t.z) + 0.2, t.z], { count: 16, color: ['#ffffff', '#e8e0d0'], speed: 4, up: 0.8, size: 0.5 });
+    }
+    // after a minute (or if it rolls right out of the park): it pops!
+    if ((gameNow() - startedAt) / 1000 > BALL_TIME || t.y < -8) pop();
+  });
+
+  return (
+    <RigidBody ref={body} position={start} colliders={false} linearDamping={0.25} angularDamping={0.4} ccd>
+      <BallCollider ref={col} args={[GIANT_BALL_R]} density={0.03} restitution={0.7} friction={0.8} />
+      <mesh castShadow receiveShadow geometry={look.geo} material={look.mat} />
+    </RigidBody>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 /** Starts a surprise now and then (never on its own in test mode: tests start them). */
 export function ParkEvents() {
@@ -564,6 +681,7 @@ export function ParkEvents() {
       {kind === 'chicken' && <GoldenChicken key={startedAt} />}
       {kind === 'present' && <PresentBalloon key={startedAt} />}
       {kind === 'rain' && <RainShower key={startedAt} />}
+      {kind === 'ball' && <GiantBall key={startedAt} />}
     </>
   );
 }
