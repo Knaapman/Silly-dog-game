@@ -138,3 +138,47 @@ test('surprise: rain with puddles to jump in, then a rainbow', async ({ page }) 
   expect((await ev(game)).kind).toBeNull();
   game.expectNoErrors();
 });
+
+test('surprise: a giant beach ball drops in: headbutt it, bounce on it, and after a minute it pops', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await start(game, 'ball');
+  const ball = () => page.evaluate(() => {
+    const s = (window as any).__silly;
+    const b = s.events.eventSpot.ball;
+    return { x: b.x, y: b.y, z: b.z, ...s.runtime.debugInfo.giantBall } as { x: number; y: number; z: number; landed: boolean; bonks: number; bounces: number; popped: boolean };
+  });
+  // down it comes out of the sky, somewhere near
+  expect((await ball()).y).toBeGreaterThan(15);
+  for (let k = 0; k < 40 && !(await ball()).landed; k += 1) await game.seconds(0.1);
+  expect((await ball()).landed).toBe(true);
+  await game.seconds(4);
+  let b = await ball();
+  await game.teleport(0, b.x + 1, 0.5, b.z + 6);
+  await game.seconds(1, true);
+  await game.screenshot('test-results/event-ball.png');
+  b = await ball();
+
+  // headbutt it: off it goes (and a sticker)
+  await game.hopTo(0, [b.x + 6, b.z], [b.x + 3.2, b.z]);
+  await game.tap('KeyE');
+  await game.seconds(0.3);
+  expect((await ball()).bonks).toBe(1);
+  expect(await stickers(game)).toContain('giantball');
+  await game.seconds(4);
+
+  // drop onto the top of it: boing!
+  b = await ball();
+  // (teleport takes the height above the ground: the ball is 4.4 m tall, drop from 2.5 m over it)
+  await game.teleport(0, b.x, 2 * 2.2 + 2.5, b.z);
+  const top = await game.maxY(0, 1.5);
+  expect((await ball()).bounces).toBeGreaterThanOrEqual(1);
+  expect(top).toBeGreaterThan(b.y + 4);
+
+  // a minute after it came: POP, and the surprise is over
+  await game.seconds(55);
+  expect((await ball()).popped).toBe(true);
+  expect((await ev(game)).kind).toBeNull();
+  game.expectNoErrors();
+});

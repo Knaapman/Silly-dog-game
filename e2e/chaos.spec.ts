@@ -80,7 +80,7 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const held = new Set<string>();
   const problems: string[] = [];
-  const surprises = ['chicken', 'present', 'rain'];
+  const surprises = ['chicken', 'present', 'rain', 'ball'];
   const CHUNKS = 720; // x 0.25 s = 3 minutes
   for (let i = 0; i < CHUNKS; i += 1) {
     // keyboards: change direction now and then, tap a random action

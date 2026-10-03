@@ -43,6 +43,8 @@ add('bubble machine', L.BUBBLE_MACHINE.at[0], L.BUBBLE_MACHINE.at[1], 1.6);
 add('molehills', L.MOLES.center[0], L.MOLES.center[1], 3);
 // the building blocks: the little tower and the ring of blocks round it
 add('blocks', L.BLOCKS.center[0], L.BLOCKS.center[1], L.BLOCKS.ring + L.BLOCKS.size);
+// the roundabout (and room to run round it, pushing)
+add('roundabout', L.ROUNDABOUT.center[0], L.ROUNDABOUT.center[1], L.ROUNDABOUT.radius + 1.1);
 // the xylophone: a row of circles along its keys, and the songbird's post
 for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i - 2) * 3.1, L.XYLOPHONE.center[1], 1.8);
 add('songbird post', L.XYLOPHONE.bird[0], L.XYLOPHONE.bird[1], 0.5);
@@ -202,7 +204,8 @@ describe('park layout', () => {
       ...L.SNOW_PILES.map(([x, z], i): [string, number, number, number] => [`snow pile ${i}`, x, z, 1.4]),
       ['penguin shy', L.PENGUIN_SHY.center[0] + 0.5, L.PENGUIN_SHY.center[1], 3],
       ['molehills', L.MOLES.center[0], L.MOLES.center[1], 3],
-      ['blocks', L.BLOCKS.center[0], L.BLOCKS.center[1], L.BLOCKS.ring + L.BLOCKS.size]
+      ['blocks', L.BLOCKS.center[0], L.BLOCKS.center[1], L.BLOCKS.ring + L.BLOCKS.size],
+      ['roundabout', L.ROUNDABOUT.center[0], L.ROUNDABOUT.center[1], L.ROUNDABOUT.radius + 1.1]
     ];
     const out: string[] = [];
     for (const t of L.TREASURE_SPOTS) {

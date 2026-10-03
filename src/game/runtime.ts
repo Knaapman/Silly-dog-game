@@ -30,7 +30,8 @@ export type PropKind =
   | 'giantcarrot'
   | 'hamsterball'
   | 'fish'
-  | 'block';
+  | 'block'
+  | 'giantball';
 
 export type PropEntry = {
   id: number;

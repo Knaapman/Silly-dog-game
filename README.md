@@ -99,6 +99,12 @@ higher. Five high is a cheer and a sticker (a friend sticker when two children b
 headbutt it and down it all comes, CRASH. Blocks carried off and left lying about far away hop back home after a while.
 Playing alone, the buddy fetches blocks for your tower.
 
+**The roundabout** 🎠 at the playground's east edge, north of the swings: a big round deck in rainbow slices with
+handles, turning on a post. Run round beside it (or headbutt its edge) to push it, and hop on: it carries you round.
+The harder you push, the faster it goes, and when it really whizzes anyone out near the edge flies off, wheee (a
+sticker, and a friend sticker when a friend did the pushing); hang on in the middle and you stay on. It slows down by
+itself. Playing alone, the buddy runs round pushing while you ride.
+
 **The swings** 🪑 on the east side of the playground: four seats on a big red and yellow frame. Walk into a seat
 and you sit down; hold the stick (any way at all, no timing needed) and you swing higher and higher. Jump and you
 let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
@@ -379,12 +385,12 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks, the brontosaurus's sneeze...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks, the brontosaurus's sneeze, a headbutt on the giant beach ball, flying off the roundabout...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
-  remembered on this device. Fourteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
+  remembered on this device. Fifteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
   counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
   rest (the three-animal tower, the tractor's trailer, pushing a swing, the balloon together, hamster balls bumping,
-  a fish slap, the moles together and a tower of blocks built together) need two children.
+  a fish slap, the moles together, a tower of blocks built together and a push off the roundabout) need two children.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for
@@ -398,7 +404,10 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   - 🐔 a **golden chicken** runs around near you: catch it by touching or licking it (it gets tired after a while, so
     small legs can catch it too; left alone, it gets away);
   - 🎁 a **present on a balloon** floats over: jump into it or lick it, and everybody gets a new hat;
-  - ☔ a **rain shower**: puddles appear to jump in (splash!), and when it stops there's a rainbow.
+  - ☔ a **rain shower**: puddles appear to jump in (splash!), and when it stops there's a rainbow;
+  - 🏐 a **giant beach ball** drops out of the sky nearby (BOOM): push it about together, headbutt it flying, jump
+    on top of it for a big boing, roll it into things (the block tower, the dominoes, the lagoon...); after a minute it
+    pops in a shower of confetti.
   Grown-ups can switch surprises off.
 
 ## Development
@@ -515,6 +524,7 @@ src/
       Moles.tsx         whack-a-mole: moles pop up while a child is near; bonk ten and a golden one comes up
       Blocks.tsx        giant building blocks: carry with your tongue, lick to put one on the tower, headbutt it down
       PhotoWall.tsx     the photo wall: the last five photos in frames on the mesa's south face
+      Roundabout.tsx    the roundabout: push it round, ride it, fly off when it whizzes
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
