@@ -5,7 +5,7 @@ import { playBoom, playGeyser, playWhoosh } from '../audio';
 import { emit, poof, ring } from '../fx';
 import { distXZ, type LaunchPadDef, type Vec2, type Vec3 } from '../layout';
 import { lambert } from '../materials';
-import { launchSpots, players, rider, props, propPosition, shakeCamera } from '../runtime';
+import { canBoard, launchSpots, players, rider, props, propPosition, shakeCamera } from '../runtime';
 import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
@@ -177,7 +177,7 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
     s.recoil = Math.max(0, s.recoil - delta * 3);
     if (s.slot == null) {
       players.forEach((p) => {
-        if (s.slot != null || p.isLaunched() || p.flopped || (s.cooldown.get(p.slot) ?? 0) > now) return;
+        if (s.slot != null || !canBoard(p) || (s.cooldown.get(p.slot) ?? 0) > now) return;
         if (distXZ(p.position.x, p.position.z, loadSpot.x, loadSpot.z) > 1.1 || Math.abs(p.position.y - (position[1] + 0.5)) > 1.2) return;
         s.slot = p.slot;
         s.timer = 0.9;

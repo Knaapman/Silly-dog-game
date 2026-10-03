@@ -9,7 +9,7 @@ import { burstConfetti, emit, poof, ring } from '../fx';
 import { getInput, rumble } from '../input';
 import { distXZ, SLED_RUN, TUBE_RIDE, WATER_LEVEL } from '../layout';
 import { lambert, stripeTexture } from '../materials';
-import { debugInfo, players, rider, type PlayerRuntime, type Surface } from '../runtime';
+import { canBoard, debugInfo, players, rider, type PlayerRuntime, type Surface } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useSledding } from '../sledding';
 import { useGame } from '../store';
@@ -315,7 +315,7 @@ function Sled({ index }: { index: number }) {
     } else if (s.mode === 'park') {
       // walk into it: sit down and off you go
       players.forEach((p) => {
-        if (s.rider != null || p.isLaunched() || p.flopped || p.ridingOn != null) return;
+        if (s.rider != null || !canBoard(p)) return;
         if (distXZ(p.position.x, p.position.z, s.x, s.z) > 1.0 || p.position.y < s.y || p.position.y > s.y + 2) return;
         s.rider = p.slot;
         s.mode = 'ride';

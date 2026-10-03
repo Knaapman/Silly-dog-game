@@ -81,7 +81,7 @@ a carrot the size of a sofa flies out to push about and headbutt, and four big b
 Jump to let go. (A sticker for pulling it out, and a friend sticker for pulling it out together.)
 
 **The water slide** 🛝 on the beach, east of the lagoon: walk up the blue stairs on the north side of the tower, then
-step into the red slide or the blue one at the top. Whoosh: round the bends and over the bumps, faster and faster,
+step into the red slide or the blue one at the top (a bubble at the foot of the stairs shows the way up). Whoosh: round the bends and over the bumps, faster and faster,
 spray flying, and out over the lagoon with a splash. Two friends can go at once, side by side (a friend sticker);
 playing alone, the buddy hops into the other slide next to you. The tower's roof fades when it would hide you.
 
@@ -142,7 +142,8 @@ striped balloon with a wicker basket. Climb in (there's room for four); a moment
 floats slowly round a big loop over the playground, the beach and the lagoon (about a minute), then back down onto its
 pad, where everyone steps out. Jump to climb out on the way and down you drop: into the lagoon, onto the bouncy
 castle, wherever you like. An empty balloon finishes its loop and comes home by itself. A sticker for going up, and a
-friend sticker for going up together. Playing alone, the buddy hops in with you (and jumps out after you).
+friend sticker for going up together. Changed your mind while it's still on its pad? Jump, and you're back out (and
+nobody aboard, it waits). Playing alone, the buddy hops in with you (and jumps out after you).
 
 **Kites** 🪁 on the grassy hill north of the mesa: three spools of string lie on the top, each with its kite beside
 it. Lick a spool to pick it up and run: the wind takes the kite out on its string, and the faster you run the higher
@@ -259,8 +260,9 @@ Select (`1` / `,`), or tap your badge at the top left.
 **Playing alone?** After a few seconds a **buddy** 💛 joins: a computer animal that trots along, copies your jumps
 and noises, and plays along with everything a friend can: jump on its back and it runs wherever you push the stick,
 lick it and throw it, or go to a see-saw and it climbs onto the far end so you can fling it. Fly off a launch pad,
-cannon or geyser and it takes the same one after you; get up somewhere it can't walk to (the lighthouse, the barn
-roof) and it steps back and comes after you with a big boing. When a real friend joins, the buddy makes room.
+cannon or geyser and it takes the same one after you; ride the ferris wheel and it comes up in a gondola behind
+you; get up somewhere it can't walk to (the lighthouse, the barn roof) and it steps back and comes after you with a
+big boing. When a real friend joins, the buddy makes room.
 Grown-ups can switch it off.
 
 | | Controller | Keyboard P1 | Keyboard P2 | Touch |
@@ -352,7 +354,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | Area | What is there |
 |---|---|
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
-| 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
+| 🎡 Carnival (north-west) | **Ferris wheel**: walk up onto its deck and to the front, and a hop takes you into the next gondola down, up past the star at the top (jump to get out), a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down (headbutt its tummy and it giggles; tickle it five times quickly and... ah... ah... CHOO! everyone up on it is sneezed off onto the grass), a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
@@ -588,6 +590,8 @@ e2e/                    Playwright browser tests in test mode
    (bottom, right, left, top) and colour, which matches Xbox, PlayStation and Switch-style pads. Hints show only to
    the children who need them (not to one already holding the spool, not to the one on the swing), and help meant for
    one child is drawn on that child's layer: in split screen only their own view shows it (`Hints.tsx`, `helpPaws.ts`).
+   Every attraction follows the same few rules (walk into it to get on, jump to get off, the stick steers, a bubble
+   where you get on): see **[docs/attractions.md](docs/attractions.md)**, a table of how each one is played.
 2. **Every button always does something visible and audible**, even when nothing is in range (the tongue still
    comes out, the headbutt still dashes).
 3. **No failure states.** Nothing is timed and nothing is lost. If you fall out of the world you pop back in, and an

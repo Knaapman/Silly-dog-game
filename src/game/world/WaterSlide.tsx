@@ -6,10 +6,10 @@ import { emit } from '../fx';
 import { rumble, type SourceId } from '../input';
 import { distXZ, WATER_LEVEL, WATER_SLIDE } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider } from '../runtime';
+import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
-import { Ramp, StaticBox, StaticCylinder } from './common';
+import { Ramp, StaticBox, StaticCylinder, useHint } from './common';
 import { useSeeThrough } from './seeThrough';
 import { randomStream } from '../rng';
 
@@ -133,7 +133,7 @@ export function WaterSlide() {
 
     // step into a slide at the top
     players.forEach((p) => {
-      if (p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null) return;
+      if (!canBoard(p)) return;
       if (rides.current.some((r) => r.rider === p.slot)) return;
       lanes.forEach((lane, i) => {
         const r = rides.current[i];
@@ -207,6 +207,8 @@ export function WaterSlide() {
 
   const rampTop: [number, number, number] = [TX, Y0 + H, TZ - HALF];
   const rampFoot: [number, number, number] = [TX, Y0, TZ - HALF - WATER_SLIDE.stairs];
+  // the way up is round the back of the tower: a bubble at the foot of the stairs
+  useHint([rampFoot[0], rampFoot[1] + 1, rampFoot[2]], 'walk', 4);
   const posts: [number, number][] = [
     [TX - HALF + 0.2, TZ - HALF + 0.2],
     [TX + HALF - 0.2, TZ - HALF + 0.2],

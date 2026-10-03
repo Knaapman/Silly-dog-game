@@ -7,7 +7,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { BALLOON, distXZ } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider } from '../runtime';
+import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
@@ -102,7 +102,7 @@ export function HotAirBalloon() {
     // climb in (on the pad)
     if (z.mode === 'wait' || z.mode === 'boarding') {
       for (const p of players.values()) {
-        if (z.riders.includes(p.slot) || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null) continue;
+        if (z.riders.includes(p.slot) || !canBoard(p)) continue;
         if (p.bot && kidsAboard() === 0) continue;
         if (distXZ(p.position.x, p.position.z, px, pz) > REACH || p.position.y < g - 0.3 || p.position.y > g + 2) continue;
         const free = z.riders.indexOf(null);
@@ -170,7 +170,8 @@ export function HotAirBalloon() {
     else z.pos.set(px, g, pz);
     if ((z.mode === 'rise' || z.mode === 'fly') && now >= z.nextBurn) burn(now);
 
-    // the riders: in their places; jump to climb out (an animal on its own lets the buddy out too)
+    // the riders: in their places; jump to climb out, on the way or still on the pad (an animal on
+    // its own lets the buddy out too)
     const kids = kidsAboard();
     z.riders.forEach((r, i) => {
       if (r == null) return;
@@ -182,18 +183,23 @@ export function HotAirBalloon() {
       const [sx, sz] = SPOTS[i];
       tmp.seat.set(z.pos.x + sx, z.pos.y + 0.65, z.pos.z + sz);
       const flying = z.mode === 'rise' || z.mode === 'fly' || z.mode === 'land';
-      const wantsOut = flying && (p.bot ? kids === 0 : getInput(p.source as SourceId).pressed.jump);
+      const wantsOut = (flying || z.mode === 'boarding') && (p.bot ? kids === 0 : getInput(p.source as SourceId).pressed.jump);
       if (!wantsOut) {
         p.hold(tmp.seat, false, Math.atan2(sx, sz));
         return;
       }
       z.riders[i] = null;
-      z.jumps += 1;
+      if (flying) z.jumps += 1;
       p.hold(null);
       tmp.out.set(z.pos.x + sx * 6, 0, z.pos.z + sz * 6);
       tmp.out.y = groundHeight(tmp.out.x, tmp.out.z);
       p.launchTo(tmp.out.clone(), z.pos.y + 1.5);
     });
+    // everybody climbed back out before it took off: it waits for the next lot
+    if (z.mode === 'boarding' && z.riders.every((r) => r == null)) {
+      z.mode = 'wait';
+      z.t = 0;
+    }
 
     // the picture: the basket where it is, a gentle bob and turn in the air, the burner's flame
     const gr = group.current;

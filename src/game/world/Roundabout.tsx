@@ -50,7 +50,7 @@ export function Roundabout() {
   const flungAt = useRef(new Map<number, number>());
   const loud = useRef(false);
   debugInfo.roundabout = roundabout;
-  useHint([cx, top + 0.8, cz], 'walk', 3.5);
+  useHint([cx, top + 0.8, cz], 'walk', 3.5, (p) => !roundabout.riders.includes(p.slot));
   // standing on it, it carries you round
   const surface = useMemo<Surface>(() => ({ velocityAt: (p, out) => out.set(roundabout.spin * (p.z - cz), 0, -roundabout.spin * (p.x - cx)) }), [cx, cz]);
   useSurface(deck, surface);

@@ -168,6 +168,14 @@ export function rider(slot: number | null | undefined): PlayerRuntime | undefine
 }
 
 /**
+ * Free to get on a ride: not flying or held by another ride already (`isLaunched`), not flopped,
+ * not on a friend's back and not on the end of a tongue. Rides that hold their rider check this.
+ */
+export function canBoard(p: PlayerRuntime) {
+  return !p.isLaunched() && !p.flopped && p.ridingOn == null && p.grabbedBy == null;
+}
+
+/**
  * Where each animal last stepped onto a launch pad, into a cannon or onto a geyser (game ms), so
  * the buddy can follow a child the same way.
  */
