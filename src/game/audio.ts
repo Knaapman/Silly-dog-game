@@ -24,6 +24,8 @@ let buses: Record<AudioCategory, GainNode> | null = null;
 let noiseBuffer: AudioBuffer | null = null;
 let activeVoices = 0;
 const MAX_VOICES = 48;
+/** No sound lasts longer than this (ms): a voice still holding its place then is freed. */
+const SAFETY_RELEASE_MS = 10_000;
 
 const settings = { muted: false, music: true, volume: 0.85 };
 const listeners = new Set<() => void>();
@@ -87,7 +89,7 @@ export function subscribeAudio(listener: () => void) {
 }
 
 export function getAudioState() {
-  return { ...settings, running: ctx?.state === 'running' };
+  return { ...settings, running: ctx?.state === 'running', voices: activeVoices };
 }
 
 /** Must be called from a real user gesture (click, tap, key) — gamepad presses don't count. */
@@ -200,8 +202,20 @@ function voice(category: AudioCategory, options: ChannelOptions = {}) {
   const input = c.createGain();
   input.gain.value = options.gain ?? 1;
   const nodes: AudioNode[] = [input];
-  if (options.position) {
-    const p = heardAt(toXYZ(options.position));
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    nodes.forEach((n) => n.disconnect());
+    activeVoices -= 1;
+  };
+  // (a sound that never gets to finish(): something threw while it was being put together. Free
+  // its place anyway, or after MAX_VOICES of those the park would go quiet for good.)
+  const safety = window.setTimeout(release, SAFETY_RELEASE_MS);
+  const where = options.position ? toXYZ(options.position) : null;
+  // (somewhere that isn't a number, an animal flung into NaN: play it, just not from anywhere)
+  if (where && Number.isFinite(where.x + where.y + where.z)) {
+    const p = heardAt(where);
     const panner = c.createPanner();
     panner.panningModel = 'equalpower';
     panner.distanceModel = 'inverse';
@@ -296,11 +310,9 @@ function voice(category: AudioCategory, options: ChannelOptions = {}) {
       end = Math.max(end, t0 + spec.dur);
     },
     finish() {
+      window.clearTimeout(safety);
       const ms = (end - c.currentTime) * 1000 + 120;
-      window.setTimeout(() => {
-        nodes.forEach((n) => n.disconnect());
-        activeVoices -= 1;
-      }, Math.max(0, ms));
+      window.setTimeout(release, Math.max(0, ms));
     }
   };
 }
