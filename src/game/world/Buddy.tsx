@@ -275,7 +275,7 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       // the child is on a swing: stand behind it (the swing does the pushing, with our hop)
       busy = true;
       stopAt = 0.25;
-      target.copy(swingHelp.spot);
+      target.copy(swingHelp.goto);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
     } else {
       // near a see-saw? get onto the far end (pushing it down if it's up) so the child can

@@ -157,7 +157,10 @@ test('playing alone: the buddy comes round behind your swing and pushes you high
   const buddy = await game.player(help.slot!);
   expect(buddy.z).toBeLessThan(cz - 0.8);
   expect(Math.abs(buddy.x - x)).toBeLessThan(1);
-  expect(amp((await swings(game)).seats[3])).toBeGreaterThan(0.6);
+  const s = await swings(game);
+  expect(amp(s.seats[3])).toBeGreaterThan(0.6);
+  // (it went round the side to get there, not through the swing's way)
+  expect(s.knocks).toBe(0);
   await game.seconds(0.2, true);
   await game.screenshot('test-results/swings-buddy.png');
   // off the swing: the buddy stops pushing

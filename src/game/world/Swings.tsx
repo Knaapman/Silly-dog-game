@@ -42,7 +42,7 @@ const SEAT_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#ffd23f'];
 type Seat = Swing & { rider: number | null; since: number; prev: number; knocked: Map<number, number>; lastWhoosh: number };
 
 /** The buddy pushing a child on a swing: where to stand (read by the buddy's brain). */
-export const swingHelp = { slot: null as number | null, seat: -1, spot: new THREE.Vector3(), since: 0, nextTry: 0, pushes: 0 };
+export const swingHelp = { slot: null as number | null, seat: -1, spot: new THREE.Vector3(), goto: new THREE.Vector3(), since: 0, nextTry: 0, pushes: 0 };
 
 export function Swings() {
   const [cx, cz] = SWINGS.center;
@@ -256,6 +256,10 @@ function buddyPushes(seats: Seat[], xs: number[], g: number, cz: number, now: nu
   // stand just behind where the seat swings back to (further back as it swings higher)
   const amp = amplitude(s);
   h.spot.set(xs[h.seat], g, cz - SWING_LENGTH * Math.sin(Math.min(amp, BUDDY_MAX)) - 1.05);
+  // coming from the front: round by the gap next to the seat, not through the swing's way
+  const middle = (xs[0] + xs[xs.length - 1]) / 2;
+  if (b.position.z > cz - 0.3) h.goto.set(middle + Math.sign(xs[h.seat] - middle) * SWINGS.spacing, g, cz - 0.9);
+  else h.goto.copy(h.spot);
   const there = distXZ(b.position.x, b.position.z, h.spot.x, h.spot.z) < 0.7 && !b.isLaunched();
   if (!there) {
     if (now - h.since > BUDDY_GIVE_UP * 1000) {
