@@ -7,7 +7,7 @@ import { nearestTreasure } from '../hunt';
 import { rumble } from '../input';
 import { distXZ, TREES } from '../layout';
 import { treeShakeListeners } from '../chase';
-import { players, propPosition, props, shakeCamera } from '../runtime';
+import { kiteLift, players, propPosition, props, shakeCamera } from '../runtime';
 import { useGame } from '../store';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
@@ -30,6 +30,8 @@ export const TRICK = {
   glideFall: 2.2,
   /** ...and steers better than a normal jump in the air. */
   glideAccel: 9,
+  /** Holding a kite flying high, you fall no faster than this (m/s). */
+  kiteFall: 2.6,
   pigMud: 12,
   pigToot: 11,
   pigTootAir: 9,
@@ -47,6 +49,13 @@ export const TRICK = {
 /** Duck: hold jump while falling to glide down slowly, feathers drifting behind. */
 export function glide(f: FrameCtx, controlling: boolean) {
   const { s, input, v, t } = f;
+  // (any animal holding a kite that's flying high floats down gently too)
+  const lift = kiteLift.get(f.slot) ?? 0;
+  if (lift > 0.6 && !s.grounded && !s.swimming && v.y < 0 && s.launched <= 0) {
+    v.y = Math.max(v.y, -TRICK.kiteFall);
+    s.gliding = true;
+    return;
+  }
   const gliding = f.species === 'duck' && controlling && !s.grounded && !s.swimming && input.held.jump && v.y < 0 && s.launched <= 0;
   if (gliding) {
     v.y = Math.max(v.y, -TRICK.glideFall);

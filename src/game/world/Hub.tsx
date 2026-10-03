@@ -12,6 +12,7 @@ import { HatRack } from './HatRack';
 import { HotAirBalloon } from './HotAirBalloon';
 import { Moles } from './Moles';
 import { PhotoWall } from './PhotoWall';
+import { Kites } from './Kites';
 
 function Fountain() {
   const [cx, cz] = FOUNTAIN.center;
@@ -126,6 +127,7 @@ export function Hub() {
       <HotAirBalloon />
       <Moles />
       <PhotoWall />
+      <Kites />
       {LAMP_POSTS.map((p, i) => (
         <LampPost key={i} position={[p[0], 0, p[1]] as Vec3} />
       ))}

@@ -314,6 +314,8 @@ export const HILLS: { center: Vec2; radius: number; height: number }[] = [
   { center: [-27, 45], radius: 5, height: 2.2 },
   { center: [-36, -52], radius: 6, height: 2.6 }
 ];
+/** Kites: three spools of string on the top of the first hill (north of the mesa). */
+export const KITES = { hill: HILLS[0].center, ring: 1.3 };
 
 /** Big boulders on the mountain's slopes: climb up, jump off. */
 export const BOULDERS: { at: Vec2; r: number }[] = [

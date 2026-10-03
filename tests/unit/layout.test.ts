@@ -45,6 +45,8 @@ add('molehills', L.MOLES.center[0], L.MOLES.center[1], 3);
 add('blocks', L.BLOCKS.center[0], L.BLOCKS.center[1], L.BLOCKS.ring + L.BLOCKS.size);
 // the roundabout (and room to run round it, pushing)
 add('roundabout', L.ROUNDABOUT.center[0], L.ROUNDABOUT.center[1], L.ROUNDABOUT.radius + 1.1);
+// the kite spools on top of their hill
+add('kites', L.KITES.hill[0], L.KITES.hill[1], L.KITES.ring + 0.5, { slopeOk: true });
 // the xylophone: a row of circles along its keys, and the songbird's post
 for (let i = 0; i < 5; i += 1) add(`xylophone ${i}`, L.XYLOPHONE.center[0] + (i - 2) * 3.1, L.XYLOPHONE.center[1], 1.8);
 add('songbird post', L.XYLOPHONE.bird[0], L.XYLOPHONE.bird[1], 0.5);
@@ -205,7 +207,8 @@ describe('park layout', () => {
       ['penguin shy', L.PENGUIN_SHY.center[0] + 0.5, L.PENGUIN_SHY.center[1], 3],
       ['molehills', L.MOLES.center[0], L.MOLES.center[1], 3],
       ['blocks', L.BLOCKS.center[0], L.BLOCKS.center[1], L.BLOCKS.ring + L.BLOCKS.size],
-      ['roundabout', L.ROUNDABOUT.center[0], L.ROUNDABOUT.center[1], L.ROUNDABOUT.radius + 1.1]
+      ['roundabout', L.ROUNDABOUT.center[0], L.ROUNDABOUT.center[1], L.ROUNDABOUT.radius + 1.1],
+      ['kites', L.KITES.hill[0], L.KITES.hill[1], L.KITES.ring + 0.5]
     ];
     const out: string[] = [];
     for (const t of L.TREASURE_SPOTS) {
