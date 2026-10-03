@@ -112,8 +112,8 @@ to climb out. A ball floats in the water, a headbutt sends it rolling (with whoe
 somewhere pops back into its row after a while. Playing alone, the buddy climbs into the next ball and rolls after
 you. (A sticker for a good long roll.)
 
-**The hot air balloon** 🎈 waits on its pad on the grass east of the plaza, a big striped balloon with a wicker
-basket. Climb in (there's room for four); a moment later the burner roars and up it goes, high over the park, and
+**The hot air balloon** 🎈 waits on its pad on the grass by the T-rex, between the plaza and the playground: a big
+striped balloon with a wicker basket. Climb in (there's room for four); a moment later the burner roars and up it goes, high over the park, and
 floats slowly round a big loop over the playground, the beach and the lagoon (about a minute), then back down onto its
 pad, where everyone steps out. Jump to climb out on the way and down you drop: into the lagoon, onto the bouncy
 castle, wherever you like. An empty balloon finishes its loop and comes home by itself. A sticker for going up, and a
@@ -295,10 +295,10 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 
 | Area | What is there |
 |---|---|
-| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), the **bubble machine** on the grass to the south-east, and the **hot air balloon** to the east |
+| ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
-| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises |
+| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
 | ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build, a snowball fight |

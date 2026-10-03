@@ -12,7 +12,7 @@ import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
 
-// The hot air balloon on the grass east of the plaza. Climb into the basket (there's room for
+// The hot air balloon on the grass by the T-rex. Climb into the basket (there's room for
 // four); a moment later the burner roars and up it goes, high over the park, floating slowly
 // round a big loop over the playground, the beach and the lagoon, then back down onto its pad,
 // where everyone steps out. Jump to climb out on the way (down you drop: into the lagoon, onto
