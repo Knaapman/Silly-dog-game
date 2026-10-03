@@ -11,6 +11,9 @@ import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { Ramp, StaticBox, StaticCylinder } from './common';
 import { useSeeThrough } from './seeThrough';
+import { randomStream } from '../rng';
+
+const random = randomStream('waterSlide');
 
 // The water slide on the lagoon's east shore: walk up the stairs on the tower's north side,
 // step into the red slide or the blue one at the top, and whoosh: round the bends, over the
@@ -182,7 +185,7 @@ export function WaterSlide() {
         r.spray = 0.06;
         emit('drop', [tmp.pos.x, tmp.pos.y - 0.2, tmp.pos.z], { count: 2, color: ['#bfe9ff', '#ffffff'], speed: 1.5 + r.v * 0.2, up: 1.5, size: 0.08, life: 0.5 });
       }
-      if (Math.random() < dt * 4) rumble(p.source as SourceId, 0.15, 0.3, 60);
+      if (random() < dt * 4) rumble(p.source as SourceId, 0.15, 0.3, 60);
       if (r.d >= lane.length) {
         // off the end and out over the lagoon: splash!
         p.hold(null);

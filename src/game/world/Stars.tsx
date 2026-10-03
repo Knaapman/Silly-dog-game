@@ -6,6 +6,9 @@ import { GOLDEN_STARS } from '../layout';
 import { players, shakeCamera } from '../runtime';
 import { useGame } from '../store';
 import { gameClock, useGameFrame } from '../clock';
+import { randomStream } from '../rng';
+
+const random = randomStream('stars');
 
 let starGeometry: THREE.ExtrudeGeometry | null = null;
 export function getStarGeometry() {
@@ -59,7 +62,7 @@ export function GoldenStar({ index, position, getPosition }: { index: number; po
   const collected = useGame((s) => s.stars[index]);
   const group = useRef<THREE.Group>(null);
   const pos = useMemo(() => new THREE.Vector3(), []);
-  const sparkle = useRef(Math.random() * 0.3);
+  const sparkle = useRef(random() * 0.3);
 
   useGameFrame((_, delta) => {
     const g = group.current;

@@ -10,6 +10,9 @@ import { useHint } from './common';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
+import { randomStream } from '../rng';
+
+const random = randomStream('launchers');
 
 let chevronCache: THREE.Shape | null = null;
 function chevronShape() {
@@ -30,7 +33,7 @@ function chevronShape() {
 export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
   const chevrons = useRef<THREE.Group>(null);
   const angle = Math.atan2(pad.target[0] - pad.position[0], pad.target[2] - pad.position[2]);
-  const sparkle = useRef(Math.random());
+  const sparkle = useRef(random());
   const cooldown = useRef(new Map<number, number>());
   const target = useMemo(() => new THREE.Vector3(...pad.target), [pad]);
   const padY = groundHeight(pad.position[0], pad.position[2]);
@@ -45,7 +48,7 @@ export function LaunchPad({ pad }: { pad: LaunchPadDef }) {
     sparkle.current -= delta;
     if (sparkle.current <= 0) {
       sparkle.current = 0.25;
-      emit('star', [pad.position[0] + (Math.random() - 0.5) * 1.6, padY + 0.2, pad.position[2] + (Math.random() - 0.5) * 1.6], {
+      emit('star', [pad.position[0] + (random() - 0.5) * 1.6, padY + 0.2, pad.position[2] + (random() - 0.5) * 1.6], {
         count: 1,
         color: ['#fff3a8', '#ffffff'],
         speed: 0.3,
@@ -107,13 +110,13 @@ export function Geyser({ at, target, apex, period = 5, offset = 0 }: { at: Vec2;
       c.scale.set(1, Math.max(0.01, h * 7), 1);
       c.position.y = (h * 7) / 2;
     }
-    if (warming && Math.random() < 0.3) emit('drop', [at[0], 0.2, at[1]], { count: 1, color: '#bfe9ff', speed: 0.6, up: 2, size: 0.1 });
+    if (warming && random() < 0.3) emit('drop', [at[0], 0.2, at[1]], { count: 1, color: '#bfe9ff', speed: 0.6, up: 2, size: 0.1 });
     if (erupting && lastPhase.current >= 1.4) {
       playGeyser([at[0], 1, at[1]]);
       ring([at[0], 0.08, at[1]], { color: '#d9f3ff', radius: 2.5, duration: 0.5 });
     }
     if (erupting) {
-      if (Math.random() < 0.6) emit('drop', [at[0], 1 + Math.random() * 5, at[1]], { count: 2, color: ['#bfe9ff', '#ffffff'], speed: 2.5, up: 3 });
+      if (random() < 0.6) emit('drop', [at[0], 1 + random() * 5, at[1]], { count: 2, color: ['#bfe9ff', '#ffffff'], speed: 2.5, up: 3 });
       players.forEach((p) => {
         if (p.isLaunched() || p.flopped) return;
         if (distXZ(p.position.x, p.position.z, at[0], at[1]) > 1.4 || p.position.y > 2) return;
@@ -125,7 +128,7 @@ export function Geyser({ at, target, apex, period = 5, offset = 0 }: { at: Vec2;
       props.forEach((prop) => {
         if (prop.heldBy != null || !propPosition(prop, tmp)) return;
         if (distXZ(tmp.x, tmp.z, at[0], at[1]) > 1.3 || tmp.y > 2) return;
-        prop.getBody()?.setLinvel({ x: (Math.random() - 0.5) * 3, y: 15, z: (Math.random() - 0.5) * 3 }, true);
+        prop.getBody()?.setLinvel({ x: (random() - 0.5) * 3, y: 15, z: (random() - 0.5) * 3 }, true);
       });
     }
     lastPhase.current = t;
@@ -199,7 +202,7 @@ export function Cannon({ position, target, apex }: { position: Vec3; target: Vec
         emit('puff', muzzle, { count: 22, color: ['#ffffff', '#cfd8dc', '#90a4ae'], speed: 4, up: 2, size: 0.5, dir: [dir.x * 5, 1, dir.z * 5] });
         emit('confetti', muzzle, { count: 30, speed: 5, up: 6 });
         shakeCamera(0.5);
-      } else if (Math.random() < 0.5) {
+      } else if (random() < 0.5) {
         emit('star', [muzzle.x - dir.x * 2.2, muzzle.y - 0.6, muzzle.z - dir.z * 2.2], { count: 1, color: ['#ffb020', '#ffe14d'], speed: 1.5, up: 2, size: 0.1 });
       }
     }

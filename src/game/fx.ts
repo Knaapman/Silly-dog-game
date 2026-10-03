@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { randomStream } from './rng';
+
+const random = randomStream('fx');
 
 // Pooled particle + shockwave-ring data. Pure data so anything (store, props, players)
 // can emit effects without React; FxRenderer draws the pools with instanced meshes.
@@ -90,29 +93,29 @@ export function emit(kind: ParticleKind, at: PointLike, options: EmitOptions = {
 
   for (let n = 0; n < count; n += 1) {
     // Recycle the oldest slot when the pool is full.
-    const i = pool.count < pool.max ? pool.count++ : Math.floor(Math.random() * pool.max);
-    const a = Math.random() * Math.PI * 2;
-    const r = Math.random();
+    const i = pool.count < pool.max ? pool.count++ : Math.floor(random() * pool.max);
+    const a = random() * Math.PI * 2;
+    const r = random();
     pool.px[i] = p.x + Math.cos(a) * spread * r;
-    pool.py[i] = p.y + (Math.random() - 0.5) * spread;
+    pool.py[i] = p.y + (random() - 0.5) * spread;
     pool.pz[i] = p.z + Math.sin(a) * spread * r;
-    const s = speed * (0.4 + Math.random() * 0.6);
+    const s = speed * (0.4 + random() * 0.6);
     pool.vx[i] = Math.cos(a) * s + dir[0];
-    pool.vy[i] = up * (0.5 + Math.random() * 0.7) + dir[1];
+    pool.vy[i] = up * (0.5 + random() * 0.7) + dir[1];
     pool.vz[i] = Math.sin(a) * s + dir[2];
-    pool.rx[i] = Math.random() * Math.PI * 2;
-    pool.ry[i] = Math.random() * Math.PI * 2;
-    pool.rz[i] = Math.random() * Math.PI * 2;
-    pool.wx[i] = (Math.random() - 0.5) * 14;
-    pool.wy[i] = (Math.random() - 0.5) * 14;
-    pool.wz[i] = (Math.random() - 0.5) * 14;
-    const life = (options.life ?? d.life) * (0.75 + Math.random() * 0.5);
+    pool.rx[i] = random() * Math.PI * 2;
+    pool.ry[i] = random() * Math.PI * 2;
+    pool.rz[i] = random() * Math.PI * 2;
+    pool.wx[i] = (random() - 0.5) * 14;
+    pool.wy[i] = (random() - 0.5) * 14;
+    pool.wz[i] = (random() - 0.5) * 14;
+    const life = (options.life ?? d.life) * (0.75 + random() * 0.5);
     pool.life[i] = life;
     pool.maxLife[i] = life;
-    pool.size[i] = (options.size ?? d.size) * (0.7 + Math.random() * 0.6);
+    pool.size[i] = (options.size ?? d.size) * (0.7 + random() * 0.6);
     pool.gravity[i] = options.gravity ?? d.gravity;
     pool.drag[i] = options.drag ?? d.drag;
-    tmpColor.set(colors[Math.floor(Math.random() * colors.length)]);
+    tmpColor.set(colors[Math.floor(random() * colors.length)]);
     pool.r[i] = tmpColor.r;
     pool.g[i] = tmpColor.g;
     pool.b[i] = tmpColor.b;

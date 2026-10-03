@@ -13,6 +13,9 @@ import { HotAirBalloon } from './HotAirBalloon';
 import { Moles } from './Moles';
 import { PhotoWall } from './PhotoWall';
 import { Kites } from './Kites';
+import { randomStream } from '../rng';
+
+const random = randomStream('hub');
 
 function Fountain() {
   const [cx, cz] = FOUNTAIN.center;
@@ -26,7 +29,7 @@ function Fountain() {
     drip.current -= delta;
     if (drip.current <= 0) {
       drip.current = 0.05;
-      const a = Math.random() * Math.PI * 2;
+      const a = random() * Math.PI * 2;
       emit('drop', [cx + Math.cos(a) * 0.3, FOUNTAIN.topHeight + 0.9, cz + Math.sin(a) * 0.3], {
         count: 1,
         color: ['#bfe9ff', '#ffffff'],

@@ -12,6 +12,9 @@ import { earnSticker } from '../stickers';
 import { amplitude, fling, pushSwing, seatOffset, seatSpeed, stepSwing, SWING_LENGTH, SWING_PIVOT, type Swing } from '../swing';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('swings');
 
 // The swings, on the playground's east side: a seat for each child. Walk into one and sit;
 // push the stick (any way) and it swings higher and higher. A friend can headbutt the seat for
@@ -154,7 +157,7 @@ export function Swings() {
           }
         } else {
           p.hold(tmp.seat, false, 0);
-          if (amplitude(s) > 1 && Math.random() < dt * 4) emit('star', tmp.seat, { count: 1, color: ['#ffd23f', '#ffffff'], speed: 1, up: 0.5, size: 0.12, life: 0.6 });
+          if (amplitude(s) > 1 && random() < dt * 4) emit('star', tmp.seat, { count: 1, color: ['#ffd23f', '#ffffff'], speed: 1, up: 0.5, size: 0.12, life: 0.6 });
         }
       }
 

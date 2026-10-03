@@ -9,6 +9,9 @@ import { allocPropId, players, registerProp, spawners, type PropEntry } from '..
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { groundHeight } from '../terrain';
+import { randomStream } from '../rng';
+
+const random = randomStream('critters');
 
 function lerpAngle(a: number, b: number, t: number) {
   let d = b - a;
@@ -128,16 +131,16 @@ function Cow({ index }: { index: number }) {
           c.mode = 'walk';
           c.timer = 6;
           c.target.set(
-            PASTURE.center[0] + (Math.random() - 0.5) * (PASTURE.size[0] - 3),
+            PASTURE.center[0] + (random() - 0.5) * (PASTURE.size[0] - 3),
             0,
-            PASTURE.center[1] + (Math.random() - 0.5) * (PASTURE.size[1] - 3)
+            PASTURE.center[1] + (random() - 0.5) * (PASTURE.size[1] - 3)
           );
         }
       } else {
         const d = distXZ(t.x, t.z, c.target.x, c.target.z);
         if (d < 0.8 || c.timer <= 0) {
           c.mode = 'graze';
-          c.timer = 3 + Math.random() * 4;
+          c.timer = 3 + random() * 4;
         } else {
           c.facing = lerpAngle(c.facing, Math.atan2(c.target.x - t.x, c.target.z - t.z), 1 - Math.exp(-3 * dt));
           speed = 1.1;
@@ -147,7 +150,7 @@ function Cow({ index }: { index: number }) {
       rb.setLinvel({ x: v.x + (Math.sin(c.facing) * speed - v.x) * k, y: v.y, z: v.z + (Math.cos(c.facing) * speed - v.z) * k }, true);
       c.mooIn -= dt;
       if (c.mooIn <= 0) {
-        c.mooIn = 8 + Math.random() * 10;
+        c.mooIn = 8 + random() * 10;
         playMoo(t);
       }
     }

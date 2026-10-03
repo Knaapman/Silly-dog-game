@@ -18,15 +18,19 @@ import { Prop } from './Prop';
 import { useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { useSeeThrough } from './seeThrough';
+import { randomStream } from '../rng';
+import { systemOff } from '../testMode';
+
+const random = randomStream('farm');
 
 function Mud() {
   const bubbleTimer = useRef(0);
   useGameFrame((_, delta) => {
     bubbleTimer.current -= delta;
     if (bubbleTimer.current <= 0) {
-      bubbleTimer.current = 0.4 + Math.random() * 0.8;
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * MUD.radius * 0.8;
+      bubbleTimer.current = 0.4 + random() * 0.8;
+      const a = random() * Math.PI * 2;
+      const r = random() * MUD.radius * 0.8;
       emit('puff', [MUD.center[0] + Math.cos(a) * r, 0.05, MUD.center[1] + Math.sin(a) * r], { count: 1, color: '#7a5634', size: 0.18, speed: 0.1, up: 0.4, life: 0.6 });
     }
   });
@@ -267,7 +271,7 @@ export function Farm() {
       <Windmill />
       <Fence />
       <Cows />
-      <Chickens />
+      {!systemOff('chickens') && <Chickens />}
       <MelonPatch />
       <Tractor />
       <GiantCarrot />

@@ -3,6 +3,9 @@ import { GRAVITY } from '../config';
 import { SPAWN_POINTS } from '../layout';
 import { playersCentroid } from '../runtime';
 import { groundHeight } from '../terrain';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.physics');
 
 export function lerpAngle(a: number, b: number, t: number) {
   let d = b - a;
@@ -28,7 +31,7 @@ export function pickSpawn(slot: number) {
   const others = new THREE.Vector3();
   const count = playersCentroid(others, slot);
   if (count > 0) {
-    const a = Math.random() * Math.PI * 2;
+    const a = random() * Math.PI * 2;
     const x = others.x + Math.cos(a) * 2.5;
     const z = others.z + Math.sin(a) * 2.5;
     // (above the ground there: the others may be up the mountain)

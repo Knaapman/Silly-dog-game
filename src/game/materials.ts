@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { randomStream } from './rng';
+
+const random = randomStream('materials');
 
 // Shared matte "toy" materials. Lambert is cheap enough for older tablets.
 const cache = new Map<string, THREE.MeshLambertMaterial>();
@@ -63,8 +66,8 @@ export const grassTexture = () =>
           ctx.fillRect(0, (i * s) / 4, s, s / 4);
         }
         for (let i = 0; i < 900; i += 1) {
-          ctx.fillStyle = Math.random() < 0.5 ? 'rgba(40,110,40,0.25)' : 'rgba(170,230,120,0.25)';
-          ctx.fillRect(Math.random() * s, Math.random() * s, 2, 3);
+          ctx.fillStyle = random() < 0.5 ? 'rgba(40,110,40,0.25)' : 'rgba(170,230,120,0.25)';
+          ctx.fillRect(random() * s, random() * s, 2, 3);
         }
       },
       20
@@ -152,13 +155,13 @@ export const hayTexture = () =>
       ctx.fillStyle = '#e8c35a';
       ctx.fillRect(0, 0, s, s);
       for (let i = 0; i < 260; i += 1) {
-        ctx.strokeStyle = Math.random() < 0.5 ? '#c9a13b' : '#f7dc84';
+        ctx.strokeStyle = random() < 0.5 ? '#c9a13b' : '#f7dc84';
         ctx.lineWidth = 1.5;
-        const x = Math.random() * s;
-        const y = Math.random() * s;
+        const x = random() * s;
+        const y = random() * s;
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x + (Math.random() - 0.5) * 6, y + 10 + Math.random() * 10);
+        ctx.lineTo(x + (random() - 0.5) * 6, y + 10 + random() * 10);
         ctx.stroke();
       }
     })
@@ -188,9 +191,9 @@ export const pathTexture = () =>
         ctx.fillStyle = '#ecd29a';
         ctx.fillRect(0, 0, s, s);
         for (let i = 0; i < 300; i += 1) {
-          ctx.fillStyle = Math.random() < 0.5 ? 'rgba(190,150,90,0.35)' : 'rgba(255,245,210,0.4)';
+          ctx.fillStyle = random() < 0.5 ? 'rgba(190,150,90,0.35)' : 'rgba(255,245,210,0.4)';
           ctx.beginPath();
-          ctx.arc(Math.random() * s, Math.random() * s, 1 + Math.random() * 2, 0, Math.PI * 2);
+          ctx.arc(random() * s, random() * s, 1 + random() * 2, 0, Math.PI * 2);
           ctx.fill();
         }
       },
@@ -236,7 +239,7 @@ export const speckleTexture = (key: string, base: string, dots: string[], repeat
         for (let i = 0; i < 260; i += 1) {
           ctx.fillStyle = dots[i % dots.length];
           ctx.beginPath();
-          ctx.arc(Math.random() * size, Math.random() * size, 0.8 + Math.random() * 1.8, 0, Math.PI * 2);
+          ctx.arc(random() * size, random() * size, 0.8 + random() * 1.8, 0, Math.PI * 2);
           ctx.fill();
         }
       },

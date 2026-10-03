@@ -9,6 +9,9 @@ import { discardPendingPresses, padIdOf, rumbleAll, type SourceId } from './inpu
 import { after, gameNow } from './clock';
 import { unlockedHats, useProgress } from './progress';
 import { earnSticker, unlockedSpecies } from './stickers';
+import { randomStream } from './rng';
+
+const random = randomStream('store');
 
 // Reactive state only for things the UI / scene graph needs to re-render on.
 // Per-frame data lives in runtime.ts.
@@ -82,7 +85,7 @@ interface GameStore {
 function pickRandomHat(current: HatId): HatId {
   const options = unlockedHats().filter((h) => h !== 'none' && h !== current);
   if (options.length === 0) return current === 'none' ? (unlockedHats().find((h) => h !== 'none') ?? 'none') : current;
-  return options[Math.floor(Math.random() * options.length)];
+  return options[Math.floor(random() * options.length)];
 }
 
 export const useGame = create<GameStore>((set, get) => {

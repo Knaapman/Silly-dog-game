@@ -12,6 +12,9 @@ import { useGame } from '../store';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { startFlip, type FrameCtx } from './frame';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.tricks');
 
 // Every animal has a trick of its own, on the buttons it already has (no new buttons to learn):
 //
@@ -60,7 +63,7 @@ export function glide(f: FrameCtx, controlling: boolean) {
   if (gliding) {
     v.y = Math.max(v.y, -TRICK.glideFall);
     s.glideTime += f.dt;
-    if (Math.random() < f.dt * 8) emit('puff', [t.x, t.y + 0.2, t.z], { count: 1, color: ['#ffffff', '#fff3a8'], speed: 0.6, up: 0.2, size: 0.12, gravity: 0.3, life: 1 });
+    if (random() < f.dt * 8) emit('puff', [t.x, t.y + 0.2, t.z], { count: 1, color: ['#ffffff', '#fff3a8'], speed: 0.6, up: 0.2, size: 0.12, gravity: 0.3, life: 1 });
     if (s.glideTime > 1.2) earnSticker('glide');
   } else s.glideTime = 0;
   s.gliding = gliding;
@@ -75,7 +78,7 @@ export function woolBounce(f: FrameCtx) {
   v.y = Math.min(TRICK.sheepMax, impact * TRICK.sheepKeep);
   s.jumps = 1;
   s.squash = 0.45;
-  playBoing(s.pos, 0.7 + Math.random() * 0.2);
+  playBoing(s.pos, 0.7 + random() * 0.2);
   emit('puff', [t.x, s.groundY + 0.2, t.z], { count: 10, color: ['#ffffff', '#f3efe6'], speed: 2.5, up: 1, size: 0.35 });
   rumble(f.source, 0.2, 0.5, 100);
   // (the sticker wants a real jump: dropping in when joining bounces too, but doesn't count)

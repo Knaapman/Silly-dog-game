@@ -9,6 +9,9 @@ import { props } from '../runtime';
 import { isInWater, waterLevelAt } from '../terrain';
 import { gameClock, useGameFrame } from '../clock';
 import { nearAnyCamera } from '../views';
+import { randomStream } from '../rng';
+
+const random = randomStream('water');
 
 // The water: one big sheet at WATER_LEVEL (the sea, the lagoon and the river all show through
 // wherever the ground is cut below it), the stream tumbling down the mountain's face on its own
@@ -174,7 +177,7 @@ function Flow() {
     foam.current -= delta;
     if (foam.current > 0) return;
     foam.current = 0.12;
-    emit('puff', [FALLS_FOOT[0] + (Math.random() - 0.5) * 4, WATER_LEVEL + 0.2, FALLS_FOOT[1] - Math.random() * 2], {
+    emit('puff', [FALLS_FOOT[0] + (random() - 0.5) * 4, WATER_LEVEL + 0.2, FALLS_FOOT[1] - random() * 2], {
       count: 2,
       color: ['#ffffff', '#e0f6ff'],
       size: 0.45,
@@ -183,8 +186,8 @@ function Flow() {
       gravity: 0.5,
       life: 1.2
     });
-    const a = RIVER[1 + Math.floor(Math.random() * 2)];
-    emit('drop', [a.p[0] + (Math.random() - 0.5) * 3, a.level + 0.6, a.p[1]], { count: 2, color: ['#ffffff', '#bfe9ff'], speed: 1.5, up: 2, size: 0.12, dir: [0, 0, 2.5] });
+    const a = RIVER[1 + Math.floor(random() * 2)];
+    emit('drop', [a.p[0] + (random() - 0.5) * 3, a.level + 0.6, a.p[1]], { count: 2, color: ['#ffffff', '#bfe9ff'], speed: 1.5, up: 2, size: 0.12, dir: [0, 0, 2.5] });
   });
   return <mesh geometry={geometry} material={material} renderOrder={1} />;
 }

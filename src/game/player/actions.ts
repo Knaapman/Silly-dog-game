@@ -26,6 +26,9 @@ import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
 import { releaseFriend, releaseHeld, type FrameCtx } from './frame';
 import { earnSticker } from '../stickers';
 import { mightyMoo, sniff, TRICK } from './tricks';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.actions');
 
 /** How long a tongue can hang on to a friend (seconds). */
 const FRIEND_HOLD_MAX = 4;
@@ -327,7 +330,7 @@ export function poop(f: FrameCtx) {
     // Squat for a moment; the poop comes out partway through.
     s.poopPresses -= 1;
     s.poopTime = 0.34;
-    s.poopQueued = { size: 0.75 + 0.13 * s.belly, golden: s.belly >= BELLY_MAX && Math.random() < 0.35 };
+    s.poopQueued = { size: 0.75 + 0.13 * s.belly, golden: s.belly >= BELLY_MAX && random() < 0.35 };
     s.squash = 0.25;
   }
   if (s.flopped || s.holdAt) {
@@ -346,7 +349,7 @@ export function poop(f: FrameCtx) {
       s.bellyVel -= 2.5;
       const back = (0.55 + 0.26 * size) * s.size;
       // a little to the left or right, so a row of poops spreads out instead of stacking
-      const side = (Math.random() - 0.5) * 0.6;
+      const side = (random() - 0.5) * 0.6;
       tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -back);
       tmp.c.x += tmp.fwd.z * side;
       tmp.c.z -= tmp.fwd.x * side;
@@ -456,7 +459,7 @@ export function headbutt(f: FrameCtx) {
       const v = prop.launch * (giant ? 1.5 : 1) * (goat ? TRICK.goatBonk : 1);
       pb.wakeUp();
       pb.setLinvel({ x: tmp.d.x * v, y: v * 0.55 + 2, z: tmp.d.z * v }, true);
-      pb.setAngvel({ x: (Math.random() - 0.5) * 12, y: (Math.random() - 0.5) * 12, z: (Math.random() - 0.5) * 12 }, true);
+      pb.setAngvel({ x: (random() - 0.5) * 12, y: (random() - 0.5) * 12, z: (random() - 0.5) * 12 }, true);
     }
     prop.onBonk?.(slot, tmp.d);
     bonkStars([tmp.p.x, tmp.p.y + 0.3, tmp.p.z]);

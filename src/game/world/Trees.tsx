@@ -10,6 +10,9 @@ import { treeShakeListeners } from '../chase';
 import { groundHeight } from '../terrain';
 import { Prop } from './Prop';
 import { gameClock, useGameFrame } from '../clock';
+import { randomStream } from '../rng';
+
+const random = randomStream('trees');
 
 // All trees are instanced (one draw call per tree part) but each one can still be
 // headbutted: it wobbles and drops apples or coconuts.
@@ -194,7 +197,7 @@ export function Trees() {
   const nextId = useRef(1);
 
   useEffect(() => {
-    spawners.apple = (p, color = Math.random() < 0.3 ? '#9ccc3c' : '#e53935') => {
+    spawners.apple = (p, color = random() < 0.3 ? '#9ccc3c' : '#e53935') => {
       const id = nextId.current++;
       setApples((list) => [...list, { id, pos: [p.x, p.y, p.z] as Vec3, color }].slice(-MAX_APPLES));
     };
@@ -211,9 +214,9 @@ export function Trees() {
           emit('confetti', [tree.at[0], 3.2, tree.at[1]], { count: 14, color: fall.leaves, speed: 3, up: 1, size: 1.4 });
           if (tree.kind === 'snowpine') emit('puff', [tree.at[0], 3, tree.at[1]], { count: 16, color: '#ffffff', speed: 3, up: -1, size: 0.35 });
           if (!fall.item) return;
-          const n = 1 + Math.floor(Math.random() * 2);
+          const n = 1 + Math.floor(random() * 2);
           for (let k = 0; k < n; k += 1) {
-            const a = Math.random() * Math.PI * 2;
+            const a = random() * Math.PI * 2;
             spawners.apple(
               new THREE.Vector3(tree.at[0] + Math.cos(a) * 1.1, 3.6, tree.at[1] + Math.sin(a) * 1.1),
               fall.item === 'coconut' ? '#6d4c2f' : undefined

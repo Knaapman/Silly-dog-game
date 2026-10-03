@@ -456,7 +456,11 @@ all its work between steps, and only the last step of a batch is drawn. Nothing 
 storage. The same seed and the same presses therefore play out identically, down to the last bit, on any machine
 (`e2e/determinism.spec.ts` checks exactly that, with keyboard and controller players). In test mode controllers
 are read once per simulated frame instead of on a real-time timer, so a test's button presses always land on the
-same frame. The browser tests in `e2e/` drive the game this way through the
+same frame. Each part of the park draws its random numbers from a stream of its own (`rng.ts`), seeded from the
+test's seed and the part's name, so a change in one part (a new particle effect, a cat that turns once more) no longer
+shifts what every other part does. A test can also leave out the roaming animals it doesn't need with
+`game.open(seed, { off: ['cats', 'birds', 'chickens'] })` (`?test=1&off=cats,birds`); `e2e/streams.spec.ts` checks
+that the cats roam exactly the same with or without the birds and chickens. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
 and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
@@ -480,7 +484,8 @@ src/
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
-    testMode.ts         ?test=<seed>
+    testMode.ts         ?test=<seed>, and &off= to leave out roaming animals
+    rng.ts              random streams: one per part of the park (seeded per part in test mode)
     store.ts            reactive state for UI: players, party meter, stars, menu
     hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area; every other round one up high), found, the chest
     skycourse.ts        how far up the sky course anyone has got (the flags)

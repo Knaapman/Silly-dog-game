@@ -13,6 +13,9 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('giantCarrot');
 
 // The giant carrot: its leaves stick out of a mound of earth east of the farm. Grab them with
 // your tongue and you hang on; push the stick away from the carrot to pull. Alone it comes up
@@ -310,13 +313,13 @@ export function GiantCarrot() {
         const lean = pl.pulling ? 0.35 + Math.sin(now / 70 + slot) * 0.06 : 0;
         tmp.a.copy(spot.out).multiplyScalar(lean).add(spot.at);
         p.hold(tmp.a, false, Math.atan2(-spot.out.x, -spot.out.z));
-        if (pl.pulling && Math.random() < dt * 3) rumble(p.source as SourceId, 0.2, 0.3, 80);
+        if (pl.pulling && random() < dt * 3) rumble(p.source as SourceId, 0.2, 0.3, 80);
       });
       if (pulling > 0) {
         s.dirt -= dt;
         if (s.dirt <= 0) {
           s.dirt = 0.12;
-          emit('chunk', [CX + (Math.random() - 0.5) * 1.2, Y0 + 0.2, CZ + (Math.random() - 0.5) * 1.2], { count: 2, color: ['#7a5230', '#5c3d22'], speed: 2, up: 3, size: 0.14 });
+          emit('chunk', [CX + (random() - 0.5) * 1.2, Y0 + 0.2, CZ + (random() - 0.5) * 1.2], { count: 2, color: ['#7a5230', '#5c3d22'], speed: 2, up: 3, size: 0.14 });
         }
       }
       if (s.progress >= 1) pop(now);

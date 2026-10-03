@@ -16,6 +16,9 @@ import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { cameraFoci } from '../views';
+import { randomStream } from '../rng';
+
+const random = randomStream('events');
 
 // Park surprises: now and then something happens that pulls everybody somewhere new, with no
 // words needed: a golden chicken to chase, a present floating by on a balloon, or a rain
@@ -54,7 +57,7 @@ export const useEvents = create<EventStore>((set) => ({
   next: null,
   rainbowUntil: 0,
   start: (kind) => set({ kind, startedAt: gameNow() }),
-  end: () => set({ kind: null, next: gameNow() + (GAP[0] + Math.random() * (GAP[1] - GAP[0])) * 1000 })
+  end: () => set({ kind: null, next: gameNow() + (GAP[0] + random() * (GAP[1] - GAP[0])) * 1000 })
 }));
 
 /** Non-reactive state other parts of the game read every frame. */
@@ -68,7 +71,7 @@ const tmp = new THREE.Vector3();
 function spotNearPlayers(dist: number, out: THREE.Vector3) {
   if (playersCentroid(out) === 0) out.set(0, 0, 4);
   for (let tries = 0; tries < 12; tries += 1) {
-    const a = Math.random() * Math.PI * 2;
+    const a = random() * Math.PI * 2;
     const x = THREE.MathUtils.clamp(out.x + Math.cos(a) * dist, -WORLD_HALF_X + 8, WORLD_HALF_X - 8);
     const z = THREE.MathUtils.clamp(out.z + Math.sin(a) * dist, -WORLD_HALF_Z + 8, WORLD_HALF_Z - 16);
     if (!isInWater(x, z)) return out.set(x, groundHeight(x, z), z);
@@ -105,7 +108,7 @@ function GoldenChicken() {
     eventSpot.chicken.copy(at);
     return at;
   }, []);
-  const st = useRef({ facing: Math.random() * Math.PI * 2, done: false, squawk: 0, sparkle: 0, flap: 0 });
+  const st = useRef({ facing: random() * Math.PI * 2, done: false, squawk: 0, sparkle: 0, flap: 0 });
   const startedAt = useEvents((s) => s.startedAt);
 
   const finish = (caughtBy: PlayerRuntime | null) => {
@@ -213,7 +216,7 @@ function GoldenChicken() {
 
     s.squawk -= dt;
     if (fleeing && s.squawk <= 0) {
-      s.squawk = 1.2 + Math.random();
+      s.squawk = 1.2 + random();
       playSquawk(t);
     }
     s.sparkle -= dt;
@@ -289,8 +292,8 @@ function PresentBalloon() {
     return at;
   }, []);
   const startedAt = useEvents((s) => s.startedAt);
-  const st = useRef({ angle: Math.random() * Math.PI * 2, done: false, leaving: false });
-  const color = useMemo(() => ['#ff4d5e', '#3b82f6', '#a855f7', '#22c55e'][Math.floor(Math.random() * 4)], []);
+  const st = useRef({ angle: random() * Math.PI * 2, done: false, leaving: false });
+  const color = useMemo(() => ['#ff4d5e', '#3b82f6', '#a855f7', '#22c55e'][Math.floor(random() * 4)], []);
 
   const burst = (by: PlayerRuntime | null) => {
     const s = st.current;
@@ -404,9 +407,9 @@ function RainShower() {
   const dropPos = useMemo(() => {
     const a = new Float32Array(DROPS * 3);
     for (let i = 0; i < DROPS; i += 1) {
-      a[i * 3] = (Math.random() - 0.5) * 44;
-      a[i * 3 + 1] = Math.random() * 16;
-      a[i * 3 + 2] = (Math.random() - 0.5) * 32;
+      a[i * 3] = (random() - 0.5) * 44;
+      a[i * 3 + 1] = random() * 16;
+      a[i * 3 + 2] = (random() - 0.5) * 32;
     }
     return a;
   }, []);
@@ -417,14 +420,14 @@ function RainShower() {
     const out: Puddle[] = [];
     const ray = new rapier.Ray({ x: 0, y: 20, z: 0 }, { x: 0, y: -1, z: 0 });
     for (let tries = 0; tries < 40 && out.length < 6; tries += 1) {
-      const spot = spotNearPlayers(3 + Math.random() * 9, new THREE.Vector3());
+      const spot = spotNearPlayers(3 + random() * 9, new THREE.Vector3());
       ray.origin = { x: spot.x, y: 20, z: spot.z };
       const hit = world.castRay(ray, 40, true);
       if (!hit) continue;
       const y = 20 - hit.timeOfImpact;
       const fixed = hit.collider.parent()?.isFixed() ?? true;
       if (!fixed || y > 0.6 || out.some((p) => distXZ(p.pos.x, p.pos.z, spot.x, spot.z) < 3.5)) continue;
-      out.push({ pos: new THREE.Vector3(spot.x, y + 0.03, spot.z), r: 1.1 + Math.random() * 0.6, cool: 0, step: 0 });
+      out.push({ pos: new THREE.Vector3(spot.x, y + 0.03, spot.z), r: 1.1 + random() * 0.6, cool: 0, step: 0 });
     }
     return out;
   }, [world, rapier]);
@@ -463,8 +466,8 @@ function RainShower() {
         let y = dropPos[i * 3 + 1] - dt * 18;
         if (y < 0) {
           y += 16;
-          dropPos[i * 3] = (Math.random() - 0.5) * 44;
-          dropPos[i * 3 + 2] = (Math.random() - 0.5) * 32;
+          dropPos[i * 3] = (random() - 0.5) * 44;
+          dropPos[i * 3 + 2] = (random() - 0.5) * 32;
         }
         dropPos[i * 3 + 1] = y;
         const f = foci[i % foci.length];
@@ -672,7 +675,7 @@ export function ParkEvents() {
       return;
     }
     // take turns, starting somewhere random
-    if (order.current === 0) order.current = Math.floor(Math.random() * KINDS.length) + 1;
+    if (order.current === 0) order.current = Math.floor(random() * KINDS.length) + 1;
     ev.start(KINDS[order.current++ % KINDS.length]);
   });
   // (keyed by start time, so a new surprise of the same kind starts fresh)

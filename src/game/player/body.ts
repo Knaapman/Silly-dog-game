@@ -15,6 +15,9 @@ import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './fra
 import { ballistic } from './physics';
 import { safeSpot, type Rapier } from './rescue';
 import { earnSticker } from '../stickers';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.body');
 
 /** Magic food wearing off, and growing / shrinking (the mushroom). Sets f.rad. */
 export function powerAndSize(f: FrameCtx) {
@@ -114,7 +117,7 @@ export function waterAndMud(f: FrameCtx) {
   if (inMud) s.mud = Math.min(1, s.mud + dt * 2.5);
   else if (swimming && s.mud > 0) {
     s.mud = Math.max(0, s.mud - dt * 1.2);
-    if (Math.random() < 0.2) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: '#ffffff', size: 0.2, speed: 1, up: 1 });
+    if (random() < 0.2) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: '#ffffff', size: 0.2, speed: 1, up: 1 });
   } else s.mud = Math.max(0, s.mud - dt * 0.015);
 
   // paint: a splash puts it on (a fresh coat); the water washes it off; otherwise it slowly dries and flakes off
@@ -133,7 +136,7 @@ export function waterAndMud(f: FrameCtx) {
     if (s.paintColors.length >= PAINT_COLORS.length) earnSticker('rainbowpaint');
   } else if (swimming && s.paint > 0) {
     s.paint = Math.max(0, s.paint - dt * 1.2);
-    if (Math.random() < 0.3) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: paintColor(s.paintColor), size: 0.2, speed: 1, up: 1 });
+    if (random() < 0.3) emit('puff', [t.x, t.y + 0.3, t.z], { count: 1, color: paintColor(s.paintColor), size: 0.2, speed: 1, up: 1 });
   } else s.paint = Math.max(0, s.paint - dt * (s.paintColor === SNOW_PAINT ? 0.07 : 0.012));
   if (s.paint <= 0) s.paintColors.length = 0;
   paintOf.set(f.slot, { amount: s.paint, color: s.paintColor, colors: s.paintColors });
@@ -166,7 +169,7 @@ export function impulses(f: FrameCtx) {
     f.v.z = s.pendingBump.z * 7;
     f.v.y = 9;
     s.stunned = 0.55;
-    startFlip(f, 'y', 0.55, Math.random() < 0.5 ? 1 : -1);
+    startFlip(f, 'y', 0.55, random() < 0.5 ? 1 : -1);
     playBoing(s.pos, 1.5);
     rumble(f.source, 0.5, 0.5, 160);
     s.pendingBump = null;
@@ -217,7 +220,7 @@ export function tugged(f: FrameCtx) {
     f.v.y = Math.max(f.v.y, 8);
     s.jumpBuffer = 0;
     s.squash = -0.3;
-    startFlip(f, 'y', 0.5, Math.random() < 0.5 ? 1 : -1);
+    startFlip(f, 'y', 0.5, random() < 0.5 ? 1 : -1);
     playBoing(s.pos, 1.4);
     rumble(f.source, 0.3, 0.3, 120);
     rb.setLinvel(f.v, true);
@@ -308,7 +311,7 @@ export function respawnIfLost(f: FrameCtx, rb: RapierRigidBody, world: World, ra
 /** Publish what others need to know about us (camera, critters, friends, rides). */
 export function syncRuntime(f: FrameCtx) {
   const { s, rt, t, dt } = f;
-  if (f.napping && Math.random() < dt * 1.5) {
+  if (f.napping && random() < dt * 1.5) {
     emit('puff', [t.x + 0.3, t.y + 1.2, t.z], { count: 1, color: '#e3f2fd', size: 0.18, speed: 0.2, up: 1.2, gravity: -1, life: 1.5 });
   }
   if (!rt) return;

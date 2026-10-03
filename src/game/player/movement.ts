@@ -11,6 +11,9 @@ import { startFlip, type FrameCtx } from './frame';
 import type { Flip } from './state';
 import { lerpAngle } from './physics';
 import { glide, jumpsOf, rainbowJump, TRICK, woolBounce } from './tricks';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.movement');
 
 /** Walking, sliding, swimming, jumping and bouncing; or, while flopped / held / riding, not. */
 export function movement(f: FrameCtx) {
@@ -65,7 +68,7 @@ export function movement(f: FrameCtx) {
     useGame.getState().addParty(PARTY_POINTS.bounce);
   }
   s.sliding = sliding;
-  if (sliding && Math.random() < 0.3) emit('star', [t.x, t.y - 0.3, t.z], { count: 1, color: ['#ffffff', '#fff3a8'], speed: 1, up: 1, size: 0.1 });
+  if (sliding && random() < 0.3) emit('star', [t.x, t.y - 0.3, t.z], { count: 1, color: ['#ffffff', '#fff3a8'], speed: 1, up: 1, size: 0.1 });
 
   // Snow crunches under your feet.
   if (s.grounded && (surface?.snow || isOnSnow(t.x, t.z)) && Math.hypot(lv.x, lv.z) > 2) {
@@ -107,8 +110,8 @@ export function movement(f: FrameCtx) {
     s.bounceCooldown = 0.3;
     s.squash = 0.45;
     const axes: Flip['axis'][] = ['x', 'z', 'y'];
-    startFlip(f, axes[Math.floor(Math.random() * axes.length)], 0.8, Math.random() < 0.5 ? 1 : -1);
-    playBoing(s.pos, 0.9 + Math.random() * 0.4);
+    startFlip(f, axes[Math.floor(random() * axes.length)], 0.8, random() < 0.5 ? 1 : -1);
+    playBoing(s.pos, 0.9 + random() * 0.4);
     ring([t.x, s.groundY + 0.05, t.z], { color: '#ffffff', radius: 2.2, duration: 0.4 });
     rumble(source, 0.3, 0.6, 120);
     surface.onBounce?.(slot);

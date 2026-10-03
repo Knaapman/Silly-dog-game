@@ -13,6 +13,9 @@ import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('bubbleMachine');
 
 // The bubble machine: a wand turns round on top and blows soap bubbles off towards the plaza,
 // little ones and big ones, drifting and rising. A little one pops when you touch it. A big one
@@ -94,8 +97,8 @@ export function BubbleMachine() {
   const blow = (r: number, at?: { x: number; y?: number; z: number }) => {
     const b = list.find((x) => !x.alive);
     if (!b) return null;
-    const a = BUBBLE_MACHINE.blow + (Math.random() - 0.5) * 1.1;
-    const speed = 0.9 + Math.random() * 0.8;
+    const a = BUBBLE_MACHINE.blow + (random() - 0.5) * 1.1;
+    const speed = 0.9 + random() * 0.8;
     Object.assign(b, {
       alive: true,
       x: at?.x ?? WAND.x,
@@ -105,10 +108,10 @@ export function BubbleMachine() {
       vz: at ? 0 : Math.cos(a) * speed,
       r,
       bornAt: gameNow(),
-      life: 9 + Math.random() * 5,
+      life: 9 + random() * 5,
       rider: null,
       rideAt: 0,
-      hue: Math.random()
+      hue: random()
     });
     return b;
   };
@@ -145,7 +148,7 @@ export function BubbleMachine() {
     // blow another one now and then: one in three is a big one
     if (bubbles.auto && now >= s.nextBlow) {
       s.nextBlow = now + BLOW_EVERY * 1000;
-      blow(Math.random() < 0.35 ? BIG + Math.random() * 0.25 : 0.35 + Math.random() * 0.5);
+      blow(random() < 0.35 ? BIG + random() * 0.25 : 0.35 + random() * 0.5);
     }
 
     list.forEach((b, i) => {

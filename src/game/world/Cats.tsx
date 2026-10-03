@@ -15,6 +15,9 @@ import { earnSticker } from '../stickers';
 import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 import { eatFish, nearestFish } from './Fishing';
+import { randomStream } from '../rng';
+
+const random = randomStream('cats');
 
 /** `stalk` when a cat is after a fish rather than a flock of birds. */
 const FISH = -2;
@@ -421,7 +424,7 @@ function Cat({ index }: { index: number }) {
           const d = distXZ(c.target.x, c.target.z, t.x, t.z);
           if (d < 0.6 || c.timer <= 0) {
             c.idle = 'sit';
-            c.timer = 2 + Math.random() * 3;
+            c.timer = 2 + random() * 3;
           } else {
             c.facing = Math.atan2(c.target.x - t.x, c.target.z - t.z) + (now < c.sidestepUntil ? c.sidestep : 0);
             speed = distXZ(t.x, t.z, home.x, home.z) > 14 || truce ? 3.5 : 1.7;
@@ -430,31 +433,31 @@ function Cat({ index }: { index: number }) {
             c.stuckFor = Math.hypot(v.x, v.z) < speed * 0.4 && onGround ? c.stuckFor + dt : 0;
             if (c.stuckFor > 0.5) {
               c.stuckFor = 0;
-              c.sidestep = (Math.random() < 0.5 ? 1 : -1) * 1.3;
+              c.sidestep = (random() < 0.5 ? 1 : -1) * 1.3;
               c.sidestepUntil = now + 800;
             }
           }
         } else if (c.timer <= 0) {
-          const r = Math.random();
+          const r = random();
           if (distXZ(t.x, t.z, home.x, home.z) > 9 || r < 0.4) {
             c.idle = 'walk';
-            const a = Math.random() * Math.PI * 2;
-            const rr = 2 + Math.random() * 6;
+            const a = random() * Math.PI * 2;
+            const rr = 2 + random() * 6;
             c.target.set(home.x + Math.cos(a) * rr, 0, home.z + Math.sin(a) * rr);
             c.timer = 12;
           } else if (r < 0.65) {
             c.idle = 'groom';
-            c.timer = 3 + Math.random() * 2;
+            c.timer = 3 + random() * 2;
           } else if (r < 0.85) {
             c.idle = 'nap';
-            c.timer = 9 + Math.random() * 7;
+            c.timer = 9 + random() * 7;
           } else {
             c.idle = 'sit';
-            c.timer = 3 + Math.random() * 3;
-            if (Math.random() < 0.5) playCatSound('meow', t);
+            c.timer = 3 + random() * 3;
+            if (random() < 0.5) playCatSound('meow', t);
           }
         }
-        if (c.idle === 'nap' && Math.random() < dt * 0.8)
+        if (c.idle === 'nap' && random() < dt * 0.8)
           emit('puff', [t.x, t.y + 0.6, t.z], {
             count: 1,
             color: '#e3f2fd',
@@ -502,7 +505,7 @@ function Cat({ index }: { index: number }) {
         c.stuckFor = 0;
         c.jumpAt = now;
         vy = 7.5;
-        c.facing += (Math.random() < 0.5 ? 1 : -1) * 1.1;
+        c.facing += (random() < 0.5 ? 1 : -1) * 1.1;
       }
     } else if (m === 'tagged') {
       if (c.timer <= 0 && conga) {
@@ -592,9 +595,9 @@ function Cat({ index }: { index: number }) {
       if (nearest && nearest.position.distanceTo(c.perch) < 1.6) c.shakenBy = nearest.slot;
       c.teaseIn -= dt;
       if (c.teaseIn <= 0) {
-        c.teaseIn = 2.5 + Math.random() * 3;
+        c.teaseIn = 2.5 + random() * 3;
         const close = nearest && nearD < 7;
-        playCatSound(close && Math.random() < 0.5 ? 'hiss' : 'meow', t);
+        playCatSound(close && random() < 0.5 ? 'hiss' : 'meow', t);
         c.arch = close ? 0.6 : 0;
       }
       const alone = !nearest || nearD > 14;
@@ -647,7 +650,7 @@ function Cat({ index }: { index: number }) {
       }
     } else if (m === 'dizzy') {
       c.facing += dt * 7;
-      if (Math.random() < dt * 5)
+      if (random() < dt * 5)
         emit('star', [t.x, t.y + 0.7, t.z], {
           count: 1,
           color: '#ffe14d',
@@ -662,7 +665,7 @@ function Cat({ index }: { index: number }) {
       }
     } else if (m === 'held') {
       if (entry.heldBy == null) tumble(null);
-      else if (Math.random() < dt * 1.2) playCatSound(Math.random() < 0.5 ? 'hiss' : 'meow', t);
+      else if (random() < dt * 1.2) playCatSound(random() < 0.5 ? 'hiss' : 'meow', t);
     } else if (m === 'conga') {
       if (!conga) {
         // that was fun; off home again, at a trot, and left alone on the way
@@ -704,7 +707,7 @@ function Cat({ index }: { index: number }) {
           }
         }
         if (now > c.congaMeow) {
-          c.congaMeow = now + 2500 + Math.random() * 2500;
+          c.congaMeow = now + 2500 + random() * 2500;
           playCatSound('meow', t);
           emit('heart', [t.x, t.y + 0.8, t.z], { count: 2, color: ['#ff4d8d', '#ff8fb5'], speed: 1, up: 1.5 });
         }
