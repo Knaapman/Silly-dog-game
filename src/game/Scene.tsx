@@ -17,7 +17,7 @@ import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPre
 import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
-import { camera as camState, players, type PlayerRuntime } from './runtime';
+import { camera as camState, keepAwake, players, type PlayerRuntime } from './runtime';
 import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
@@ -422,6 +422,24 @@ function PhysicsHook() {
   return null;
 }
 
+/**
+ * Fixed bodies never move, but the physics library copies every awake body onto its picture each
+ * frame, and Rapier counts fixed bodies as awake: a few hundred wasted copies a frame. Put them to
+ * sleep (now and then, for ones that came along since); see runtime.keepAwake for the exceptions.
+ */
+function RestingStatics() {
+  const { world } = useRapier();
+  const frame = useRef(0);
+  useFrame(() => {
+    frame.current += 1;
+    if (frame.current % 30 !== 1) return;
+    world.forEachRigidBody((b) => {
+      if (b.isFixed() && !b.isSleeping() && !keepAwake.has(b.handle)) b.sleep();
+    });
+  });
+  return null;
+}
+
 function Players() {
   const list = useGame((s) => s.players);
   return (
@@ -450,6 +468,7 @@ export function Scene() {
       <PhotoDirector />
       <Physics gravity={[0, GRAVITY, 0]} paused={paused}>
         <PhysicsHook />
+        <RestingStatics />
         <Terrain />
         <Trees />
         <Landmarks />

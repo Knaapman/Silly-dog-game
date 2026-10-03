@@ -71,6 +71,12 @@ export function propPosition(entry: PropEntry, out: THREE.Vector3) {
   return out.set(t.x, t.y, t.z);
 }
 
+/**
+ * Fixed bodies that code moves about (the giant carrot's handle): never put to sleep, so their
+ * pictures keep following them. (Every other fixed body is put to sleep: see Scene.tsx.)
+ */
+export const keepAwake = new Set<number>();
+
 /** Static things that react to a headbutt (trees, the hat box...). */
 export type StaticBonkable = {
   id: number;
