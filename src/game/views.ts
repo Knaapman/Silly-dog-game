@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { perf } from './perf';
 import { create } from 'zustand';
 import { camera as camState } from './runtime';
 
@@ -59,6 +60,15 @@ function aimSun(focus: THREE.Vector3) {
 
 /** Draw the frame: the one shared view, or each player's view in its part of the screen. */
 export function renderViews(gl: THREE.WebGLRenderer, scene: THREE.Scene, shared: THREE.Camera) {
+  // (count the whole frame's draw calls, however many views it takes: see perf.ts)
+  gl.info.autoReset = false;
+  gl.info.reset();
+  drawViews(gl, scene, shared);
+  perf.calls = gl.info.render.calls;
+  perf.triangles = gl.info.render.triangles;
+}
+
+function drawViews(gl: THREE.WebGLRenderer, scene: THREE.Scene, shared: THREE.Camera) {
   if (!views.split || views.list.length < 2) {
     gl.render(scene, shared);
     return;

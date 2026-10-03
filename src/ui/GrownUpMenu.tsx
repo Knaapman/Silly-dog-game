@@ -4,6 +4,7 @@ import { KEYMAPS, onUiNav, type ActionName } from '../game/input';
 import { effectiveQuality, useSettings, type Level, type Quality, type Settings, ZOOM_MAX, ZOOM_MIN } from '../game/settings';
 import { installApp, useInstall } from '../game/install';
 import { perf } from '../game/perf';
+import { clearPlayLog, loadSessions, playLogFile } from '../game/playlog';
 import { MAX_PHOTOS, usePhotos } from '../game/photo';
 import { HAT_UNLOCKS, useProgress } from '../game/progress';
 import { STICKERS, useStickers } from '../game/stickers';
@@ -374,6 +375,7 @@ export function GrownUpMenu() {
   const testerRef = useRef(tester);
   testerRef.current = tester;
   const fps = useFps();
+  const draws = useDraws();
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setMenuOpen(false)}>
@@ -446,10 +448,17 @@ export function GrownUpMenu() {
         {gpu && (
           <p className="mt-1 text-center text-xs text-white/50" title={gpu}>
             Graphics: {quality}
-            {fps > 0 && <span data-testid="fps"> · {Math.round(fps)} fps</span>} · {gpu.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 80)}
+            {fps > 0 && <span data-testid="fps"> · {Math.round(fps)} fps</span>}
+            {draws.calls > 0 && (
+              <span data-testid="draws">
+                {' '}· {draws.calls} draws · {Math.round(draws.triangles / 1000)}k triangles
+              </span>
+            )}{' '}
+            · {gpu.replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 80)}
           </p>
         )}
 
+        <PlayLogRow />
         <ProgressRow />
         <InstallRow />
         <PhotoGallery />
@@ -478,6 +487,56 @@ export function GrownUpMenu() {
         </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Draw calls and triangles in the last frame, refreshed twice a second. */
+function useDraws() {
+  const [d, setD] = useState({ calls: perf.calls, triangles: perf.triangles });
+  useEffect(() => {
+    const id = window.setInterval(() => setD({ calls: perf.calls, triangles: perf.triangles }), 500);
+    return () => window.clearInterval(id);
+  }, []);
+  return d;
+}
+
+/**
+ * The play log (see playlog.ts): how many sessions it holds, a button to save it as a file to send
+ * along, and one to clear it.
+ */
+function PlayLogRow() {
+  const [count, setCount] = useState(() => loadSessions().length);
+  const saveFile = () => {
+    const blob = new Blob([playLogFile()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `silly-park-play-log-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setCount(loadSessions().length);
+  };
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-white/60" data-testid="playlog">
+      <span title="A small record of each play session on this computer (smoothness, stuck animals, controllers, what got played): nothing leaves this computer unless you save it and send it">
+        📋 Play log: {count} {count === 1 ? 'session' : 'sessions'}
+      </span>
+      <button className="rounded-full bg-white/15 px-3 py-1 hover:bg-white/25" onClick={saveFile} data-testid="playlog-save">
+        Save
+      </button>
+      <button
+        className="rounded-full bg-white/15 px-3 py-1 hover:bg-white/25"
+        onClick={() => {
+          clearPlayLog();
+          setCount(0);
+        }}
+        data-testid="playlog-clear"
+      >
+        Clear
+      </button>
     </div>
   );
 }

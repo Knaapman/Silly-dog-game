@@ -294,7 +294,14 @@ tester**, the sticker album, a picture of all controls, and:
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just
   stuttered). Ultra means 4096 px shadows over a wider area and supersampling: it draws up to a 4K-wide picture and
   scales it down, so edges are smooth on a 1080p or 1440p screen (never less sharp than the screen itself). The frame
-  rate is shown under the settings.
+  rate is shown under the settings, with the number of draw calls and triangles in a frame (how much work the
+  graphics card is given).
+- **Play log** 📋: a small record of each play session, kept on this computer only (the last ten). For each session:
+  how long it lasted, how many children played and which animals, the frame rate (lowest and average, once warmed up),
+  the most draw calls in a frame, any change of graphics level, how often an animal got stuck (and where) or needed
+  the rescue buttons, controllers dropping out, any errors, the stickers earned (which things got played with) and
+  how long the animals spent in each part of the park. **Save** downloads it as a file, to send along with what you
+  noticed; **Clear** empties it. Nothing is sent anywhere by itself.
 - **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
 - **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
   without internet.
@@ -489,6 +496,7 @@ src/
     chase.ts            the chase: park cats and bird flocks register here; the cat tally
     storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
+    playlog.ts          the play log: a record of each session on this computer, saved from the grown-ups menu
     install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
     collision.ts        collision groups (animals walk through poops and climb into hamster balls)
