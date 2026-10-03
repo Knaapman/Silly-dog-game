@@ -31,7 +31,8 @@ export type PropKind =
   | 'hamsterball'
   | 'fish'
   | 'block'
-  | 'giantball';
+  | 'giantball'
+  | 'kite';
 
 export type PropEntry = {
   id: number;
@@ -77,6 +78,9 @@ export function propPosition(entry: PropEntry, out: THREE.Vector3) {
  * pictures keep following them. (Every other fixed body is put to sleep: see Scene.tsx.)
  */
 export const keepAwake = new Set<number>();
+
+/** How high each player's kite is flying (0..1), by slot: up high, a jump turns into a glide. */
+export const kiteLift = new Map<number, number>();
 
 /** Static things that react to a headbutt (trees, the hat box...). */
 export type StaticBonkable = {
