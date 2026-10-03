@@ -122,6 +122,8 @@ export const BOWLING = {
   ] as Vec2[]
 };
 
+/** A good place to fish (lick the water): the lagoon's north shore (east of where the beach ball floats), facing the water (south). */
+export const FISHING_SPOT = [5, 33.7] as Vec2;
 /** Hamster balls: four giant clear balls waiting in a row on the grass at the top of the bowling lane (roll down it!). */
 export const HAMSTER = { radius: 1.1, homes: [0, 1, 2, 3].map((i): Vec2 => [LANE_X, Z.sports[1] + 28 + (i - 1.5) * 2.6]) };
 export const CRATE_TOWER = { base: at3(Z.sports, -12, 0, 14), size: 1.2, rows: 4 };

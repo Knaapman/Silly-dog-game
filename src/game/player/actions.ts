@@ -19,7 +19,7 @@ import { BELLY_MAX, MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../co
 import { bonkStars, emit, ring } from '../fx';
 import { rumble, type ActionName } from '../input';
 import { distXZ, isOnGrass } from '../layout';
-import { groundHeight } from '../terrain';
+import { groundHeight, isInWater, waterLevelAt } from '../terrain';
 import { foods, noises, players, propPosition, props, pushNoise, shakeCamera, spawners, statics, type FoodEntry, type PlayerRuntime, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { BONK_PITCH, MODEL_SCALE, RADIUS } from './constants';
@@ -128,6 +128,11 @@ export function tongue(f: FrameCtx) {
         }
         playSlurp(s.pos);
         rumble(source, 0.1, 0.3, 60);
+      } else if (lickingWater(f)) {
+        // into the water: sometimes a fish leaps out (the fishing decides)
+        s.lickMiss = 0.32;
+        playSlurp(s.pos, true);
+        spawners.fishLick(slot, tmp.c, tmp.fwd);
       } else if (s.grounded && s.groundY - groundHeight(t.x, t.z) < 0.5 && isOnGrass(t.x, t.z)) {
         // Nothing to lick, but there's always grass: munch!
         s.lickMiss = 0.32;
@@ -186,6 +191,17 @@ export function tongue(f: FrameCtx) {
       }
     }
   }
+}
+
+/** Is the tongue reaching into water (the sea, the lagoon, the river, the fountain) just in front? Leaves the spot in tmp.c. */
+function lickingWater(f: FrameCtx) {
+  const { tmp } = f;
+  tmp.c.copy(tmp.mouth).addScaledVector(tmp.fwd, 1.4);
+  if (!isInWater(tmp.c.x, tmp.c.z)) return false;
+  const level = waterLevelAt(tmp.c.x, tmp.c.z);
+  if (tmp.mouth.y - level > 1.6) return false;
+  tmp.c.y = level;
+  return true;
 }
 
 /** Animal noise (bark / meh / oink / baa), or dragon fire with a chili inside. */

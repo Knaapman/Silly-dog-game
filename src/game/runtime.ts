@@ -28,7 +28,8 @@ export type PropKind =
   | 'pitball'
   | 'poop'
   | 'giantcarrot'
-  | 'hamsterball';
+  | 'hamsterball'
+  | 'fish';
 
 export type PropEntry = {
   id: number;
@@ -214,7 +215,9 @@ export const spawners = {
   apple: (_position: THREE.Vector3, _color?: string) => {},
   babyDino: (_ownerSlot: number, _position: THREE.Vector3) => {},
   /** size ~0.8 (one bite) .. 1.4 (full belly); golden is the rare shiny one. */
-  poop: (_position: THREE.Vector3, _velocity: THREE.Vector3, _size: number, _golden: boolean) => {}
+  poop: (_position: THREE.Vector3, _velocity: THREE.Vector3, _size: number, _golden: boolean) => {},
+  /** A lick into the water at `at` (facing `fwd`): now and then a fish leaps out. */
+  fishLick: (_slot: number, _at: THREE.Vector3, _fwd: THREE.Vector3) => {}
 };
 
 export function playersCentroid(out: THREE.Vector3, excludeSlot?: number) {

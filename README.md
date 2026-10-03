@@ -104,6 +104,12 @@ it goes both ways at once. At the far end the last one lands on a big red button
 party (and a sticker). A domino falling on someone standing in its way bonks them. When it has all gone quiet for a
 few seconds, the fallen ones stand back up one after the other, with a twinkle each, ready for another go.
 
+**Fishing with your tongue** 🐟: stand at the water's edge (the lagoon, the sea, the river, even the fountain) and
+lick the water. Now and then (always by the third lick) a fish leaps out with a splash, up over your head, and lands
+flopping on the bank behind you. Pick it up with your tongue and throw it: back into the water and it swims off, or
+at a friend: SLAP (a friend sticker). A fish left flopping about for a while flops off home by itself. The lagoon's
+north shore is a good spot (a sticker for your first fish).
+
 **Hamster balls** 🐹 wait in a row on the grass at the top of the bowling lane: four giant see-through balls, each
 with coloured hoops. Walk into one and you're inside; push the stick and it rolls, faster and faster (and down a slope
 it really goes). Roll down the bowling lane and knock the pins flying, or into the dominoes. Roll fast into a friend
@@ -222,7 +228,7 @@ Grown-ups can switch it off.
 | Move | Left stick or D-pad | `W A S D` | Arrow keys | Drag anywhere on the left half |
 | ⬆️ Jump (press again in the air to flip) | **A** / ✕ (bottom) | `Space` or `K` | `Enter` / `Num 0` | Green button |
 | 💥 Headbutt | **B** / ◯ (right) | `E` or `L` | `Right Shift` / `Num 2` | Red button |
-| 👅 Lick & grab (or eat, or grab a friend), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
+| 👅 Lick & grab (or eat, or grab a friend, or fish in the water), press again to throw | **X** / ▢ (left) | `Q` or `J` | `Right Ctrl` / `Num 1` | Blue button |
 | 📣 Animal noise | **Y** / △ (top) | `R` or `I` | `/` / `Num 3` | Yellow button |
 | 🌀 Flop (ragdoll, steer by rolling) | Bumpers **LB** / **RB** | `F`, `U` or `O` | `.` | Purple button |
 | 💩 Poop (or toot, on an empty tummy) | Triggers **LT** / **RT** | `G` or `P` | `'` / `Num 5` | Brown button |
@@ -348,7 +354,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Eight stickers need a friend (they have a little 👫 on them); playing alone, the buddy
   counts, except for the three-animal tower and riding in the tractor's trailer.
@@ -477,6 +483,7 @@ src/
       Dominoes.tsx      the giant dominoes: bump one and the chain runs along the row to the bell; they stand back up
       HotAirBalloon.tsx the hot air balloon: climb in, up, round a loop over the park, down; jump out on the way
       HamsterBalls.tsx  hamster balls: climb in, roll with the stick, bump; they float, and pop home when left
+      Fishing.tsx       fishing: lick the water and a fish leaps out onto the bank, flops, swims off, slaps friends
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
