@@ -1,12 +1,13 @@
 import { CapsuleCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { playCrack, playPoof, playRoar, playRumble } from '../audio';
+import { playCrack, playGiggle, playPoof, playRoar, playRumble, playSneeze, SNEEZE_AT } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { BRONTO, DINO_PAD, distXZ, EGG_NEST, TREX, VOLCANO, type Vec3 } from '../layout';
 import { lambert } from '../materials';
-import { players, props, propPosition, registerStatic, shakeCamera, spawners, statics } from '../runtime';
+import { debugInfo, players, props, propPosition, registerStatic, shakeCamera, spawners, statics } from '../runtime';
+import { groundHeight } from '../terrain';
 import { useGame } from '../store';
 import { Ramp, useHint } from './common';
 import { BabyDinos } from './Critters';
@@ -133,14 +134,96 @@ function Volcano() {
 // ---------------------------------------------------------------------------
 // Brontosaurus: stairs onto its back, walk up the neck to the head, slide down the tail.
 
+/** Tickles (headbutts on its body) within TICKLE_WINDOW seconds that make the brontosaurus sneeze. */
+const TICKLES = 5;
+const TICKLE_WINDOW = 6;
+
 function Brontosaurus() {
   const [bx, bz] = BRONTO.center;
   const green = '#7ed957';
   const dark = '#5cb83a';
   const slide = useMemo(() => ({ slippery: 0.35, slide: true }), []);
   useHint([bx - 7.5, 1, bz], 'walk', 4);
+  useHint([bx, 1, bz + 2.6], 'bonk', 3);
   const whole = useRef<THREE.Group>(null);
+  const head = useRef<THREE.Group>(null);
   useSeeThrough(whole, bx + 3, bz, 7);
+  // tickle it (headbutt its legs and tummy): it giggles; tickle it lots and... ah... ah... CHOO!
+  const st = useRef({ tickles: [] as number[], wiggle: 0, sneezeAt: -1, sneezes: 0, blown: 0 });
+  debugInfo.bronto = st.current;
+  const tmp = useMemo(() => new THREE.Vector3(), []);
+  useEffect(
+    () =>
+      registerStatic({
+        id: 9210,
+        position: new THREE.Vector3(bx, 1.4, bz),
+        radius: 2.6,
+        onBonk: () => {
+          const s = st.current;
+          if (s.sneezeAt >= 0) return;
+          const now = gameNow();
+          s.tickles = [...s.tickles.filter((t) => now - t < TICKLE_WINDOW * 1000), now];
+          s.wiggle = 1;
+          playGiggle([bx + 9.4, 7, bz], 0.45);
+          if (s.tickles.length >= TICKLES) {
+            s.tickles = [];
+            s.sneezeAt = now + SNEEZE_AT * 1000;
+            playSneeze([bx + 9.4, 7, bz]);
+          }
+        }
+      }),
+    [bx, bz]
+  );
+  const lastChoo = useRef(-1e9);
+  const sneeze = () => {
+    const nose: [number, number, number] = [bx + 10.9, 6.9, bz];
+    lastChoo.current = gameNow();
+    shakeCamera(0.6);
+    emit('puff', nose, { count: 34, color: ['#ffffff', '#e6f7c1', '#d9f99d'], speed: 9, up: 0.5, size: 0.6, dir: [12, -1, 0] });
+    emit('drop', nose, { count: 20, color: ['#d9f99d', '#bef264'], speed: 8, up: 1, size: 0.18, dir: [10, 0, 0] });
+    useGame.getState().addParty(PARTY_POINTS.goal);
+    earnSticker('sneeze');
+    for (const p of players.values()) {
+      const up = p.position.y - groundHeight(p.position.x, p.position.z);
+      const along = p.position.x - bx;
+      const across = p.position.z - bz;
+      if (Math.abs(across) < 2.4 && along > -4.2 && along < 10.6 && up > 2.2) {
+        // up on its back, its neck or its head: whoosh, off you go (off to the side, onto the grass)
+        const side = across >= 0 ? 1 : -1;
+        tmp.set(p.position.x + 1.5, 0, bz + side * (7 + Math.abs(along) * 0.15));
+        tmp.y = groundHeight(tmp.x, tmp.z);
+        p.launchTo(tmp.clone(), p.position.y + 4);
+        st.current.blown += 1;
+      } else if (along > 10 && along < 20 && Math.abs(across) < 4 && up < 9) {
+        // right in front of its nose: blown away
+        tmp.set(p.position.x + 6, 0, p.position.z + across * 0.5);
+        tmp.y = groundHeight(tmp.x, tmp.z);
+        p.launchTo(tmp.clone(), Math.max(p.position.y, tmp.y) + 3);
+        st.current.blown += 1;
+      }
+    }
+    props.forEach((prop) => {
+      if (prop.heldBy != null || !propPosition(prop, tmp)) return;
+      if (tmp.x - bx > 10 && tmp.x - bx < 22 && Math.abs(tmp.z - bz) < 5) prop.getBody()?.applyImpulse({ x: 6, y: 2, z: 0 }, true);
+    });
+  };
+  useGameFrame((_, delta) => {
+    const s = st.current;
+    const now = gameNow();
+    s.wiggle = Math.max(0, s.wiggle - delta * 1.5);
+    if (s.sneezeAt >= 0 && now >= s.sneezeAt) {
+      s.sneezeAt = -1;
+      s.sneezes += 1;
+      sneeze();
+    }
+    const h = head.current;
+    if (!h) return;
+    // the head: a giggly wiggle; leaning back for the "ah... ah..."; and a jerk forward on the CHOO
+    const ah = s.sneezeAt >= 0 ? 1 - (s.sneezeAt - now) / (SNEEZE_AT * 1000) : 0;
+    const choo = Math.max(0, 1 - (now - lastChoo.current) / 500);
+    h.rotation.y = Math.sin(now / 50) * 0.15 * s.wiggle;
+    h.rotation.z = ah * 0.4 - choo * 0.35;
+  });
   return (
     <group ref={whole}>
       <RigidBody type="fixed" colliders={false} position={[bx, 2.6, bz]}>
@@ -167,7 +250,7 @@ function Brontosaurus() {
       <RigidBody type="fixed" colliders={false} position={[bx + 9.3, 7.2, bz]}>
         <CylinderCollider args={[0.2, 1.2]} />
       </RigidBody>
-      <group position={[bx + 9.4, 7.1, bz]}>
+      <group ref={head} position={[bx + 9.4, 7.1, bz]}>
         <mesh castShadow scale={[1.3, 0.8, 1]} material={lambert(green)}>
           <sphereGeometry args={[1.1, 16, 12]} />
         </mesh>

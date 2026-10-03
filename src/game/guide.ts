@@ -152,7 +152,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   moles: [[MOLES.center[0] + 3.5, MOLES.center[1]]],
   molefriends: [[MOLES.center[0] + 3.5, MOLES.center[1]]],
   blocks: [[BLOCKS.center[0], BLOCKS.center[1] - 3.5]],
-  blockfriends: [[BLOCKS.center[0], BLOCKS.center[1] - 3.5]]
+  blockfriends: [[BLOCKS.center[0], BLOCKS.center[1] - 3.5]],
+  sneeze: [[BRONTO.center[0], BRONTO.center[1] + 3.5]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

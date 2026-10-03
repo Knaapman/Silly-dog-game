@@ -327,7 +327,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
 | 🎡 Carnival (north-west) | **Ferris wheel** with gondolas you can ride, a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
-| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down, a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
+| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with a neck you can walk up and a tail you can slide down (headbutt its tummy and it giggles; tickle it five times quickly and... ah... ah... CHOO! everyone up on it is sneezed off onto the grass), a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
 | ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build, a snowball fight |
@@ -360,7 +360,9 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   with a star above them are still to be found. Start (and the party) only picks from unlocked hats. Progress is
   remembered on this device.
 - **The camera button** 📷: three beeps, everybody jumps, flash! The photo pops up for a moment and is kept for the
-  grown-ups (see the grown-ups menu).
+  grown-ups (see the grown-ups menu). The last five also go up on the **photo wall**: big wooden frames on the rock
+  face of the mesa, at the north edge of the plaza behind the hat rack, the newest on the left, arriving with a twinkle.
+  Frames still waiting for a photo show a camera.
 - **12 golden stars**, each marked by a beam of light: on top of the fountain, at the top of the ferris wheel, in the
   soccer goal, above the volcano, on the slide tower, on the lighthouse balcony, on the snow hill, on the barn roof,
   above the tallest mushroom, in the middle of the maze, on the brontosaurus's head and on the train's roof. When all
@@ -377,7 +379,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
-  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
+  friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks, the brontosaurus's sneeze...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
   grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
   remembered on this device. Fourteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
   counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
@@ -512,6 +514,7 @@ src/
       PenguinShy.tsx    the penguin shy: knock the penguins off their counter with snowballs (from a few steps away)
       Moles.tsx         whack-a-mole: moles pop up while a child is near; bonk ten and a golden one comes up
       Blocks.tsx        giant building blocks: carry with your tongue, lick to put one on the tower, headbutt it down
+      PhotoWall.tsx     the photo wall: the last five photos in frames on the mesa's south face
       Hub, Carnival, Sports, DinoPark, Playground, Beach, Winter, Farm, Forest, Train
                         one file per area
       Launchers.tsx     launch pads, geysers, cannon (ballistic launches that land on a target)
