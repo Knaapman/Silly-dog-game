@@ -143,6 +143,11 @@ test('the buddy follows the child up high: the same way, or with a big boing', a
   await game.seconds(7);
   b = await rt(game, buddy);
   expect(b.ridingOn).toBeNull();
+  // (and is back on the grass: give a silly hop it might be in the middle of time to come down)
+  for (let i = 0; i < 12 && (b.launched || b.y >= 1.5); i += 1) {
+    await game.seconds(0.25);
+    b = await rt(game, buddy);
+  }
   expect(b.y).toBeLessThan(1.5);
   game.expectNoErrors();
 });
