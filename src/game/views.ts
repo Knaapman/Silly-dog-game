@@ -28,6 +28,22 @@ export const JOIN_AT = 23;
 
 export type View = { slot: number; cam: THREE.PerspectiveCamera; focus: THREE.Vector3; look: THREE.Vector3; rect: Rect };
 
+/**
+ * Help meant for one child (see Hints) is drawn on that child's own layer: the shared camera sees
+ * every child's, and in split screen each view sees only its own child's.
+ */
+export const HINT_LAYER = 20;
+export const hintLayer = (slot: number) => HINT_LAYER + slot;
+/** A view following `slot`: the world, and that child's help only. */
+export function seeOwnHelp(cam: THREE.Camera, slot: number) {
+  cam.layers.set(0);
+  cam.layers.enable(hintLayer(slot));
+}
+/** The shared camera: the world, and every child's help. */
+export function seeAllHelp(cam: THREE.Camera) {
+  for (let slot = 0; slot < 4; slot += 1) cam.layers.enable(hintLayer(slot));
+}
+
 /** The views as the camera rig last set them up (empty when the screen isn't split). */
 export const views = { split: false, list: [] as View[] };
 

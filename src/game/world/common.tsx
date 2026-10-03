@@ -15,15 +15,18 @@ import { useGameFrame } from '../clock';
 
 let hintId = 1;
 
-/** Shows a floating controller-button hint here when a player comes close. */
-export function useHint(position: Vec3 | THREE.Vector3, action: Hint['action'], radius = 4) {
+/** Shows a floating controller-button hint here when a player comes close (one that `wants` it). */
+export function useHint(position: Vec3 | THREE.Vector3, action: Hint['action'], radius = 4, wants?: Hint['wants']) {
   const id = useMemo(() => hintId++, []);
   const pos = useMemo(
     () => (position instanceof THREE.Vector3 ? position : new THREE.Vector3(position[0], position[1], position[2])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-  useEffect(() => registerHint({ id, position: pos, radius, action }), [id, pos, radius, action]);
+  // (`wants` is read through a ref: a new function each render doesn't re-register the hint)
+  const wantsRef = useRef(wants);
+  wantsRef.current = wants;
+  useEffect(() => registerHint({ id, position: pos, radius, action, wants: (p) => !wantsRef.current || wantsRef.current(p) }), [id, pos, radius, action]);
   return pos;
 }
 

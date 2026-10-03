@@ -7,11 +7,12 @@ import { PARTY_POINTS } from '../config';
 import { poof } from '../fx';
 import { distXZ, KITES } from '../layout';
 import { lambert } from '../materials';
-import { allocPropId, debugInfo, kiteLift, players, registerProp, type PropEntry } from '../runtime';
+import { allocPropId, debugInfo, kiteLift, players, registerHint, registerProp, type Hint, type PropEntry } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { HelpPaws } from './helpPaws';
 
 // Kites on the hill north of the mesa: three spools of string lie on the top, each with its kite
 // beside it. Lick a spool to pick it up and run: the wind takes the kite out on its string, and the
@@ -32,11 +33,17 @@ const WIND = new THREE.Vector3(-1, 0, 0.35).normalize();
 export const WAY_UP = 0.85;
 const HOME_AFTER = 40;
 const AWAY = 12;
+/** Help, only while it's needed: standing still this long (s) with the kite down shows paw prints
+ * ("run!"); a kite flying high this long (s) without a jump shows the jump bubble. */
+const STAND_HELP = 2.5;
+const JUMP_HELP = 1.5;
+/** A kite this high (0..1) lets a jump float (see tricks.ts glide). */
+const FLOATS = 0.6;
 
-type Kite = { holder: number | null; h: number; pos: THREE.Vector3; still: number };
+type Kite = { holder: number | null; h: number; pos: THREE.Vector3; still: number; standFor: number; highFor: number; jumpHelp: boolean; seenJump: number; helpAt: THREE.Vector3 };
 
-/** For the tests. */
-export const kites = { list: [] as Kite[], high: 0, together: 0, homes: 0 };
+/** For the tests. ranHigh / glided: children who've had a kite up high / floated on one (no more help). */
+export const kites = { list: [] as Kite[], high: 0, together: 0, homes: 0, ranHigh: new Set<number>(), glided: new Set<number>(), paws: [] as { shown: number; mask: number }[] };
 
 export function Kites() {
   const [hx, hz] = KITES.hill;
@@ -52,7 +59,22 @@ export function Kites() {
     [hx, hz]
   );
   const ids = useMemo(() => homes.map(() => allocPropId()), [homes]);
-  if (kites.list.length !== homes.length) kites.list = homes.map((h): Kite => ({ holder: null, h: 0, pos: h.clone().add(new THREE.Vector3(0.9, 0, 0)), still: 0 }));
+  if (kites.list.length !== homes.length)
+    kites.list = homes.map(
+      (h): Kite => ({
+        holder: null,
+        h: 0,
+        pos: h.clone().add(new THREE.Vector3(0.9, 0, 0)),
+        still: 0,
+        standFor: 0,
+        highFor: 0,
+        jumpHelp: false,
+        seenJump: 0,
+        helpAt: new THREE.Vector3()
+      })
+    );
+  /** Paw prints for each spool's holder ("run this way"). */
+  const paws = useMemo(() => homes.map(() => new HelpPaws(4)), [homes]);
   debugInfo.kites = kites;
   const kiteRefs = useRef<(THREE.Group | null)[]>([]);
   /** Children who've had the sticker for a kite way up (once each is plenty). */
@@ -60,7 +82,22 @@ export function Kites() {
   const strings = useRef<(THREE.Mesh | null)[]>([]);
   const tails = useRef<(THREE.Group | null)[]>([]);
   const tmp = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), q: new THREE.Quaternion() }), []);
-  useHint([hx, groundHeight(hx, hz) + 1, hz], 'lick', 4);
+  // (not for a child already holding a spool)
+  useHint([hx, groundHeight(hx, hz) + 1, hz], 'lick', 4, (p) => !kites.list.some((k) => k.holder === p.slot));
+
+  // the jump bubble over a child whose kite is up high, until they've floated once (for that
+  // child only: its slot follows whoever holds the spool)
+  const jumpHints = useMemo(
+    () =>
+      kites.list.map(
+        (k, i): Hint => ({ id: 9900 + i, position: k.helpAt, radius: 2, action: 'jump', wants: (p) => p.slot === k.holder && !kites.glided.has(p.slot) && k.jumpHelp })
+      ),
+    [homes]
+  );
+  useEffect(() => {
+    const offs = jumpHints.map((h) => registerHint(h));
+    return () => offs.forEach((off) => off());
+  }, [jumpHints]);
 
   useEffect(() => {
     const offs = homes.map((_, i) => {
@@ -76,6 +113,8 @@ export function Kites() {
         heldBy: null,
         onGrab: (slot) => {
           kites.list[i].holder = slot;
+          // (jumps from before picking it up don't count)
+          kites.list[i].seenJump = players.get(slot)?.jumpedAt ?? 0;
           return true;
         },
         onRelease: () => {
@@ -128,7 +167,28 @@ export function Kites() {
           earnSticker('kite');
         }
         if (!p.bot && k.h > 0.7) high += 1;
+
+        // help, only while it's needed (and never again once it's worked)
+        k.standFor = speed < 0.5 && p.grounded && k.h < 0.3 ? k.standFor + dt : 0;
+        k.highFor = k.h > FLOATS && p.grounded ? k.highFor + dt : 0;
+        // (once on, the jump bubble stays till the jump, or till the kite comes down: not on and
+        // off with every bump on the hill)
+        if (k.highFor > JUMP_HELP) k.jumpHelp = true;
+        if (k.h < FLOATS - 0.1) k.jumpHelp = false;
+        if (k.h > FLOATS) kites.ranHigh.add(p.slot);
+        // a jump with the kite up high: that's what the jump bubble is for (running off the top of
+        // the hill floats too, but that isn't the child jumping)
+        if (p.jumpedAt !== k.seenJump) {
+          if (k.h > FLOATS) kites.glided.add(p.slot);
+          k.seenJump = p.jumpedAt;
+          k.jumpHelp = false;
+        }
+        k.helpAt.copy(p.position);
+        jumpHints[i].slot = p.slot;
       } else {
+        k.standFor = 0;
+        k.highFor = 0;
+        k.jumpHelp = false;
         // lying on the grass beside its spool
         k.h = 0;
         tmp.a.set(t.x + 0.9, groundHeight(t.x + 0.9, t.z) + 0.08, t.z);
@@ -158,6 +218,23 @@ export function Kites() {
         }
       }
 
+      // paw prints ahead of a child standing still with the kite down: "run!" (gone once they run)
+      const help = paws[i];
+      const wantSteps = !!p && !p.bot && !kites.ranHigh.has(p.slot) && (k.standFor > STAND_HELP || (help.shown > 0 && Math.hypot(p.velocity.x, p.velocity.z) < RUN_FROM));
+      if (p && wantSteps && help.shown === 0) {
+        const fx = Math.sin(p.facing);
+        const fz = Math.cos(p.facing);
+        help.place(
+          [0, 1, 2, 3].map((n) => {
+            const side = n % 2 ? 0.16 : -0.16;
+            const ahead = 0.9 + n * 0.55;
+            return { x: p.position.x + fx * ahead + fz * side, z: p.position.z + fz * ahead - fx * side, angle: p.facing };
+          })
+        );
+      }
+      help.update(wantSteps, dt, p ? [p.slot] : []);
+      kites.paws[i] = { shown: help.shown, mask: help.mask };
+
       // carried off and left lying about: home after a while
       const v = rb.linvel();
       const away = distXZ(t.x, t.z, hx, hz) > AWAY;
@@ -179,6 +256,9 @@ export function Kites() {
 
   return (
     <group>
+      {paws.map((pw, i) => (
+        <primitive key={`paws${i}`} object={pw.group} />
+      ))}
       {homes.map((h, i) => (
         <group key={i}>
           {/* the spool of string (what you pick up) */}

@@ -19,7 +19,7 @@ import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, keepAwake, physics, players, props as runtimeProps, type PlayerRuntime } from './runtime';
-import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, SPLIT_AT, useViews, views, type View } from './views';
+import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, seeOwnHelp, SPLIT_AT, useViews, views, type View } from './views';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
 import { systemOff, TEST_MODE } from './testMode';
@@ -196,6 +196,7 @@ function CameraRig() {
       if (!v) {
         // a new view starts where the shared camera is, and swoops in to its animal
         const cam = (camera as THREE.PerspectiveCamera).clone();
+        seeOwnHelp(cam, p.slot);
         v = { slot: p.slot, cam, focus: focus.clone(), look: lookAt.clone(), rect: rects[i] };
         viewOf.set(p.slot, v);
       }

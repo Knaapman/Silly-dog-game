@@ -275,7 +275,16 @@ export function registerSurface(handle: number, surface: Surface) {
 }
 
 /** Things that react when a player walks close (used for floating button hints). */
-export type Hint = { id: number; position: THREE.Vector3; radius: number; action: 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'walk' };
+export type Hint = {
+  id: number;
+  position: THREE.Vector3;
+  radius: number;
+  action: 'jump' | 'bonk' | 'lick' | 'noise' | 'flop' | 'poop' | 'walk';
+  /** Only players who need it bring it up (e.g. not one already holding the thing). */
+  wants?: (p: PlayerRuntime) => boolean;
+  /** Meant for this one player: in split screen only their view shows it. */
+  slot?: number;
+};
 export const hints = new Map<number, Hint>();
 
 export function registerHint(hint: Hint) {
