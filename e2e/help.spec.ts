@@ -16,8 +16,8 @@ const kite = (game: Game) =>
       h: k.list[0].h as number,
       holder: k.list[0].holder as number | null,
       paws: k.paws[0] as { shown: number; mask: number },
-      ranHigh: [...k.ranHigh] as number[],
-      glided: [...k.glided] as number[]
+      ranHigh: k.ranHigh.slots as number[],
+      glided: k.glided.slots as number[]
     };
   });
 const swing = (game: Game, i: number) =>
@@ -27,7 +27,7 @@ const swing = (game: Game, i: number) =>
       rider: s.seats[i].rider as number | null,
       help: s.help[i] as { shown: number; slots: number[]; mask: number },
       friendPushes: s.friendPushes as number,
-      pushers: [...s.pushers] as number[]
+      pushers: s.pushers.slots as number[]
     };
   }, i);
 const swingsLayout = (game: Game) =>
@@ -245,5 +245,27 @@ test('swing playing alone: the buddy pushes, no paw prints for anyone, and the c
   await game.tap('Space');
   await game.seconds(0.2);
   expect((await swing(game, 3)).rider).toBeNull();
+  game.expectNoErrors();
+});
+
+test('learned help belongs to the child, not the player number: a new child in the same slot gets it again', async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  await game.join('kb2');
+  // slot 1 learned the kite with a controller, then that child left and another took the slot on
+  // the keyboard: the paw prints are back for them
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.kites.ranHigh.add({ slot: 1, source: 'pad0' }));
+  await pickUpKite(game, 1);
+  await game.seconds(4);
+  expect((await kite(game)).paws.shown).toBeGreaterThan(0.9);
+  expect((await kite(game)).paws.mask).toBe(LAYER(1));
+  // but for the very child who learned it (this slot, this controller): none
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.kites.ranHigh.add({ slot: 1, source: 'kb2' }));
+  await game.seconds(1);
+  expect((await kite(game)).paws.shown).toBe(0);
+  // and the buddy never "learns" for whoever comes after it
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.swings.pushers.add({ slot: 2, source: 'bot', bot: true }));
+  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.swings.pushers.slots)).toEqual([]);
   game.expectNoErrors();
 });

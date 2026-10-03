@@ -12,7 +12,7 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
-import { HelpPaws } from './helpPaws';
+import { HelpPaws, Learned } from './helpPaws';
 
 // Kites on the hill north of the mesa: three spools of string lie on the top, each with its kite
 // beside it. Lick a spool to pick it up and run: the wind takes the kite out on its string, and the
@@ -43,7 +43,7 @@ const FLOATS = 0.6;
 type Kite = { holder: number | null; h: number; pos: THREE.Vector3; still: number; standFor: number; highFor: number; jumpHelp: boolean; seenJump: number; helpAt: THREE.Vector3 };
 
 /** For the tests. ranHigh / glided: children who've had a kite up high / floated on one (no more help). */
-export const kites = { list: [] as Kite[], high: 0, together: 0, homes: 0, ranHigh: new Set<number>(), glided: new Set<number>(), paws: [] as { shown: number; mask: number }[] };
+export const kites = { list: [] as Kite[], high: 0, together: 0, homes: 0, ranHigh: new Learned(), glided: new Learned(), paws: [] as { shown: number; mask: number }[] };
 
 export function Kites() {
   const [hx, hz] = KITES.hill;
@@ -90,7 +90,7 @@ export function Kites() {
   const jumpHints = useMemo(
     () =>
       kites.list.map(
-        (k, i): Hint => ({ id: 9900 + i, position: k.helpAt, radius: 2, action: 'jump', wants: (p) => p.slot === k.holder && !kites.glided.has(p.slot) && k.jumpHelp })
+        (k, i): Hint => ({ id: 9900 + i, position: k.helpAt, radius: 2, action: 'jump', wants: (p) => p.slot === k.holder && !kites.glided.has(p) && k.jumpHelp })
       ),
     [homes]
   );
@@ -175,11 +175,11 @@ export function Kites() {
         // off with every bump on the hill)
         if (k.highFor > JUMP_HELP) k.jumpHelp = true;
         if (k.h < FLOATS - 0.1) k.jumpHelp = false;
-        if (k.h > FLOATS) kites.ranHigh.add(p.slot);
+        if (k.h > FLOATS) kites.ranHigh.add(p);
         // a jump with the kite up high: that's what the jump bubble is for (running off the top of
         // the hill floats too, but that isn't the child jumping)
         if (p.jumpedAt !== k.seenJump) {
-          if (k.h > FLOATS) kites.glided.add(p.slot);
+          if (k.h > FLOATS) kites.glided.add(p);
           k.seenJump = p.jumpedAt;
           k.jumpHelp = false;
         }
@@ -220,7 +220,7 @@ export function Kites() {
 
       // paw prints ahead of a child standing still with the kite down: "run!" (gone once they run)
       const help = paws[i];
-      const wantSteps = !!p && !p.bot && !kites.ranHigh.has(p.slot) && (k.standFor > STAND_HELP || (help.shown > 0 && Math.hypot(p.velocity.x, p.velocity.z) < RUN_FROM));
+      const wantSteps = !!p && !p.bot && !kites.ranHigh.has(p) && (k.standFor > STAND_HELP || (help.shown > 0 && Math.hypot(p.velocity.x, p.velocity.z) < RUN_FROM));
       if (p && wantSteps && help.shown === 0) {
         const fx = Math.sin(p.facing);
         const fz = Math.cos(p.facing);

@@ -79,3 +79,22 @@ export class HelpPaws {
     });
   }
 }
+
+/**
+ * Who has learned something, so that help stops for them. A child is a player slot *and* the
+ * controller they play with: a different child who later gets the same slot (someone left, or a
+ * friend took the buddy's place) is new and gets the help again. The buddy never learns.
+ */
+export class Learned {
+  private readonly who = new Map<number, string>();
+  add(p: { slot: number; source: string; bot?: boolean }) {
+    if (!p.bot) this.who.set(p.slot, p.source);
+  }
+  has(p: { slot: number; source: string }) {
+    return this.who.get(p.slot) === p.source;
+  }
+  /** For the tests: the slots that have learned. */
+  get slots() {
+    return [...this.who.keys()];
+  }
+}

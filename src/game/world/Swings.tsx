@@ -12,7 +12,7 @@ import { earnSticker } from '../stickers';
 import { amplitude, fling, pushSwing, seatOffset, seatSpeed, stepSwing, SWING_LENGTH, SWING_PIVOT, type Swing } from '../swing';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
-import { HelpPaws } from './helpPaws';
+import { HelpPaws, Learned } from './helpPaws';
 import { randomStream } from '../rng';
 
 const random = randomStream('swings');
@@ -69,7 +69,7 @@ export function Swings() {
     pushes: 0,
     friendPushes: 0,
     /** Children who've given a friend a push (they know how: no more paw prints for them). */
-    pushers: new Set<number>(),
+    pushers: new Learned(),
     /** For the tests: how far the push-here prints are shown at each seat, and for whom. */
     help: [] as { shown: number; slots: number[]; mask: number }[],
     knocks: 0,
@@ -92,7 +92,7 @@ export function Swings() {
     const z = st.current;
     const s = z.seats[i];
     const on = rider(s.rider);
-    if (!on || on.bot || p.bot || p.asleep || p.slot === on.slot || z.pushers.has(p.slot)) return false;
+    if (!on || on.bot || p.bot || p.asleep || p.slot === on.slot || z.pushers.has(p)) return false;
     if (z.seats.some((o) => o.rider === p.slot) || now - s.since < PUSH_HELP_AFTER * 1000) return false;
     return distXZ(p.position.x, p.position.z, xs[i], cz) < PUSH_HELP_NEAR;
   };
@@ -129,7 +129,7 @@ export function Swings() {
           const on = rider(s.rider);
           if (on && on.slot !== slot && from && !from.bot && !on.bot) {
             z.friendPushes += 1;
-            z.pushers.add(slot);
+            z.pushers.add(from);
             earnSticker('swingpush');
           }
           playBoing(bonkSpots[i], 1.2);
