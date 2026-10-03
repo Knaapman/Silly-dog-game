@@ -302,7 +302,8 @@ tester**, the sticker album, a picture of all controls, and:
   the most draw calls in a frame, any change of graphics level, how often an animal got stuck (and where) or needed
   the rescue buttons, controllers dropping out, any errors, the stickers earned (which things got played with) and
   how long the animals spent in each part of the park. **Save** downloads it as a file, to send along with what you
-  noticed; **Clear** empties it. Nothing is sent anywhere by itself.
+  noticed; **Clear** empties it. Nothing is sent anywhere by itself. Broken saved data (a half-written save, an
+  old version) is ignored: a fresh park starts instead.
 - **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
 - **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
   without internet.

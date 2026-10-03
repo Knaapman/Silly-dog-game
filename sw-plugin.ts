@@ -46,9 +46,13 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   if (req.mode === 'navigate') {
-    // The page itself: try the network first (to pick up a new version), else the stored one.
+    // The page itself: try the network first (to pick up a new version), else the stored one. A
+    // server that answers with an error page (stopped half-way, wrong folder) counts as no network.
+    const stored = () => caches.open(VERSION).then((cache) => cache.match('./')).then((r) => r || Response.error());
     event.respondWith(
-      fetch(req).catch(() => caches.open(VERSION).then((cache) => cache.match('./')).then((r) => r || Response.error()))
+      fetch(req)
+        .then((r) => (r.ok ? r : stored().then((s) => (s.type === 'error' ? r : s))))
+        .catch(stored)
     );
     return;
   }
