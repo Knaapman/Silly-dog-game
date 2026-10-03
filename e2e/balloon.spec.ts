@@ -105,9 +105,19 @@ test('jump out on the way: down you drop; playing alone, the buddy rode along an
   // down we come (from way up high), and land
   for (let i = 0; i < 40 && (await game.player(0)).launched; i += 1) await game.seconds(0.25);
   await game.seconds(1);
-  const me = await game.player(0);
+  // and come to rest on something: the grass, or whatever was underneath (once, a tower of building
+  // blocks, which then toppled)
+  let me = await game.player(0);
+  for (let i = 0; i < 16; i += 1) {
+    await game.seconds(0.25);
+    const now = await game.player(0);
+    const still = Math.abs(now.y - me.y) < 0.02;
+    me = now;
+    if (still) break;
+  }
   expect(me.launched).toBe(false);
-  expect(me.y - (await ground(game, me.x, me.z))).toBeLessThan(1.5);
+  expect(me.y - (await ground(game, me.x, me.z))).toBeGreaterThan(0);
+  expect(me.y - (await ground(game, me.x, me.z))).toBeLessThan(4);
   // the empty balloon flies on round its loop and comes home by itself
   expect(await until(game, 'rest', 70)).toBe(true);
   b = await balloon(game);

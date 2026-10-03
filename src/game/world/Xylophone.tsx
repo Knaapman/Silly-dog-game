@@ -14,6 +14,9 @@ import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { judge, KEYS, makeTune, TUNE_BIG, TUNE_MOST, TUNE_START } from '../tune';
 import { useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('xylophone');
 
 // The giant xylophone in the playground: eight big keys to walk, run and jump along, each with
 // its own note. Behind them a songbird on a post sings a little tune and lights up its keys;
@@ -120,7 +123,7 @@ export function Xylophone() {
   const floatNote = (key: number, now: number) => {
     const i = noteCursor.current;
     noteCursor.current = (i + 1) % NOTE_POOL;
-    noteState.current[i] = { at: now, x: (Math.random() - 0.5) * 0.6, color: key };
+    noteState.current[i] = { at: now, x: (random() - 0.5) * 0.6, color: key };
     const g = notes.current[i];
     g?.children.forEach((c) => ((c as THREE.Mesh).material = noteMats[key]));
   };
@@ -182,7 +185,7 @@ export function Xylophone() {
     const since = (now - s.phaseAt) / 1000;
     if (s.phase === 'wait') {
       if (near && now - s.nearSince > 1200) {
-        if (s.tune.length !== s.length) s.tune = makeTune(s.length);
+        if (s.tune.length !== s.length) s.tune = makeTune(s.length, random);
         s.misses = 0;
         setPhase('sing', now);
       }
@@ -206,7 +209,7 @@ export function Xylophone() {
       if (since > 1.4) setPhase(near ? 'sing' : 'wait', now);
     } else if (s.phase === 'cheer') {
       if (since > 2.6) {
-        s.tune = makeTune(s.length);
+        s.tune = makeTune(s.length, random);
         s.misses = 0;
         setPhase(near ? 'sing' : 'wait', now);
       }

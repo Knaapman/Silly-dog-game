@@ -8,6 +8,9 @@ import { MODEL_SCALE, RADIUS, UP } from './constants';
 import type { FrameCtx } from './frame';
 import { waterLevelAt } from '../terrain';
 import { addFootprint, paintColor } from '../paint';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.animate');
 
 /** The scene objects one animal moves around every frame. */
 export type PlayerVisuals = {
@@ -114,7 +117,7 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
       s.powerFx = 0.3;
       tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.55 * s.size);
       emit('puff', [tmp.c.x, t.y - 0.1, tmp.c.z], { count: 1, color: ['#b5e48c', '#99d98c'], speed: 0.4, up: 0.6, size: 0.22 });
-      if (Math.random() < 0.15) playGurgle(s.pos);
+      if (random() < 0.15) playGurgle(s.pos);
     } else if (s.power === 'chili' && s.powerFx <= 0) {
       // steam out of the ears, sparks under fast feet
       s.powerFx = 0.2;
@@ -198,7 +201,7 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
   }
 
   // a unicorn leaves a little rainbow of sparkles behind when it runs
-  if (species === 'unicorn' && hSpeed > 2 && !s.hidden && Math.random() < 0.4) {
+  if (species === 'unicorn' && hSpeed > 2 && !s.hidden && random() < 0.4) {
     tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6 * s.size);
     emit('star', [tmp.c.x, t.y - 0.1, tmp.c.z], { count: 1, color: ['#ff4d5e', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'], speed: 0.6, up: 1, size: 0.1, life: 0.9 });
   }

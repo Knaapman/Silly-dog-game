@@ -9,6 +9,9 @@ import { players, props, type PlayerRuntime, type Surface } from '../runtime';
 import { useGame } from '../store';
 import type { SPECIES_SPECS } from './AnimalModel';
 import type { Flip, PlayerState } from './state';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.frame');
 
 type Vec = { x: number; y: number; z: number };
 
@@ -83,7 +86,7 @@ export function releaseHeld(f: FrameCtx, throwIt: boolean) {
   if (throwIt && pb && !placed) {
     const power = prop.heavy ? 7 : 13;
     pb.setLinvel({ x: tmp.fwd.x * power + s.vel.x * 0.5, y: prop.heavy ? 4 : 6.5, z: tmp.fwd.z * power + s.vel.z * 0.5 }, true);
-    pb.setAngvel({ x: (Math.random() - 0.5) * 8, y: (Math.random() - 0.5) * 8, z: (Math.random() - 0.5) * 8 }, true);
+    pb.setAngvel({ x: (random() - 0.5) * 8, y: (random() - 0.5) * 8, z: (random() - 0.5) * 8 }, true);
     playThrow(s.pos);
     rumble(f.source, 0.2, 0.5, 90);
   }
@@ -107,7 +110,7 @@ export function startFlop(f: FrameCtx) {
   rb.setEnabledRotations(true, true, true, true);
   col?.setFriction(0.9);
   rb.setLinvel({ x: lv.x * 0.5, y: Math.max(lv.y, 6), z: lv.z * 0.5 }, true);
-  rb.setAngvel({ x: (Math.random() - 0.5) * 16, y: (Math.random() - 0.5) * 10, z: (Math.random() - 0.5) * 16 }, true);
+  rb.setAngvel({ x: (random() - 0.5) * 16, y: (random() - 0.5) * 10, z: (random() - 0.5) * 16 }, true);
   playFlop(s.pos);
   emit('star', [t.x, t.y + 0.8, t.z], { count: 5, color: ['#ffe14d', '#ffffff'], speed: 3, up: 3 });
   useGame.getState().addParty(0.01);

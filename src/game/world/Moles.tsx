@@ -12,6 +12,9 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('moles');
 
 // Whack-a-mole on the meadow between the plaza and the forest: seven molehills, and while a child
 // is about, cheeky moles pop up out of them one after another. Bonk one (a headbutt, a jump on its
@@ -155,7 +158,7 @@ export function Moles() {
           free.push(i);
         });
         if (free.length > 0) {
-          const i = free[Math.floor(Math.random() * free.length)];
+          const i = free[Math.floor(random() * free.length)];
           const m = s.list[i];
           m.state = 'up';
           m.t = 0;
@@ -166,7 +169,7 @@ export function Moles() {
         }
       }
       // (slower while the golden one waits, so it stands out)
-      s.nextPop = now + (GAP[0] + Math.random() * (GAP[1] - GAP[0])) * 1000 * (kids > 1 ? 0.75 : 1) * (s.goldenUp ? 1.6 : 1);
+      s.nextPop = now + (GAP[0] + random() * (GAP[1] - GAP[0])) * 1000 * (kids > 1 ? 0.75 : 1) * (s.goldenUp ? 1.6 : 1);
     }
 
     s.list.forEach((m, i) => {

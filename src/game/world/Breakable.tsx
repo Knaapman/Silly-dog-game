@@ -10,6 +10,9 @@ import { registerStatic } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
 import { after, gameNow } from '../clock';
+import { randomStream } from '../rng';
+
+const random = randomStream('breakable');
 
 export type Piece = { shape: 'box' | 'ball'; size: number; color: string; offset: Vec3 };
 
@@ -57,8 +60,8 @@ export function Breakable({
             velocities: pieces.map((p) => {
               const spread = new THREE.Vector3(p.offset[0], 0, p.offset[2]).normalize().multiplyScalar(3);
               return {
-                v: [dir.x * 6 + spread.x + (Math.random() - 0.5) * 3, 5 + Math.random() * 4, dir.z * 6 + spread.z + (Math.random() - 0.5) * 3] as Vec3,
-                w: [Math.random() * 8, Math.random() * 8, Math.random() * 8] as Vec3
+                v: [dir.x * 6 + spread.x + (random() - 0.5) * 3, 5 + random() * 4, dir.z * 6 + spread.z + (random() - 0.5) * 3] as Vec3,
+                w: [random() * 8, random() * 8, random() * 8] as Vec3
               };
             })
           });

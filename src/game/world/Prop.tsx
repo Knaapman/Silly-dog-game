@@ -24,6 +24,9 @@ import {
 import { allocPropId, players, registerProp, type PropEntry, type PropKind } from '../runtime';
 import { useGame } from '../store';
 import { after, useGameFrame } from '../clock';
+import { randomStream } from '../rng';
+
+const random = randomStream('prop');
 
 type PropDef = {
   radius: number;
@@ -317,7 +320,7 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetToken, resetKey]);
 
-  const tick = useRef(Math.floor(Math.random() * 30));
+  const tick = useRef(Math.floor(random() * 30));
   useGameFrame(() => {
     const rb = body.current;
     const entry = entryRef.current;

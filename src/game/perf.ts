@@ -5,7 +5,10 @@ export const perf = {
   /** Frames per second over the last full second (0 until measured). */
   fps: 0,
   frames: 0,
-  windowStart: -1
+  windowStart: -1,
+  /** Draw calls and triangles in the last drawn frame (all views of a split screen together). */
+  calls: 0,
+  triangles: 0
 };
 
 /** Call once per drawn frame with the frame's timestamp (ms). Returns true when fps updated. */

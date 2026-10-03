@@ -53,6 +53,9 @@ function groundMaterial() {
   return m;
 }
 
+/** The ground is drawn in chunks this many grid cells across (20 m). */
+const CHUNK = 40;
+
 function Ground() {
   const material = useMemo(groundMaterial, []);
   const far = useMemo(() => new THREE.MeshLambertMaterial({ map: grassTexture() }), []);
@@ -60,7 +63,7 @@ function Ground() {
     () => [farGrass(-FAR / 2, FAR / 2, -FAR / 2, TERRAIN.minZ), farGrass(-FAR / 2, TERRAIN.minX, TERRAIN.minZ, SEA.coast), farGrass(TERRAIN.maxX, FAR / 2, TERRAIN.minZ, SEA.coast)],
     []
   );
-  const { nx, nz, heights, geometry, scale, center } = useMemo(() => {
+  const { nx, nz, heights, chunks, scale, center } = useMemo(() => {
     const { nx, nz, heights } = buildHeightGrid();
     const { minX, minZ, maxX, maxZ, cell } = TERRAIN;
     // the mesh: one vertex per grid sample, the same heights the physics uses
@@ -122,17 +125,52 @@ function Ground() {
         blend[k * 3 + 2] = sand;
       }
     geometry.setAttribute('blend', new THREE.BufferAttribute(blend, 3));
+    // Drawn in square chunks that share the vertices, so the camera only draws the ground it can
+    // see (as one mesh it was a quarter of a million triangles in every view, every frame).
+    const chunks: THREE.BufferGeometry[] = [];
+    for (let cz = 0; cz < nz; cz += CHUNK)
+      for (let cx = 0; cx < nx; cx += CHUNK) {
+        const ex = Math.min(nx, cx + CHUNK);
+        const ez = Math.min(nz, cz + CHUNK);
+        const part = new Uint32Array((ex - cx) * (ez - cz) * 6);
+        let lo = Infinity;
+        let hi = -Infinity;
+        let w = 0;
+        for (let iz = cz; iz < ez; iz += 1)
+          for (let ix = cx; ix < ex; ix += 1) {
+            const q0 = (iz * nx + ix) * 6;
+            for (let n = 0; n < 6; n += 1) part[w++] = index[q0 + n];
+          }
+        for (let iz = cz; iz <= ez; iz += 1)
+          for (let ix = cx; ix <= ex; ix += 1) {
+            const y = heights[iz * (nx + 1) + ix];
+            lo = Math.min(lo, y);
+            hi = Math.max(hi, y);
+          }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', geometry.getAttribute('position'));
+        g.setAttribute('uv', geometry.getAttribute('uv'));
+        g.setAttribute('normal', geometry.getAttribute('normal'));
+        g.setAttribute('blend', geometry.getAttribute('blend'));
+        g.setIndex(new THREE.BufferAttribute(part, 1));
+        // (the bounds of this chunk, not of the whole shared vertex list)
+        g.boundingBox = new THREE.Box3(new THREE.Vector3(minX + cx * cell, lo, minZ + cz * cell), new THREE.Vector3(minX + ex * cell, hi, minZ + ez * cell));
+        g.boundingSphere = g.boundingBox.getBoundingSphere(new THREE.Sphere());
+        chunks.push(g);
+      }
     // rapier wants the height matrix column-major: rows along z, columns along x
     const colMajor = new Float32Array(count);
     for (let iz = 0; iz <= nz; iz += 1) for (let ix = 0; ix <= nx; ix += 1) colMajor[ix * (nz + 1) + iz] = heights[iz * (nx + 1) + ix];
-    return { nx, nz, heights: Array.from(colMajor), geometry, scale: { x: nx * cell, y: 1, z: nz * cell }, center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number] };
+    return { nx, nz, heights: Array.from(colMajor), chunks, scale: { x: nx * cell, y: 1, z: nz * cell }, center: [(minX + maxX) / 2, 0, (minZ + maxZ) / 2] as [number, number, number] };
   }, []);
   const hx = WORLD_HALF_X;
   const hz = WORLD_HALF_Z;
   return (
     <RigidBody type="fixed" colliders={false} friction={1}>
       <HeightfieldCollider args={[nz, nx, heights, scale]} position={center} friction={1} />
-      <mesh receiveShadow geometry={geometry} material={material} />
+      {chunks.map((g, i) => (
+        <mesh key={i} receiveShadow geometry={g} material={material} />
+      ))}
       {/* the flat grass beyond the park's ground: north, west and east (the sea takes the south) */}
       {farStrips.map((g, i) => (
         <mesh key={i} receiveShadow geometry={g} material={far} />

@@ -12,6 +12,9 @@ import { allocPropId, debugInfo, noises, players, registerProp, type PropEntry }
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { groundHeight } from '../terrain';
+import { randomStream } from '../rng';
+
+const random = randomStream('chickens');
 
 type Mode = 'wander' | 'peck' | 'flee' | 'tumble' | 'dizzy' | 'held';
 
@@ -32,11 +35,11 @@ function Chicken({ index }: { index: number }) {
   }, [index]);
   const s = useRef({
     mode: 'wander' as Mode,
-    timer: Math.random() * 2,
+    timer: random() * 2,
     target: home.clone(),
-    facing: Math.random() * Math.PI * 2,
+    facing: random() * Math.PI * 2,
     walk: 0,
-    cluckIn: 2 + Math.random() * 6,
+    cluckIn: 2 + random() * 6,
     lastNoise: 0,
     settle: 0,
     flap: 0,
@@ -176,7 +179,7 @@ function Chicken({ index }: { index: number }) {
           tmp.normalize();
         }
         c.facing = Math.atan2(tmp.x, tmp.z) + Math.sin(time * 3) * 0.4;
-        if (Math.random() < dt * 1.5 && t.y < 0.6) {
+        if (random() < dt * 1.5 && t.y < 0.6) {
           vy = 4;
           c.flap = 0.5;
         }
@@ -191,19 +194,19 @@ function Chicken({ index }: { index: number }) {
       } else if (c.mode === 'dizzy') {
         c.facing += dt * 6;
         speed = 1.5;
-        if (Math.random() < dt * 4) emit('star', [t.x, t.y + 0.7, t.z], { count: 1, color: '#ffe14d', speed: 0.8, up: 1, size: 0.12 });
+        if (random() < dt * 4) emit('star', [t.x, t.y + 0.7, t.z], { count: 1, color: '#ffe14d', speed: 0.8, up: 1, size: 0.12 });
         if (c.timer <= 0) c.mode = 'wander';
       } else if (c.mode === 'peck') {
         speed = 0;
         if (c.timer <= 0) {
           c.mode = 'wander';
-          const a = Math.random() * Math.PI * 2;
+          const a = random() * Math.PI * 2;
           if (c.penned) {
             // pottering about in the coop
-            const r = Math.random() * (CHICKEN_COOP.size / 2 - 0.8);
+            const r = random() * (CHICKEN_COOP.size / 2 - 0.8);
             c.target.set(CHICKEN_COOP.center[0] + Math.cos(a) * r, 0, CHICKEN_COOP.center[1] + Math.sin(a) * r);
           } else {
-            const r = Math.random() * CHICKEN_HOME.radius;
+            const r = random() * CHICKEN_HOME.radius;
             c.target.set(CHICKEN_HOME.center[0] + Math.cos(a) * r, 0, CHICKEN_HOME.center[1] + Math.sin(a) * r);
           }
         }
@@ -215,7 +218,7 @@ function Chicken({ index }: { index: number }) {
         const d = distXZ(c.target.x, c.target.z, t.x, t.z);
         if (d < 0.5 || c.timer < -6) {
           c.mode = 'peck';
-          c.timer = 1 + Math.random() * 2.5;
+          c.timer = 1 + random() * 2.5;
         } else {
           c.facing = Math.atan2(c.target.x - t.x, c.target.z - t.z);
           speed = 1.8;
@@ -275,7 +278,7 @@ function Chicken({ index }: { index: number }) {
 
       c.cluckIn -= dt;
       if (c.cluckIn <= 0) {
-        c.cluckIn = 4 + Math.random() * 7;
+        c.cluckIn = 4 + random() * 7;
         playCluck(t);
       }
     }

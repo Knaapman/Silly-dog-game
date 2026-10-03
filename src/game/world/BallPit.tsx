@@ -11,6 +11,9 @@ import { allocPropId, debugInfo, players, registerProp } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { StaticBox, useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('ballPit');
 
 // The ball pit: a tub full to the brim with little coloured balls (a "sea" of them, drawn as one
 // instanced mesh with a spring on every ball) and some big real ones in among them. Wade through
@@ -210,7 +213,7 @@ function BigBalls() {
       else if (now - awaySince.current[i] > BACK_AFTER) {
         awaySince.current[i] = -1;
         poof([t.x, t.y, t.z], PIT_COLORS[i % PIT_COLORS.length], 6);
-        b.setTranslation({ x: CX + (Math.random() - 0.5) * (BALL_PIT.size - 1.5), y: 1.2, z: CZ + (Math.random() - 0.5) * (BALL_PIT.size - 1.5) }, true);
+        b.setTranslation({ x: CX + (random() - 0.5) * (BALL_PIT.size - 1.5), y: 1.2, z: CZ + (random() - 0.5) * (BALL_PIT.size - 1.5) }, true);
         b.setLinvel({ x: 0, y: 0, z: 0 }, true);
         playPoof([CX, 0.5, CZ]);
         ballPit.back += 1;

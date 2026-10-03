@@ -18,6 +18,9 @@ import { hamster } from './HamsterBalls';
 import { moles } from './Moles';
 import { blocks, kidBuilding } from './Blocks';
 import { roundabout } from './Roundabout';
+import { randomStream } from '../rng';
+
+const random = randomStream('buddy');
 
 // The buddy: when one child plays alone, a computer animal keeps them company. It is a normal
 // animal driven by made-up controller input, so everything works on it: ride it, lick it and
@@ -90,7 +93,7 @@ export function Buddy() {
     kidJumpedAt: 0,
     kidNoiseAt: 0,
     pending: [],
-    circle: Math.random() * 6,
+    circle: random() * 6,
     lastPos: new THREE.Vector3(),
     stuckFor: 0,
     nextSilly: 0,
@@ -213,7 +216,7 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     b.pending = [];
   } else if (me.grabbedBy != null || kid.asleep) {
     // dangling from a tongue (giggle now and then), or waiting for a napping friend
-    if (me.grabbedBy != null && Math.random() < dt * 0.6) press.noise = true;
+    if (me.grabbedBy != null && random() < dt * 0.6) press.noise = true;
     b.pending = [];
   } else if (me.ridingOn != null) {
     // riding on the child's back: enjoy it for a bit, then hop off (up high: only onto a spot
@@ -456,8 +459,8 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     }
     // and just being silly now and then while standing about
     if (!moving && now > b.nextSilly && !busy && me.grounded && !me.isLaunched()) {
-      b.nextSilly = now + 7000 + Math.random() * 8000;
-      if (Math.random() < 0.5) {
+      b.nextSilly = now + 7000 + random() * 8000;
+      if (random() < 0.5) {
         b.pending.push({ action: 'jump', at: now }, { action: 'jump', at: now + 250 });
       } else press.noise = true;
     }
@@ -502,7 +505,7 @@ function catchUp(me: PlayerRuntime, kid: PlayerRuntime, trail: THREE.Vector3[]) 
     const at = landingSpot(trail, kid, scratch.b);
     body.setTranslation({ x: at.x, y: at.y + RADIUS + 0.6, z: at.z }, true);
   } else {
-    const a = Math.random() * Math.PI * 2;
+    const a = random() * Math.PI * 2;
     body.setTranslation({ x: kid.position.x + Math.cos(a) * 2.5, y: kid.position.y + 2, z: kid.position.z + Math.sin(a) * 2.5 }, true);
   }
   body.setLinvel({ x: 0, y: 0, z: 0 }, true);

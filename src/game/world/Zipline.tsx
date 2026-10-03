@@ -11,6 +11,9 @@ import { debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { StaticBox, StaticCylinder, useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('zipline');
 
 // The zipline: step onto the platform on the mountain's south rim and grab a handle, and off
 // you go, whizzing over the whole park, faster and faster, down to the lagoon, where you let go
@@ -109,7 +112,7 @@ export function Zipline() {
           tmp.seat.copy(tmp.p);
           tmp.seat.y -= HANG;
           p.hold(tmp.seat, false, facing);
-          if (Math.random() < dt * 6) emit('star', [tmp.p.x, tmp.p.y, tmp.p.z], { count: 1, color: ['#ffd23f', '#ffffff'], speed: 1, up: 0.5, size: 0.12, life: 0.6 });
+          if (random() < dt * 6) emit('star', [tmp.p.x, tmp.p.y, tmp.p.z], { count: 1, color: ['#ffd23f', '#ffffff'], speed: 1, up: 0.5, size: 0.12, life: 0.6 });
           if (h.t >= 1) {
             // the end, over the lagoon: let go, splash
             earnSticker('zipline');

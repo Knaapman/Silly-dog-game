@@ -16,6 +16,9 @@ import { Prop } from './Prop';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { useSeeThrough } from './seeThrough';
+import { randomStream } from '../rng';
+
+const random = randomStream('dinoPark');
 
 // ---------------------------------------------------------------------------
 // Volcano: climb in (or take the launch pad) and it erupts you into the sky.
@@ -47,8 +50,8 @@ function Volcano() {
     const colors = ['#ff4d5e', '#ff9f1c', '#ffd23f', '#ff8fd8'];
     setBalls((list) => {
       const add = Array.from({ length: count }, () => {
-        const a = Math.random() * Math.PI * 2;
-        return { id: nextBall.current++, color: colors[Math.floor(Math.random() * colors.length)], velocity: [Math.cos(a) * 6, 14, Math.sin(a) * 6] as Vec3 };
+        const a = random() * Math.PI * 2;
+        return { id: nextBall.current++, color: colors[Math.floor(random() * colors.length)], velocity: [Math.cos(a) * 6, 14, Math.sin(a) * 6] as Vec3 };
       });
       return [...list, ...add].slice(-8);
     });
@@ -61,11 +64,11 @@ function Volcano() {
     s.smoke -= delta;
     if (s.smoke <= 0) {
       s.smoke = 0.35;
-      emit('puff', [cx + (Math.random() - 0.5), RIM + 0.4, cz + (Math.random() - 0.5)], { count: 1, color: ['#bdbdbd', '#eeeeee'], size: 0.6, speed: 0.4, up: 2, gravity: -1.5, life: 2 });
+      emit('puff', [cx + (random() - 0.5), RIM + 0.4, cz + (random() - 0.5)], { count: 1, color: ['#bdbdbd', '#eeeeee'], size: 0.6, speed: 0.4, up: 2, gravity: -1.5, life: 2 });
     }
     s.nextAmbient -= delta;
     if (s.nextAmbient <= 0) {
-      s.nextAmbient = 18 + Math.random() * 6;
+      s.nextAmbient = 18 + random() * 6;
       playRumble([cx, RIM, cz]);
       after(0.9, () => spit(3));
     }
@@ -89,7 +92,7 @@ function Volcano() {
         // First go straight up past the golden star; the next time, land outside.
         if (rec.count % 2 === 1) p.launchTo(craterTop, 16);
         else {
-          const a = Math.random() * Math.PI * 2;
+          const a = random() * Math.PI * 2;
           p.launchTo(new THREE.Vector3(cx + Math.cos(a) * 13, 0, cz + Math.sin(a) * 13), 15);
         }
         spit(2);

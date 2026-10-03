@@ -10,6 +10,9 @@ import { players, registerFood, type PowerKind } from '../runtime';
 import { useGame } from '../store';
 import { useHint } from './common';
 import { after, gameClock, useGameFrame } from '../clock';
+import { randomStream } from '../rng';
+
+const random = randomStream('food');
 
 // Food that stays where it is: lick it to fill your tummy. It grows back after a while.
 
@@ -85,7 +88,7 @@ function Chili() {
 /** Pedestal + the magic food bobbing and spinning above it, trailing sparkles. */
 function MagicSnack({ kind, position }: { kind: MagicKind; position: Vec3 }) {
   const floater = useRef<THREE.Group>(null);
-  const sparkle = useRef(Math.random());
+  const sparkle = useRef(random());
   const colors = { beans: ['#b5e48c', '#ffffff'], mushroom: ['#ff4d5e', '#ffffff'], chili: ['#ff9100', '#ffd23f'] }[kind];
   useGameFrame((_, delta) => {
     const f = floater.current;
@@ -197,7 +200,7 @@ function Snack({ kind, position }: { kind: SnackKind; position: Vec3 }) {
   const [bites, setBites] = useState<number>(def.bites);
   const group = useRef<THREE.Group>(null);
   const pop = useRef(1);
-  const scoop = useMemo(() => SCOOPS[Math.floor(Math.random() * SCOOPS.length)], []);
+  const scoop = useMemo(() => SCOOPS[Math.floor(random() * SCOOPS.length)], []);
   const resetToken = useGame((s) => s.resetToken);
   const regrowTimer = useRef<(() => void) | undefined>(undefined);
 

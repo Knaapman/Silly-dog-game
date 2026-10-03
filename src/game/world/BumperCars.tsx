@@ -13,6 +13,9 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
+import { randomStream } from '../rng';
+
+const random = randomStream('bumperCars');
 
 // Bumper cars at the carnival. Walk in through the gap in the rail and into a car: push the
 // stick where you want to go and it zooms that way. Crash into the other cars (with or without
@@ -145,8 +148,8 @@ export function BumperCars() {
         a.vz += j2 * nz;
         b.vx -= j2 * nx;
         b.vz -= j2 * nz;
-        a.spin += (Math.random() - 0.5) * j2 * 2.5;
-        b.spin += (Math.random() - 0.5) * j2 * 2.5;
+        a.spin += (random() - 0.5) * j2 * 2.5;
+        b.spin += (random() - 0.5) * j2 * 2.5;
         bumped(a, i, -rel, now);
         bumped(b, j, -rel, now);
         if (-rel > 1.5 && (a.driver != null || b.driver != null)) {

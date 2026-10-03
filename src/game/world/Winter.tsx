@@ -18,6 +18,9 @@ import { earnSticker } from '../stickers';
 import { cameraFoci } from '../views';
 import { SnowballFight } from './SnowballFight';
 import { PenguinShy } from './PenguinShy';
+import { randomStream } from '../rng';
+
+const random = randomStream('winter');
 
 function IcePond() {
   const [ix, iz] = ICE.center;
@@ -198,7 +201,7 @@ function SnowBall({ home, index }: { home: Vec3; index: number }) {
         entryRef.current.radius = radius.current;
         entryRef.current.heavy = radius.current > 1.2;
       }
-      if (Math.random() < 0.3) emit('puff', [t.x, t.y - radius.current + 0.1, t.z], { count: 1, color: '#ffffff', size: 0.25, speed: 1, up: 1 });
+      if (random() < 0.3) emit('puff', [t.x, t.y - radius.current + 0.1, t.z], { count: 1, color: '#ffffff', size: 0.25, speed: 1, up: 1 });
     }
     if (mesh.current) mesh.current.scale.setScalar(radius.current / SNOWBALL_START);
     if (t.y < -5 || (t.y < WINTER.level - 12 && !isOnSnow(t.x, t.z) && speed < 0.5)) respawn();
@@ -277,8 +280,8 @@ function SnowmanBuild() {
         (debugInfo.snowman as { knocks: number }).knocks += 1;
         const hs = pieceHeights(st.pieces.map((p) => p.r));
         const fling = (spread: number, up: number): { v: Vec3; w: Vec3 } => ({
-          v: [dir.x * 5 + (Math.random() - 0.5) * spread, up + Math.random() * 3, dir.z * 5 + (Math.random() - 0.5) * spread],
-          w: [Math.random() * 6, Math.random() * 6, Math.random() * 6]
+          v: [dir.x * 5 + (random() - 0.5) * spread, up + random() * 3, dir.z * 5 + (random() - 0.5) * spread],
+          w: [random() * 6, random() * 6, random() * 6]
         });
         const top = hs[2] + st.pieces[2].r;
         setDebris({
@@ -487,8 +490,8 @@ function Snowfall() {
     // around wherever a camera is looking (each view's, in split screen)
     for (const f of cameraFoci()) {
       if (distXZ(f.x, f.z, SNOW.center[0], SNOW.center[1]) > SNOW.radius + 12) continue;
-      const x = f.x + (Math.random() - 0.5) * 34;
-      const z = f.z + (Math.random() - 0.5) * 26;
+      const x = f.x + (random() - 0.5) * 34;
+      const z = f.z + (random() - 0.5) * 26;
       if (!isOnSnow(x, z)) continue;
       emit('confetti', [x, WINTER.level + 12, z], { count: 2, color: '#ffffff', speed: 0.4, up: 0, gravity: 1.1, drag: 1.2, life: 6 });
     }

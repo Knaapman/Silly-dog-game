@@ -18,6 +18,9 @@ import { getStarGeometry, getStarMaterial } from './Stars';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
 import { useSurface } from './surface';
+import { randomStream } from '../rng';
+
+const random = randomStream('rides');
 
 // Rides on the new ground: rubber rings down the river, and sleds down the mountain.
 
@@ -203,7 +206,7 @@ export function TubeRide() {
         t.vz = (t.z - pz) / dt;
       }
       // a few ripples behind a moving tube
-      if (t.mode === 'ride' && Math.random() < dt * 3) ring([t.x - p.dx * 1.1, WATER_LEVEL + 0.04, t.z - p.dz * 1.1], { color: '#e0f6ff', radius: 1.2, duration: 0.8 });
+      if (t.mode === 'ride' && random() < dt * 3) ring([t.x - p.dx * 1.1, WATER_LEVEL + 0.04, t.z - p.dz * 1.1], { color: '#e0f6ff', radius: 1.2, duration: 0.8 });
     });
   });
 
@@ -351,7 +354,7 @@ function Sled({ index }: { index: number }) {
         s.pitch = Math.atan(slope);
         seat.set(s.x, s.y + 0.8, s.z);
         p.hold(seat, false, SLED_FACING);
-        if (s.v > 4 && Math.random() < dt * 20) emit('puff', [s.x + 0.8, s.y + 0.1, s.z], { count: 1, color: s.y > 7 ? '#ffffff' : '#e8e0d0', size: 0.3, speed: 0.6, up: 0.8, life: 0.8 });
+        if (s.v > 4 && random() < dt * 20) emit('puff', [s.x + 0.8, s.y + 0.1, s.z], { count: 1, color: s.y > 7 ? '#ffffff' : '#e8e0d0', size: 0.3, speed: 0.6, up: 0.8, life: 0.8 });
         if (s.x <= SLED_RUN.kickX) {
           // up the hill and WHEEE, off you fly: the faster you were going, the further (and
           // further still with a jump right at the top)

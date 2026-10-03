@@ -9,6 +9,9 @@ import { RADIUS } from './constants';
 import { startFlip, type FrameCtx } from './frame';
 import { lerpAngle } from './physics';
 import { earnSticker } from '../stickers';
+import { randomStream } from '../rng';
+
+const random = randomStream('player.piggyback');
 
 function setRiding(f: FrameCtx, on: number | null) {
   f.s.ridingOn = on;
@@ -77,11 +80,11 @@ export function piggyback(f: FrameCtx) {
         playJump(s.pos);
       } else if (thrown) {
         // the carrier flopped (or got launched): everybody off!
-        const a = Math.random() * Math.PI * 2;
+        const a = random() * Math.PI * 2;
         f.v.x = Math.cos(a) * 5;
         f.v.z = Math.sin(a) * 5;
         f.v.y = 8;
-        startFlip(f, 'z', 0.7, Math.random() < 0.5 ? 1 : -1);
+        startFlip(f, 'z', 0.7, random() < 0.5 ? 1 : -1);
         playBoing(s.pos, 0.9);
       }
       s.jumpBuffer = 0;

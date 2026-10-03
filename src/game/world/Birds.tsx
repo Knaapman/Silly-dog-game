@@ -11,6 +11,9 @@ import { noises, players, props, propPosition } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { useGame } from '../store';
+import { randomStream } from '../rng';
+
+const random = randomStream('birds');
 
 // Bird flocks: they peck about on the grass (and on a few high spots), burst into the air when
 // an animal runs at them or barks, circle round and land somewhere else, so you can chase them
@@ -55,7 +58,7 @@ function Flock({ index }: { index: number }) {
     center: new THREE.Vector3(),
     spread: 2,
     since: 0,
-    stayFor: 25 + Math.random() * 15,
+    stayFor: 25 + random() * 15,
     from: new THREE.Vector3(),
     mid: new THREE.Vector3(),
     to: new THREE.Vector3(),
@@ -64,7 +67,7 @@ function Flock({ index }: { index: number }) {
     upT: 0,
     poop: -1,
     lastNoise: 0,
-    swirl: Math.random() * 6,
+    swirl: random() * 6,
     checkPoopIn: 5
   });
   const birds = useMemo<Bird[]>(
@@ -76,11 +79,11 @@ function Flock({ index }: { index: number }) {
         hopFrom: new THREE.Vector3(),
         hopT: 1,
         peckT: 0,
-        nextMove: Math.random() * 2,
-        facing: Math.random() * Math.PI * 2,
+        nextMove: random() * 2,
+        facing: random() * Math.PI * 2,
         down: true,
         bonk: 0,
-        flap: Math.random() * 6
+        flap: random() * 6
       })),
     []
   );
@@ -92,8 +95,8 @@ function Flock({ index }: { index: number }) {
     st.center.set(x, y, z);
     st.spread = spread;
     birds.forEach((b, i) => {
-      const a = (i / PER_FLOCK) * Math.PI * 2 + Math.random() * 0.6;
-      const r = spread * (0.35 + Math.random() * 0.65);
+      const a = (i / PER_FLOCK) * Math.PI * 2 + random() * 0.6;
+      const r = spread * (0.35 + random() * 0.65);
       b.spot.set(x + Math.cos(a) * r, y, z + Math.sin(a) * r);
       if (instant) {
         b.pos.copy(b.spot);
@@ -116,7 +119,7 @@ function Flock({ index }: { index: number }) {
   const pickNext = (preferNear: boolean) => {
     const st = f.current;
     // a poop lying about with nobody near it? lunch!
-    if (Math.random() < 0.45) {
+    if (random() < 0.45) {
       let found: THREE.Vector3 | null = null;
       let foundId = -1;
       props.forEach((prop) => {
@@ -157,7 +160,7 @@ function Flock({ index }: { index: number }) {
       options.push(i);
       if (preferNear && seen) options.push(i, i); // more likely where the children are
     });
-    const next = options.length ? options[Math.floor(Math.random() * options.length)] : (st.spot + 1) % BIRD_SPOTS.length;
+    const next = options.length ? options[Math.floor(random() * options.length)] : (st.spot + 1) % BIRD_SPOTS.length;
     st.spot = next;
     const [x, y, z, r] = BIRD_SPOTS[next];
     st.to.set(x, y + groundHeight(x, z), z);
@@ -173,9 +176,9 @@ function Flock({ index }: { index: number }) {
     if (rtRef.current) rtRef.current.landed = false;
     birds.forEach((b) => {
       b.down = false;
-      const a = from ? Math.atan2(b.pos.x - from.x, b.pos.z - from.z) + (Math.random() - 0.5) * 1.2 : Math.random() * Math.PI * 2;
-      const out = calm ? 1 : 2.5 + Math.random() * 2.5;
-      b.vel.set(Math.sin(a) * out, (calm ? 4 : 6) + Math.random() * 2.5, Math.cos(a) * out);
+      const a = from ? Math.atan2(b.pos.x - from.x, b.pos.z - from.z) + (random() - 0.5) * 1.2 : random() * Math.PI * 2;
+      const out = calm ? 1 : 2.5 + random() * 2.5;
+      b.vel.set(Math.sin(a) * out, (calm ? 4 : 6) + random() * 2.5, Math.cos(a) * out);
     });
     if (!calm) {
       playFlutter(st.center);
@@ -250,7 +253,7 @@ function Flock({ index }: { index: number }) {
           if (st.checkPoopIn <= 0 && st.poop < 0) {
             st.checkPoopIn = 5;
             // a fresh poop somewhere quiet: sometimes worth a visit
-            if (now - st.since > 8000 && Math.random() < 0.35) {
+            if (now - st.since > 8000 && random() < 0.35) {
               let any = false;
               props.forEach((prop) => {
                 if (prop.kind === 'poop' && prop.heldBy == null) any = true;
@@ -269,7 +272,7 @@ function Flock({ index }: { index: number }) {
         st.phase = 'fly';
         pickNext(true);
         st.from.set(st.center.x, st.center.y + ALT * 0.6, st.center.z);
-        const side = Math.random() < 0.5 ? 1 : -1;
+        const side = random() < 0.5 ? 1 : -1;
         tmp.subVectors(st.to, st.center);
         st.mid.set((st.center.x + st.to.x) / 2 - tmp.z * 0.3 * side, Math.max(st.center.y, st.to.y) + ALT, (st.center.z + st.to.z) / 2 + tmp.x * 0.3 * side);
         st.dur = Math.max(3, distXZ(st.center.x, st.center.z, st.to.x, st.to.z) / FLY_SPEED + 1.5);
@@ -292,7 +295,7 @@ function Flock({ index }: { index: number }) {
       if (birds.every((b) => b.down)) {
         st.phase = 'landed';
         st.since = now;
-        st.stayFor = 22 + Math.random() * 18;
+        st.stayFor = 22 + random() * 18;
         st.center.set(st.to.x, st.to.y, st.to.z);
         rt.landed = true;
         if (st.poop >= 0) {
@@ -317,13 +320,13 @@ function Flock({ index }: { index: number }) {
           b.pos.lerpVectors(b.hopFrom, b.spot, b.hopT);
           b.pos.y = b.spot.y + Math.sin(b.hopT * Math.PI) * 0.18;
         } else if (b.nextMove <= 0) {
-          b.nextMove = 0.6 + Math.random() * 2.2;
-          if (Math.random() < 0.5) {
+          b.nextMove = 0.6 + random() * 2.2;
+          if (random() < 0.5) {
             b.peckT = 0.5;
           } else {
             b.hopFrom.copy(b.pos);
-            const a = Math.random() * Math.PI * 2;
-            const r = st.spread * Math.sqrt(Math.random());
+            const a = random() * Math.PI * 2;
+            const r = st.spread * Math.sqrt(random());
             b.spot.set(st.center.x + Math.cos(a) * r, st.center.y, st.center.z + Math.sin(a) * r);
             b.facing = Math.atan2(b.spot.x - b.pos.x, b.spot.z - b.pos.z);
             b.hopT = 0;
@@ -331,7 +334,7 @@ function Flock({ index }: { index: number }) {
         }
         if (st.poop >= 0 && b.peckT > 0) b.facing = Math.atan2(st.center.x - b.pos.x, st.center.z - b.pos.z);
         b.peckT = Math.max(0, b.peckT - dt);
-        if (Math.random() < dt * 0.05) playTweet(b.pos);
+        if (random() < dt * 0.05) playTweet(b.pos);
         return;
       }
       // flying

@@ -294,7 +294,15 @@ tester**, the sticker album, a picture of all controls, and:
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just
   stuttered). Ultra means 4096 px shadows over a wider area and supersampling: it draws up to a 4K-wide picture and
   scales it down, so edges are smooth on a 1080p or 1440p screen (never less sharp than the screen itself). The frame
-  rate is shown under the settings.
+  rate is shown under the settings, with the number of draw calls and triangles in a frame (how much work the
+  graphics card is given). The ground is drawn in 20 m chunks, so only the part in view is drawn (as one mesh it
+  was a quarter of a million triangles in every frame, wherever you looked).
+- **Play log** 📋: a small record of each play session, kept on this computer only (the last ten). For each session:
+  how long it lasted, how many children played and which animals, the frame rate (lowest and average, once warmed up),
+  the most draw calls in a frame, any change of graphics level, how often an animal got stuck (and where) or needed
+  the rescue buttons, controllers dropping out, any errors, the stickers earned (which things got played with) and
+  how long the animals spent in each part of the park. **Save** downloads it as a file, to send along with what you
+  noticed; **Clear** empties it. Nothing is sent anywhere by itself.
 - **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
 - **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
   without internet.
@@ -448,7 +456,11 @@ all its work between steps, and only the last step of a batch is drawn. Nothing 
 storage. The same seed and the same presses therefore play out identically, down to the last bit, on any machine
 (`e2e/determinism.spec.ts` checks exactly that, with keyboard and controller players). In test mode controllers
 are read once per simulated frame instead of on a real-time timer, so a test's button presses always land on the
-same frame. The browser tests in `e2e/` drive the game this way through the
+same frame. Each part of the park draws its random numbers from a stream of its own (`rng.ts`), seeded from the
+test's seed and the part's name, so a change in one part (a new particle effect, a cat that turns once more) no longer
+shifts what every other part does. A test can also leave out the roaming animals it doesn't need with
+`game.open(seed, { off: ['cats', 'birds', 'chickens'] })` (`?test=1&off=cats,birds`); `e2e/streams.spec.ts` checks
+that the cats roam exactly the same with or without the birds and chickens. The browser tests in `e2e/` drive the game this way through the
 helpers in `e2e/game.ts` (teleport, press keys or fake controller buttons, step, inspect). A few tests run the normal
 game instead: the real-time loop and automatic graphics, remembering settings/stars/stickers/photos across a reload,
 and the built game starting offline. GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
@@ -472,7 +484,8 @@ src/
     input.ts            keyboard (2 players), up to 4 gamepads, touch; drop-in join detection, press counts
     clock.ts            the game clock (pauses with the menu), after() timers, useGameFrame
     FrameLoop.tsx       drives the frame loop: real time (never more than 1/20 s per frame) or test mode
-    testMode.ts         ?test=<seed>
+    testMode.ts         ?test=<seed>, and &off= to leave out roaming animals
+    rng.ts              random streams: one per part of the park (seeded per part in test mode)
     store.ts            reactive state for UI: players, party meter, stars, menu
     hunt.ts             the treasure hunt: rounds, where they hide (seeded, one per area; every other round one up high), found, the chest
     skycourse.ts        how far up the sky course anyone has got (the flags)
@@ -489,6 +502,7 @@ src/
     chase.ts            the chase: park cats and bird flocks register here; the cat tally
     storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
+    playlog.ts          the play log: a record of each session on this computer, saved from the grown-ups menu
     install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
     collision.ts        collision groups (animals walk through poops and climb into hamster balls)

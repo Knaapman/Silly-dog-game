@@ -11,6 +11,9 @@ import { useGame } from '../store';
 import { Ramp, useHint } from './common';
 import { gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { randomStream } from '../rng';
+
+const random = randomStream('toilet');
 
 // A giant toilet on the plaza. Sit on it and poop (or toot): FLUSH! Everything swirls away,
 // confetti pops, and whoever is sitting there gets flushed into the sky, landing somewhere fun.
@@ -86,7 +89,7 @@ export function Toilet() {
     if (spin.current > 0) {
       spin.current -= delta;
       if (w) w.rotation.z += delta * 14 * Math.min(1, spin.current);
-      if (Math.random() < 0.6) {
+      if (random() < 0.6) {
         const a = now * 0.012;
         emit('drop', [cx + Math.cos(a) * 0.5, TOP, cz + Math.sin(a) * 0.5], { count: 2, color: ['#7fd3ff', '#bfe9ff', '#ffffff'], speed: 1.5, up: 2.5, size: 0.12 });
       }
@@ -102,7 +105,7 @@ export function Toilet() {
       launch.current = null;
       const p = players.get(l.slot);
       if (p && distXZ(p.position.x, p.position.z, cx, cz) < BOWL_R + 0.6 && p.position.y < TOP + 2.5 * p.size) {
-        const target = LANDINGS[Math.floor(Math.random() * LANDINGS.length)];
+        const target = LANDINGS[Math.floor(random() * LANDINGS.length)];
         // pop up out of the bowl first (clear of the seat rim), then fly
         const rb = p.getBody();
         const t = rb?.translation();

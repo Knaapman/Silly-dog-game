@@ -15,6 +15,9 @@ import { settings, SPROUT_SECONDS } from '../settings';
 import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
+import { randomStream } from '../rng';
+
+const random = randomStream('poop');
 
 // Poops! They plop out behind an animal that has eaten, get buzzed by flies, can be kicked
 // around, make you slip when you run over them, and after a while sprout into a flower.
@@ -63,7 +66,7 @@ const usePoops = create<{
     earnSticker('flower');
     set((s) => {
       const flowers = s.flowers.slice();
-      flowers[s.nextFlower] = { x, z, color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)], born: gameNow() };
+      flowers[s.nextFlower] = { x, z, color: FLOWER_COLORS[Math.floor(random() * FLOWER_COLORS.length)], born: gameNow() };
       return { flowers, nextFlower: (s.nextFlower + 1) % FLOWER_SLOTS };
     });
   },
@@ -131,7 +134,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
   const propId = useMemo(() => allocPropId(), []);
   const born = useRef(gameNow());
   const lastSpeed = useRef(0);
-  const stink = useRef(Math.random() * 1.5);
+  const stink = useRef(random() * 1.5);
   const gone = useRef(false);
 
   const finish = (how: 'splat' | 'sprout' | 'flush' | 'quiet') => {
@@ -160,7 +163,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
   useEffect(() => {
     const rb = body.current;
     rb?.setLinvel({ x: data.velocity[0], y: data.velocity[1], z: data.velocity[2] }, true);
-    rb?.setAngvel({ x: 0, y: (Math.random() - 0.5) * 3, z: 0 }, true);
+    rb?.setAngvel({ x: 0, y: (random() - 0.5) * 3, z: 0 }, true);
     const entry: PropEntry = {
       id: propId,
       kind: 'poop',
@@ -227,7 +230,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
     // Stink lines (or sparkles for a golden one).
     stink.current -= delta;
     if (stink.current <= 0) {
-      stink.current = golden ? 0.5 : 2.2 + Math.random();
+      stink.current = golden ? 0.5 : 2.2 + random();
       if (golden) emit('star', [p.x, p.y + 0.3 * size, p.z], { count: 2, color: ['#ffd23f', '#ffffff'], speed: 1.2, up: 1.5, size: 0.12 });
       else emit('puff', [p.x, p.y + 0.45 * size, p.z], { count: 2, color: ['#8bc34a', '#aed581'], speed: 0.3, up: 1, size: 0.09, life: 1.1 });
     }
@@ -373,7 +376,7 @@ export function Poops() {
         velocity: [velocity.x, velocity.y, velocity.z],
         size,
         golden,
-        yaw: Math.random() * Math.PI * 2
+        yaw: random() * Math.PI * 2
       });
     debugInfo.poopStats = poopStats;
     return () => {
