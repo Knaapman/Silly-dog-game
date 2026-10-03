@@ -7,6 +7,7 @@ import { seededRandom } from './game/clock';
 import * as input from './game/input';
 import { setupInstall } from './game/install';
 import * as playlog from './game/playlog';
+import { faults } from './game/faults';
 import { TEST_MODE, TEST_SEED } from './game/testMode';
 import * as runtime from './game/runtime';
 import * as chase from './game/chase';
@@ -33,7 +34,7 @@ if (TEST_MODE) Math.random = seededRandom(TEST_SEED);
 if (import.meta.env.DEV || TEST_MODE) {
   // Handy for poking at the game from the browser console / automated checks.
   const w = window as unknown as { __silly?: Record<string, unknown> };
-  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, useHunt, useSkyCourse, useSledding, useCoop, useSnowman, events, guide, buddyControl, perf, input, clock, views, playlog };
+  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, useHunt, useSkyCourse, useSledding, useCoop, useSnowman, events, guide, buddyControl, perf, input, clock, views, playlog, faults };
 }
 
 setupInstall();

@@ -3,14 +3,15 @@ import { Landmarks } from './world/Landmarks';
 import { Sleds, TubeRide } from './world/Rides';
 import { Zipline } from './world/Zipline';
 import { Cats } from './world/Cats';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { Physics, useRapier } from '@react-three/rapier';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { getAudioState, playShutter, updateListener } from './audio';
 import { GRAVITY } from './config';
 import { emit } from './fx';
-import { gameClock, useGameFrame } from './clock';
+import { gameClock, useGameFrame, useSafeFrame } from './clock';
+import { Contained, GraphicsWatch } from './Contained';
 import { FrameLoop } from './FrameLoop';
 import { FxRenderer } from './FxRenderer';
 import { albumPressed, getInput, inputTime, isSourceConnected, padIdOf, photoPressed, pollInputs } from './input';
@@ -70,7 +71,7 @@ function SkyDome() {
     []
   );
   const mesh = useRef<THREE.Mesh>(null);
-  useFrame(({ camera }) => {
+  useSafeFrame(({ camera }) => {
     mesh.current?.position.copy(camera.position);
   });
   return (
@@ -114,7 +115,7 @@ function Lighting() {
     }
   }, [quality]);
 
-  useFrame(() => {
+  useSafeFrame(() => {
     const f = camState.focus;
     if (sun.current) {
       sun.current.position.set(f.x + 14, f.y + 28, f.z + 12);
@@ -225,7 +226,7 @@ function CameraRig() {
     views.split = true;
   };
 
-  useFrame(({ camera, size, scene }, delta) => {
+  useSafeFrame(({ camera, size, scene }, delta) => {
     const dt = Math.min(delta, 0.05);
     const game = useGame.getState();
     if (TEST_MODE && camState.override) {
@@ -288,7 +289,7 @@ function CameraRig() {
 /** Polls every controller/keyboard/touch source; any button press drops a new player in. */
 function InputSystem() {
   const missingSince = useRef(new Map<number, number>());
-  useFrame(() => {
+  useSafeFrame(() => {
     const pressed = pollInputs();
     const game = useGame.getState();
     if (isPaused(game)) return;
@@ -338,7 +339,7 @@ function InputSystem() {
 }
 
 function AudioDirector() {
-  useFrame(() => {
+  useSafeFrame(() => {
     updateListener(camState.focus, views.split ? cameraFoci() : []);
     const game = useGame.getState();
     const audio = getAudioState();
@@ -384,7 +385,7 @@ function PartyDirector() {
 /** The camera: runs the photo countdown and, on the shutter frame, keeps what's on screen. */
 function PhotoDirector() {
   const get = useThree((s) => s.get);
-  useFrame(() => {
+  useSafeFrame(() => {
     if (!usePhotos.getState().tick()) return;
     const { gl, scene, camera } = get();
     // Draw now and copy straight away: the canvas is only readable until the browser shows it.
@@ -433,7 +434,7 @@ function PhysicsHook() {
 function RestingStatics() {
   const { world } = useRapier();
   const frame = useRef(0);
-  useFrame(() => {
+  useSafeFrame(() => {
     frame.current += 1;
     if (frame.current % 30 !== 1) return;
     world.forEachRigidBody((b) => {
@@ -459,6 +460,7 @@ export function Scene() {
   return (
     <>
       <FrameLoop />
+      <GraphicsWatch />
       <DevHook />
       <SkyDome />
       <fog attach="fog" args={['#d6f1ff', 100, 260]} />
@@ -472,38 +474,40 @@ export function Scene() {
       <Physics gravity={[0, GRAVITY, 0]} paused={paused}>
         <PhysicsHook />
         <RestingStatics />
-        <Terrain />
-        <Trees />
-        <Landmarks />
-        <TubeRide />
-        <Sleds />
-        <Zipline />
-        <Hub />
-        <BubbleMachine />
-        <HamsterBalls />
-        <Fishing />
-        <Carnival />
-        <SkyCourse />
-        <BumperCars />
-        <Sports />
-        <DinoPark />
-        <Playground />
-        <Beach />
-        <Winter />
-        <Farm />
-        {!systemOff('cats') && <Cats />}
-        {!systemOff('birds') && <Birds />}
-        <Forest />
-        <Train />
-        <Food />
-        <Poops />
-        {LAUNCH_PADS.slice(1).map((pad, i) => (
-          <LaunchPad key={i} pad={pad} />
-        ))}
-        <Balloons />
-        <GoldenStars />
-        <Treasures />
-        <ParkEvents />
+        <Contained>
+          <Terrain />
+          <Trees />
+          <Landmarks />
+          <TubeRide />
+          <Sleds />
+          <Zipline />
+          <Hub />
+          <BubbleMachine />
+          <HamsterBalls />
+          <Fishing />
+          <Carnival />
+          <SkyCourse />
+          <BumperCars />
+          <Sports />
+          <DinoPark />
+          <Playground />
+          <Beach />
+          <Winter />
+          <Farm />
+          {!systemOff('cats') && <Cats />}
+          {!systemOff('birds') && <Birds />}
+          <Forest />
+          <Train />
+          <Food />
+          <Poops />
+          {LAUNCH_PADS.slice(1).map((pad, i) => (
+            <LaunchPad key={i} pad={pad} />
+          ))}
+          <Balloons />
+          <GoldenStars />
+          <Treasures />
+          <ParkEvents />
+        </Contained>
         <Players />
       </Physics>
       <Sky />

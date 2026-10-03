@@ -39,3 +39,45 @@ test('auto graphics steps down by itself when the frame rate is low', async ({ p
   await page.waitForFunction(() => (window as any).__silly.useSettings.getState().autoLevel === 'low', null, { timeout: 90_000 });
   expect(await page.evaluate(() => (window as any).__silly.perf.fps)).toBeLessThan(48);
 });
+
+const ready = (page: import('@playwright/test').Page) => page.waitForFunction(() => (window as any).__silly?.runtime?.props.size > 50, null, { timeout: 60_000 });
+const gameTime = (page: import('@playwright/test').Page) => page.evaluate(() => (window as any).__silly.clock.gameClock.time as number);
+
+test('a part of the park that keeps throwing never stops the real-time game', async ({ page }) => {
+  await page.goto('/');
+  await ready(page);
+  await page.evaluate(() => (window as any).__silly.useGame.getState().start('kb1'));
+  // break the kites: their per-frame code now throws every frame
+  await page.evaluate(() => ((window as any).__silly.runtime.debugInfo.kites.list = null));
+  const t0 = await gameTime(page);
+  await page.waitForFunction((t) => (window as any).__silly.clock.gameClock.time > t + 1.5, t0, { timeout: 60_000 });
+  const f = await page.evaluate(() => (window as any).__silly.faults);
+  expect(f.messages.length).toBeGreaterThanOrEqual(1);
+  expect(f.messages[0]).toContain('game frame');
+});
+
+test('the graphics card dropping out: the picture comes back, or the game starts afresh', async ({ page }) => {
+  await page.goto('/');
+  await ready(page);
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__lose = w.__silly.gl.getContext().getExtension('WEBGL_lose_context');
+    w.__marker = 'still the same page';
+  });
+  // it drops out and the browser brings it back: drawing picks up again, no reload
+  await page.evaluate(() => (window as any).__lose.loseContext());
+  await page.waitForTimeout(500);
+  await page.evaluate(() => (window as any).__lose.restoreContext());
+  const t0 = await gameTime(page);
+  await page.waitForFunction((t) => (window as any).__silly.clock.gameClock.time > t + 1, t0, { timeout: 60_000 });
+  await page.waitForFunction(() => (window as any).__silly.perf.calls > 10, null, { timeout: 10_000 });
+  await page.waitForTimeout(3500);
+  expect(await page.evaluate(() => (window as any).__marker)).toBe('still the same page');
+
+  // it drops out for good: after a few seconds the page reloads and the park is back
+  const reloaded = page.waitForEvent('load', { timeout: 20_000 });
+  await page.evaluate(() => (window as any).__lose.loseContext());
+  await reloaded;
+  await ready(page);
+  expect(await page.evaluate(() => (window as any).__marker)).toBeUndefined();
+});

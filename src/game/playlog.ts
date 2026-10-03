@@ -1,3 +1,4 @@
+import { onFault } from './faults';
 import { isSourceConnected, type SourceId } from './input';
 import { ZONES } from './layout';
 import { perf } from './perf';
@@ -205,6 +206,8 @@ export function startPlayLog(test: boolean) {
   if (typeof window === 'undefined') return;
   window.addEventListener('error', (e) => logError(String(e.message || e.error)));
   window.addEventListener('unhandledrejection', (e) => logError(`unhandled: ${String(e.reason)}`));
+  // (and whatever went wrong but was kept from stopping the game: see faults.ts)
+  onFault(logError);
   if (!test) window.setInterval(() => tickPlayLog(), 1000);
   window.addEventListener('pagehide', save);
 }

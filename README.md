@@ -502,6 +502,7 @@ src/
     chase.ts            the chase: park cats and bird flocks register here; the cat tally
     storage.ts, idb.ts  forgiving localStorage / IndexedDB wrappers (off in test mode)
     perf.ts, adaptive.ts  frame-rate measurement and automatic graphics
+    faults.ts, Contained.tsx  one broken part never stops the park: errors kept inside it, graphics drop-outs
     playlog.ts          the play log: a record of each session on this computer, saved from the grown-ups menu
     install.ts          offline play and installing as an app
     runtime.ts          non-reactive per-frame registry (players, props, food, statics, surfaces, hints, camera)
@@ -584,3 +585,8 @@ e2e/                    Playwright browser tests in test mode
 6. **Physics you can feel, exaggerated where it matters.** Rides are real kinematic bodies that carry you, and see-saws
    are real hinges. Where honest physics would be too subtle for a 5-year-old (a see-saw only lifts a friend by half a
    metre), the game boosts the effect.
+7. **One broken part never stops the park** (`faults.ts`). Each part's per-frame code runs on its own: if it throws,
+   the rest of the frame still runs, and one that throws 30 frames in a row is switched off. A part that fails while
+   it's being built or drawn is left out (an error boundary per attraction, `Contained.tsx`). If the graphics card
+   drops out (a driver reset, waking from sleep) the picture comes back by itself, or the page reloads after 3 s;
+   stickers, stars and settings are saved. Each kind of fault is reported once, to the console and the play log.

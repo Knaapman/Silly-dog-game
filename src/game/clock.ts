@@ -1,4 +1,6 @@
 import { useFrame, type RootState } from '@react-three/fiber';
+import { useRef } from 'react';
+import { reportFault } from './faults';
 
 // One clock for the whole game.
 //
@@ -46,7 +48,15 @@ export function tickGameClock(delta: number) {
     (t.at <= gameClock.time ? due : later).push(t);
   }
   timers = later;
-  due.sort((a, b) => a.at - b.at).forEach((t) => t.fn());
+  due
+    .sort((a, b) => a.at - b.at)
+    .forEach((t) => {
+      try {
+        t.fn();
+      } catch (e) {
+        reportFault('timer', e);
+      }
+    });
 }
 
 /** For tests: back to time zero with no timers. */
@@ -58,9 +68,34 @@ export function resetGameClock() {
   timers = [];
 }
 
+/** After this many frames in a row with an error, a frame callback is switched off. */
+export const GIVE_UP_FRAMES = 30;
+
+/**
+ * Runs one frame callback so that an error stays inside it: the rest of the frame (every other
+ * part of the park, the drawing) still runs. One that keeps failing is switched off.
+ */
+function contained(fails: { current: number }, where: string, fn: () => void) {
+  if (fails.current >= GIVE_UP_FRAMES) return;
+  try {
+    fn();
+    fails.current = 0;
+  } catch (e) {
+    fails.current += 1;
+    reportFault(fails.current >= GIVE_UP_FRAMES ? `${where}, switched off after ${GIVE_UP_FRAMES} frames in a row with errors` : where, e);
+  }
+}
+
 /** useFrame for game logic: dt is game time (0 while paused, never more than MAX_STEP). */
 export function useGameFrame(callback: (state: RootState, dt: number) => void, priority = 0) {
-  useFrame((state) => callback(state, gameClock.dt), priority);
+  const fails = useRef(0);
+  useFrame((state) => contained(fails, 'game frame', () => callback(state, gameClock.dt)), priority);
+}
+
+/** useFrame with real time (the camera, the sky, sounds), with errors kept inside it too. */
+export function useSafeFrame(callback: (state: RootState, delta: number) => void, priority = 0) {
+  const fails = useRef(0);
+  useFrame((state, delta) => contained(fails, 'frame', () => callback(state, delta)), priority);
 }
 
 /** A small seeded random generator (mulberry32), so test runs are repeatable. */

@@ -1,8 +1,7 @@
-import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { playBoing } from '../audio';
-import { gameClock, gameNow } from '../clock';
+import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
 import { distXZ, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
@@ -108,7 +107,7 @@ export function Buddy() {
   });
 
   // after the input is read (priority -10), before the animals move (0)
-  useFrame(() => {
+  useSafeFrame(() => {
     const game = useGame.getState();
     const b = brain.current;
     const now = gameNow();
