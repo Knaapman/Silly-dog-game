@@ -42,6 +42,7 @@ import {
   BUBBLE_MACHINE,
   BALL_PIT,
   SWINGS,
+  DOMINOES,
   TUBE_RIDE,
   WATER_SLIDE
 } from './layout';
@@ -132,7 +133,8 @@ const PLACES: Partial<Record<StickerId, P[]>> = {
   rainbowpaint: [[PAINT_BUCKETS.center[0], PAINT_BUCKETS.center[1] + 2.5]],
   ballpit: [[BALL_PIT.center[0], BALL_PIT.center[1] - BALL_PIT.size / 2 - 1.5]],
   swing: [[SWINGS.center[0], SWINGS.center[1] + 3]],
-  swingpush: [[SWINGS.center[0], SWINGS.center[1] - 3]]
+  swingpush: [[SWINGS.center[0], SWINGS.center[1] - 3]],
+  dominoes: [[DOMINOES.points[0][0] - 1.5, DOMINOES.points[0][1]]]
 };
 
 /** Stickers for the treasure hunt: the guide leads to the nearest treasure still hidden. */

@@ -9,6 +9,7 @@ import { lambert } from '../materials';
 import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { Prop } from './Prop';
+import { Dominoes } from './Dominoes';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -249,6 +250,7 @@ export function Sports() {
       <Soccer />
       <Bowling />
       <CrateTower />
+      <Dominoes />
       {CONES.map((p, i) => (
         <Prop key={i} kind="cone" position={p} />
       ))}

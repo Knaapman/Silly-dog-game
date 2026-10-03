@@ -123,6 +123,15 @@ export const BOWLING = {
 };
 
 export const CRATE_TOWER = { base: at3(Z.sports, -12, 0, 14), size: 1.2, rows: 4 };
+/**
+ * Giant dominoes: a winding row on the grass north of the soccer field, one every `spacing`
+ * metres along a smooth line through `points` (first to last). The bell stands past the last one.
+ */
+export const DOMINOES = {
+  points: ([[-2, 18], [5, 18], [8, 15], [5, 12], [-1, 12], [-3, 9], [0, 6.5], [7, 6.5]] as Vec2[]).map(([x, z]): Vec2 => [Z.sports[0] + x, Z.sports[1] + z]),
+  spacing: 1,
+  height: 1.8
+};
 export const CONES: Vec3[] = [at3(Z.sports, -9, 0.4, 5), at3(Z.sports, 9, 0.4, 5), at3(Z.sports, -9, 0.4, -12), at3(Z.sports, 9, 0.4, -12), at3(Z.sports, -18, 0.4, 16), at3(Z.sports, -15, 0.4, 18)];
 
 // ---------------------------------------------------------------------------
