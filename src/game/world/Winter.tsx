@@ -17,6 +17,7 @@ import { after, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { cameraFoci } from '../views';
 import { SnowballFight } from './SnowballFight';
+import { PenguinShy } from './PenguinShy';
 
 function IcePond() {
   const [ix, iz] = ICE.center;
@@ -518,6 +519,7 @@ export function Winter() {
       ))}
       <SnowmanBuild />
       <SnowballFight />
+      <PenguinShy />
       <Snowfall />
     </group>
   );

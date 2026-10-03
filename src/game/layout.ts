@@ -237,11 +237,16 @@ export const BALLOON = {
 export const ZIPLINE = { from: [4.2, -48.9] as Vec2, platform: 0.8, cable: 3.2, to: [-4, 38] as Vec2, endHeight: 4 };
 /** A flag on the summit, beside where the launch pad lands you. */
 export const SUMMIT_FLAG = at(SNOW_HILL.center, 1.8, -1.2);
-export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7), at3(Z.winter, 11, WINTER.level + 1, -3)];
+export const SNOWBALLS: Vec3[] = [at3(Z.winter, 2, WINTER.level + 1, -4), at3(Z.winter, -5, WINTER.level + 1, 7), at3(Z.winter, 5, WINTER.level + 1, 1)];
 /** The bubble machine, on the grass between the plaza and the beach; it blows its bubbles towards the plaza. */
 export const BUBBLE_MACHINE = { at: [8, 16] as Vec2, blow: -Math.PI * 0.8 };
 /** Snowball fight: two snow piles with little snowballs to throw (lick one, lick again to throw). */
 export const SNOW_PILES: Vec2[] = [at(Z.winter, 4, -4), at(Z.winter, 12, -8)];
+/**
+ * The penguin shy: five penguins standing on a wooden counter on the east of the mountain top, facing
+ * west towards the snow piles (`along` is the counter's direction). Knock them off with snowballs.
+ */
+export const PENGUIN_SHY = { center: at(Z.winter, 15.5, -3), count: 5, spacing: 1.05, height: 1 };
 /** Where you build your own snowman: roll a big snowball into the ring, then two more onto it. */
 export const SNOWMAN_BUILD = { center: at(Z.winter, 9, 2), radius: 1.4 };
 
