@@ -9,7 +9,7 @@ import { getInput, rumble, type SourceId } from '../input';
 import { HAMSTER } from '../layout';
 import { lambert } from '../materials';
 import { RADIUS } from '../player/constants';
-import { allocPropId, debugInfo, players, registerProp, rider, type PlayerRuntime, type PropEntry } from '../runtime';
+import { allocPropId, canBoard, debugInfo, players, registerProp, rider, type PlayerRuntime, type PropEntry } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
@@ -112,7 +112,7 @@ function HamsterBall({ index }: { index: number }) {
     // climb in: walk into one that's (nearly) still
     if (state.rider == null && speed < BOARD_SPEED) {
       for (const p of players.values()) {
-        if (inABall(p.slot) || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null) continue;
+        if (inABall(p.slot) || !canBoard(p)) continue;
         if (p.bot && !kidInABall()) continue;
         if (now - (hamster.offAt.get(p.slot) ?? -1e9) < REBOARD * 1000) continue;
         if (Math.hypot(p.position.x - t.x, p.position.z - t.z) > R - 0.2 || Math.abs(p.position.y - t.y) > R) continue;

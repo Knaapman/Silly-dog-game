@@ -7,7 +7,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { BUBBLE_MACHINE } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider } from '../runtime';
+import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
@@ -198,7 +198,7 @@ export function BubbleMachine() {
         if (q.slot === b.rider) continue;
         const d = Math.hypot(q.position.x - b.x, q.position.y - b.y, q.position.z - b.z);
         if (d > b.r + 0.35) continue;
-        const free = !q.isLaunched() && q.ridingOn == null && q.grabbedBy == null && now - (s.lastPop.get(q.slot) ?? -1e9) > AGAIN_AFTER;
+        const free = canBoard(q) && now - (s.lastPop.get(q.slot) ?? -1e9) > AGAIN_AFTER;
         if (b.r >= BIG && b.rider == null && free && !list.some((o) => o.alive && o.rider === q.slot)) {
           b.rider = q.slot;
           b.rideAt = now;

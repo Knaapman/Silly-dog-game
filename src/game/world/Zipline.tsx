@@ -7,7 +7,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { ZIPLINE } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider } from '../runtime';
+import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { StaticBox, StaticCylinder, useHint } from './common';
@@ -75,7 +75,7 @@ export function Zipline() {
       for (const p of players.values()) {
         const free = z.handles.find((h) => h.mode === 'wait');
         if (!free) break;
-        if (p.bot || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null || riding(p.slot)) continue;
+        if (p.bot || !canBoard(p) || riding(p.slot)) continue;
         if (now - (z.letGoAt.get(p.slot) ?? -1e9) < REGRAB * 1000) continue;
         if (Math.hypot(p.position.x - a.x, p.position.z - a.z) > 1.2 || p.position.y < deck || p.position.y > deck + 2.2) continue;
         free.mode = 'ride';

@@ -8,7 +8,7 @@ import { emit } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { BUMPER } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider } from '../runtime';
+import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
@@ -64,7 +64,7 @@ export function BumperCars() {
     list.forEach((c) => {
       if (c.driver != null) return;
       players.forEach((p) => {
-        if (c.driver != null || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null) return;
+        if (c.driver != null || !canBoard(p)) return;
         if (p.bot && !kidDriving) return;
         if (list.some((o) => o.driver === p.slot)) return;
         if (Math.hypot(p.position.x - c.x, p.position.z - c.z) > R + 0.2 || p.position.y > floor + 1.8) return;

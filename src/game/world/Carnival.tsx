@@ -1,16 +1,17 @@
 import { CuboidCollider, CylinderCollider, RigidBody, type RapierCollider, type RapierRigidBody } from '@react-three/rapier';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { playBell, playBonk } from '../audio';
+import { playBell, playBoing, playBonk } from '../audio';
 import { PARTY_POINTS } from '../config';
 import { burstConfetti, emit } from '../fx';
 import { BUNTING_POLES, CAROUSEL, FERRIS, HIGH_STRIKER, STALLS, type Vec3 } from '../layout';
 import { lambert, stripeTexture } from '../materials';
-import { debugInfo, registerStatic, shakeCamera, type Surface } from '../runtime';
+import { canBoard, debugInfo, players, registerStatic, shakeCamera, type Surface } from '../runtime';
 import { useGame } from '../store';
 import { Ramp, StaticBox, useHint } from './common';
 import { useSurface } from './surface';
-import { gameClock, useGameFrame } from '../clock';
+import { gameClock, gameNow, useGameFrame } from '../clock';
+import { ballistic } from '../player/physics';
 import { earnSticker } from '../stickers';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,15 @@ import { earnSticker } from '../stickers';
 
 const GONDOLA_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e', '#a855f7', '#ff8fd8', '#ff9f1c', '#14b8a6'];
 const HANG = 1.6;
+/** Standing at the front of the boarding deck, this close to the middle, a gondola at the bottom takes you in. */
+const BOARD_FROM = { halfWidth: 1.4, near: 1.3, far: 2.8 };
+/** How near the bottom a gondola has to be when you land in it (m along, from straight under the hub). */
+const BOARD_WINDOW = 0.6;
+/** No hopping straight back in after getting out of a gondola (ms). */
+const BOARD_AGAIN = 3000;
+
+/** Who is in a gondola now, and where to stand to be taken in (the buddy uses both). */
+export const ferris = { hops: 0, riding: [] as number[], boardAt: [FERRIS.center[0], FERRIS.center[2] + 2] as [number, number] };
 
 function Gondola({ index, angle }: { index: number; angle: { current: number } }) {
   const body = useRef<RapierRigidBody>(null);
@@ -83,6 +93,17 @@ function FerrisWheel() {
   const wheel = useRef<THREE.Group>(null);
   const lights = useRef<THREE.InstancedMesh>(null);
   const LIGHTS = 32;
+  const hopped = useRef(new Map<number, number>());
+  const tmp = useMemo(() => ({ to: new THREE.Vector3(), v: new THREE.Vector3() }), []);
+  debugInfo.ferris = ferris;
+  // on the boarding deck (not shown to anyone already in a gondola, down at the bottom)
+  useHint([cx, 1.2, cz + 2.4], 'walk', 3, (p) => p.position.z > cz + 1.2);
+
+  /** Where gondola `i` is (its floor) `ahead` seconds from now. */
+  const gondolaAt = (i: number, ahead: number, out: THREE.Vector3) => {
+    const a = angle.current + FERRIS.speed * ahead + (i / FERRIS.gondolas) * Math.PI * 2;
+    return out.set(cx + Math.cos(a) * R, cy + Math.sin(a) * R - HANG + 0.1, cz);
+  };
 
   useLayoutEffect(() => {
     const m = lights.current;
@@ -104,6 +125,39 @@ function FerrisWheel() {
   useGameFrame((_, delta) => {
     angle.current += Math.min(delta, 0.05) * FERRIS.speed;
     debugInfo.ferrisAngle = angle.current;
+    // walk to the front of the deck: when a gondola comes down to the bottom, a little hop takes
+    // you in (a jump from the deck would fly right over it)
+    const now = gameNow();
+    ferris.riding.length = 0;
+    players.forEach((p) => {
+      const { x, y, z } = p.position;
+      // in a gondola (round the wheel where the gondolas are, off the ground): not hopped back in
+      // straight after getting out
+      const round = Math.abs(Math.hypot(x - cx, y - (cy - HANG + 0.6)) - R) < 1.2;
+      if (round && Math.abs(z - cz) < 0.9 && y > 0.8 && !p.isLaunched()) {
+        ferris.riding.push(p.slot);
+        hopped.current.set(p.slot, now);
+      }
+    });
+    const kidRiding = ferris.riding.some((slot) => !players.get(slot)?.bot);
+    players.forEach((p) => {
+      if (!canBoard(p) || now - (hopped.current.get(p.slot) ?? -1e9) < BOARD_AGAIN) return;
+      // (the buddy goes up after a child, never on its own)
+      if (p.bot && !kidRiding) return;
+      const { x, y, z } = p.position;
+      if (Math.abs(x - cx) > BOARD_FROM.halfWidth || z < cz + BOARD_FROM.near || z > cz + BOARD_FROM.far || y < 0.9 || y > 1.8) return;
+      for (let i = 0; i < FERRIS.gondolas; i += 1) {
+        // where it will be when we land in it (the hop's length depends on where that is: twice round)
+        let t = 0.6;
+        for (let k = 0; k < 2; k += 1) t = ballistic(p.position, gondolaAt(i, t, tmp.to), tmp.to.y + 1.4, tmp.v);
+        if (Math.abs(tmp.to.x - cx) > BOARD_WINDOW || tmp.to.y > cy - R) continue;
+        hopped.current.set(p.slot, now);
+        ferris.hops += 1;
+        p.launchTo(tmp.to.clone(), tmp.to.y + 1.4);
+        playBoing(p.position, 1.2);
+        break;
+      }
+    });
     if (wheel.current) wheel.current.rotation.z = angle.current;
     const m = lights.current;
     if (m && m.instanceColor) {
@@ -172,7 +226,7 @@ function FerrisWheel() {
       {Array.from({ length: FERRIS.gondolas }, (_, i) => (
         <Gondola key={i} index={i} angle={angle} />
       ))}
-      {/* boarding deck: walk up, hop in when a gondola swings by */}
+      {/* boarding deck: walk up to the front, and a little hop takes you into the gondola at the bottom */}
       <StaticBox position={[cx, 0.3, cz + 3]} size={[6, 0.6, 3]} color="#8d6e63" />
       <Ramp from={[cx, 0, cz + 7.5]} to={[cx, 0.6, cz + 4.5]} width={3} color="#a1887f" />
     </group>

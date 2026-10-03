@@ -7,7 +7,7 @@ import { getInput, rumble, type SourceId } from '../input';
 import { distXZ, SWINGS } from '../layout';
 import { lambert } from '../materials';
 import { RADIUS } from '../player/constants';
-import { debugInfo, players, registerHint, registerStatic, rider, type Hint, type PlayerRuntime } from '../runtime';
+import { canBoard, debugInfo, players, registerHint, registerStatic, rider, type Hint, type PlayerRuntime } from '../runtime';
 import { earnSticker } from '../stickers';
 import { amplitude, fling, pushSwing, seatOffset, seatSpeed, stepSwing, SWING_LENGTH, SWING_PIVOT, type Swing } from '../swing';
 import { groundHeight } from '../terrain';
@@ -151,7 +151,7 @@ export function Swings() {
       if (s.rider == null && seatSpeed(s) < BOARD_SPEED) {
         seatAt(i, tmp.seat);
         for (const p of players.values()) {
-          if (p.bot || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null || onASwing(p)) continue;
+          if (p.bot || !canBoard(p) || onASwing(p)) continue;
           if (now - (z.offAt.get(p.slot) ?? -1e9) < REBOARD * 1000) continue;
           if (distXZ(p.position.x, p.position.z, tmp.seat.x, tmp.seat.z) > BOARD_REACH) continue;
           if (p.position.y > tmp.seat.y + 1.3 || p.position.y < g - 0.5) continue;

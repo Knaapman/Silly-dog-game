@@ -18,6 +18,7 @@ import { hamster } from './HamsterBalls';
 import { moles } from './Moles';
 import { blocks, kidBuilding } from './Blocks';
 import { roundabout } from './Roundabout';
+import { ferris } from './Carnival';
 import { randomStream } from '../rng';
 
 const random = randomStream('buddy');
@@ -51,7 +52,7 @@ const TRAIL = 24;
  * it on); `think` lets it move about once it's here (a test can switch that off to have it stand
  * still, e.g. as something to throw at).
  */
-export const buddyControl = { auto: !TEST_MODE, think: true };
+export const buddyControl = { auto: !TEST_MODE, think: true, boings: 0 };
 
 type Brain = {
   /** Caught up with what the child did before the buddy arrived. */
@@ -176,7 +177,9 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
 
   // remember where the child walks (solid ground), and which launcher they fly off
   const kidStanding = kid.grounded && !kid.isLaunched() && kid.ridingOn == null && kid.grabbedBy == null && !kid.flopped;
-  if (kidStanding) {
+  // (a gondola on the ferris wheel is no place to land: it moves on)
+  const kidOnWheel = ferris.riding.includes(kid.slot);
+  if (kidStanding && !kidOnWheel) {
     const last = b.trail[b.trail.length - 1];
     if (!last || last.distanceTo(kid.position) > 0.5) {
       const spot = b.trail.length >= TRAIL ? b.trail.shift()! : new THREE.Vector3();
@@ -214,6 +217,14 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       z = (kid.position.z - me.position.z) * k;
     }
     b.pending = [];
+  } else if (ferris.riding.includes(me.slot)) {
+    // in a gondola on the ferris wheel, behind the child's: enjoy the ride; once the child has got
+    // out, hop out too, down at the bottom (towards the deck)
+    b.pending = b.pending.filter((p) => p.action !== 'jump');
+    if (!kidOnWheel && me.position.y - groundHeight(me.position.x, me.position.z) < 1.5) {
+      z = 1;
+      press.jump = true;
+    }
   } else if (me.grabbedBy != null || kid.asleep) {
     // dangling from a tongue (giggle now and then), or waiting for a napping friend
     if (me.grabbedBy != null && random() < dt * 0.6) press.noise = true;
@@ -255,7 +266,7 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     const settled = kidStanding && !b.via && !me.isLaunched();
     const kidAbove = settled && dy > OUT_OF_REACH;
     const outOfReach = (kidAbove && me.velocity.y < 0.5) || (settled && dy < -OUT_OF_REACH && b.stuckFor > 0.3);
-    b.apartFor = outOfReach ? b.apartFor + dt : Math.max(0, b.apartFor - dt * 2);
+    b.apartFor = outOfReach && !kidOnWheel ? b.apartFor + dt : Math.max(0, b.apartFor - dt * 2);
     const runUp = kidAbove && d < RUN_UP - 0.5;
     if (b.apartFor > BOING_AFTER && now > b.nextBoing && (!runUp || b.apartFor > BOING_AFTER + 3)) {
       b.apartFor = 0;
@@ -284,6 +295,13 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         b.via.waited += dt;
         if (b.via.waited > 7) b.via = null;
       }
+    } else if (kidOnWheel) {
+      // the child is on the ferris wheel: wait at the front of the deck, and the next gondola
+      // down takes us up too
+      busy = true;
+      stopAt = 0.15;
+      target.set(ferris.boardAt[0], 0, ferris.boardAt[1]);
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
     } else if (kidAbove) {
       // the child is up above us: stand back for a run-up (see the boing above) and get ready
       busy = true;
@@ -520,6 +538,7 @@ function landingSpot(trail: THREE.Vector3[], kid: PlayerRuntime, out: THREE.Vect
 
 /** A big boing over to the child, like a launch pad without the pad. */
 function boing(me: PlayerRuntime, spot: THREE.Vector3) {
+  buddyControl.boings += 1;
   playBoing(me.position, 0.7);
   me.launchTo(spot, Math.max(spot.y, me.position.y) + 3);
 }

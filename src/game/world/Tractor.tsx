@@ -7,7 +7,7 @@ import { emit, poof } from '../fx';
 import { getInput, rumble, type SourceId } from '../input';
 import { isInFountain, TRACTOR } from '../layout';
 import { lambert } from '../materials';
-import { debugInfo, players, rider, pushNoise, type Surface } from '../runtime';
+import { canBoard, debugInfo, players, rider, pushNoise, type Surface } from '../runtime';
 import { earnSticker } from '../stickers';
 import { isInWater, groundHeight } from '../terrain';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
@@ -260,7 +260,7 @@ export function Tractor() {
     if (s.driver == null) {
       tmp.seat.set(SEAT[0], SEAT[1], SEAT[2]).applyEuler(tmp.e.set(0, s.yaw, 0)).add(tmp.v.set(s.x, groundHeight(s.x, s.z), s.z));
       players.forEach((p) => {
-        if (s.driver != null || p.bot || p.isLaunched() || p.flopped || p.ridingOn != null || p.grabbedBy != null) return;
+        if (s.driver != null || p.bot || !canBoard(p)) return;
         if (Math.hypot(p.position.x - tmp.seat.x, p.position.z - tmp.seat.z) > 1.5 || p.position.y > tmp.seat.y + 0.8) return;
         s.driver = p.slot;
         s.driven = 0;
