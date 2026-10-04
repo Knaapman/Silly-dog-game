@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
+const stickers = (game: Game) => game.page.evaluate(() => (window as any).__silly.useStickers.getState().got as string[]);
+
 test('piggyback: ride a friend, get thrown off, stack a tower', async ({ page }) => {
   const game = new Game(page);
   await game.withPads();
@@ -52,6 +54,7 @@ test('piggyback: ride a friend, get thrown off, stack a tower', async ({ page })
   expect((await game.player(0)).ridingOn).toBe(1);
   expect((await game.player(padSlot)).ridingOn).toBe(0);
   expect((await game.player(padSlot)).y).toBeGreaterThan((await game.player(0)).y + 0.8);
+  expect(await stickers(game)).toContain('tower');
 
   // jump off the top
   await game.pad(0, 0, 0.1);

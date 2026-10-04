@@ -53,7 +53,7 @@ test('climb into a hamster ball and roll it down the bowling lane into the pins 
   const after = await pins(game);
   const moved = before.filter((p, i) => Math.hypot(p.x - after[i].x, p.z - after[i].z) > 0.3).length;
   expect(moved).toBeGreaterThanOrEqual(3);
-  expect(await stickers(game)).toContain('hamster');
+  expect(await stickers(game)).toEqual(expect.arrayContaining(['hamster', 'strike']));
   // jump: out we climb, beside it
   await game.tap('Space');
   await game.seconds(1.5);

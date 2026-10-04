@@ -10,6 +10,7 @@ import { props, shakeCamera, type PropEntry } from '../runtime';
 import { useGame } from '../store';
 import { Prop } from './Prop';
 import { Dominoes } from './Dominoes';
+import { hamster } from './HamsterBalls';
 import { after, gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 
@@ -151,9 +152,17 @@ export function Soccer() {
   );
 }
 
+/** A ball rolling into the pins at least this fast (m/s) knocks them all down. */
+const SCATTER_SPEED = 2.5;
+
 export function Bowling() {
   const [rackKey, setRackKey] = useState(0);
-  const state = useRef({ fallen: new Set<number>(), resetAt: 0, strike: false });
+  const state = useRef({ fallen: new Set<number>(), resetAt: 0, strike: false, scattered: false });
+  // where the pins stand (front pin nearest the ball, back row furthest)
+  const deck = useMemo(() => {
+    const zs = BOWLING.pins.map(([, pz]) => pz);
+    return { near: Math.max(...zs) + 0.8, far: Math.min(...zs) - 0.6 };
+  }, []);
   const laneLen = BOWLING.laneTo - BOWLING.laneFrom;
   const laneZ = (BOWLING.laneTo + BOWLING.laneFrom) / 2;
   const x = BOWLING.laneX;
@@ -162,6 +171,38 @@ export function Bowling() {
     const s = state.current;
     const now = gameNow();
     const pins = findProps('pin');
+    // A ball rolling into the pins hard enough knocks them all over. Real pins barely wobble for
+    // a child's headbutt (a dead-centre hit toppled one in six), so the pins help: each standing
+    // one gets a shove away from the ball and tips over, the nearest first.
+    if (!s.scattered) {
+      const balls = [...findProps('bowling').map((p) => p.getBody()), ...hamster.balls.map((b) => b?.body())];
+      for (const ball of balls) {
+        if (!ball) continue;
+        const t = ball.translation();
+        const v = ball.linvel();
+        const speed = Math.hypot(v.x, v.z);
+        if (speed < SCATTER_SPEED || Math.abs(t.x - x) > 1.6 || t.z > deck.near || t.z < deck.far) continue;
+        s.scattered = true;
+        const from = { x: t.x, z: t.z };
+        const dir = { x: v.x / speed, z: v.z / speed };
+        pins.forEach((pin) => {
+          const pt = pin.getBody()?.translation();
+          if (!pt || s.fallen.has(pin.id)) return;
+          after(Math.min(0.35, Math.hypot(pt.x - from.x, pt.z - from.z) * 0.12), () => {
+            const pb = pin.getBody();
+            if (!pb) return;
+            const p = pb.translation();
+            const n = Math.hypot(p.x - from.x, p.z - from.z) || 1;
+            const px = ((p.x - from.x) / n) * 2.5 + dir.x * 3;
+            const pz = ((p.z - from.z) / n) * 2.5 + dir.z * 3;
+            pb.setLinvel({ x: px, y: 2.5, z: pz }, true);
+            // tip it over the way it's shoved (a spin round the line across the shove)
+            pb.setAngvel({ x: pz * 2.5, y: 0, z: -px * 2.5 }, true);
+          });
+        });
+        break;
+      }
+    }
     pins.forEach((pin) => {
       const b = pin.getBody();
       if (!b || s.fallen.has(pin.id)) return;
@@ -186,6 +227,7 @@ export function Bowling() {
       s.fallen.clear();
       s.resetAt = 0;
       s.strike = false;
+      s.scattered = false;
       setRackKey((k) => k + 1);
       poof([x, 0.6, BOWLING.pins[0][1] - 0.7], '#ffffff', 16);
     }
