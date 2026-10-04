@@ -288,7 +288,9 @@ and after five seconds it poofs out and pops up on clear ground next to a friend
 when playing alone). Rides let go of it. Only that animal moves; nothing else in the park is reset.
 It also happens by itself, since small children won't remember the buttons: pushing the stick for three seconds
 without getting anywhere gives a big hop to wiggle free, and still stuck after seven, the animal pops out just the
-same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.)
+same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.) And an animal never
+ends up under the ground: if a very hard landing ever punches through it (the sea and river beds are thin), or it gets
+underneath any other way, it's put straight back on top.
 
 The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
 tester**, the sticker album, a picture of all controls, and:
@@ -308,7 +310,7 @@ tester**, the sticker album, a picture of all controls, and:
 - **Play log** 📋: a small record of each play session, kept on this computer only (the last ten). For each session:
   how long it lasted, how many children played and which animals, the frame rate (lowest and average, once warmed up),
   the most draw calls in a frame, stutters (frames over 100 ms, and the longest), any change of graphics level, how
-  often an animal got stuck (and where) or needed the rescue buttons, controllers dropping out, any errors, the stickers earned (which things got played with) and
+  often an animal got stuck (and where), needed the rescue buttons or got below the ground and was put back on top, controllers dropping out, any errors, the stickers earned (which things got played with) and
   how long the animals spent in each part of the park. **Save** downloads it as a file, to send along with what you
   noticed; **Clear** empties it. Nothing is sent anywhere by itself. Broken saved data (a half-written save, an
   old version) is ignored: a fresh park starts instead.

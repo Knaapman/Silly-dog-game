@@ -15,7 +15,7 @@ import { isPaused, useGame, type PlayerInfo } from '../store';
 import { choosing, tongue as tongueStep, headbutt, looks, poop, voice } from './actions';
 import { AnimalModel, createRig, SPECIES_SPECS } from './AnimalModel';
 import { animate } from './animate';
-import { flop, impulses, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
+import { flop, impulses, keepAboveGround, landing, launch, powerAndSize, probeGround, respawnIfLost, syncRuntime, tickTimers, tugged, waterAndMud } from './body';
 import { MODEL_SCALE, POWER_COLOR, POWER_TIME, RADIUS } from './constants';
 import { MarkerShape } from './MarkerShape';
 import { createTmp, type FrameCtx } from './frame';
@@ -234,6 +234,7 @@ export function Player({ info }: { info: PlayerInfo }) {
     landing(f);
     rescue(f, world, rapier);
     autoUnstick(f, world, rapier);
+    keepAboveGround(f, rb);
     respawnIfLost(f, rb, world, rapier);
     syncRuntime(f);
     animate(f, {

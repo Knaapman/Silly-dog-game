@@ -32,7 +32,8 @@ export type Session = {
   hitches?: { count: number; longestMs: number };
   /** The graphics quality, each time it changed. */
   quality: string[];
-  unstuck: { hops: number; pops: number; rescues: number; where: { kind: string; x: number; z: number }[] };
+  /** `under`: times an animal got below the ground and was put back on top. */
+  unstuck: { hops: number; pops: number; rescues: number; under?: number; where: { kind: string; x: number; z: number }[] };
   controllerDrops: number;
   errors: string[];
   stickers: string[];
@@ -49,7 +50,7 @@ type Running = {
   stickersAtStart: Set<string>;
   /** perf.hitches when the warm-up ended (-1 until then). */
   hitchesAtWarm: number;
-  unstuckAtStart: { hops: number; pops: number; chord: number };
+  unstuckAtStart: { hops: number; pops: number; chord: number; under: number };
   connected: Map<string, boolean>;
 };
 
@@ -92,7 +93,7 @@ function begin(now: number) {
       draws: { max: 0, avg: 0, maxTriangles: 0 },
       hitches: { count: 0, longestMs: 0 },
       quality: [effectiveQuality()],
-      unstuck: { hops: 0, pops: 0, rescues: 0, where: [] },
+      unstuck: { hops: 0, pops: 0, rescues: 0, under: 0, where: [] },
       controllerDrops: 0,
       errors: [],
       stickers: [],
@@ -104,7 +105,7 @@ function begin(now: number) {
     drawSamples: 0,
     stickersAtStart: new Set(useStickers.getState().got),
     hitchesAtWarm: -1,
-    unstuckAtStart: { hops: unstuckLog.hops, pops: unstuckLog.pops, chord: unstuckLog.chord },
+    unstuckAtStart: { hops: unstuckLog.hops, pops: unstuckLog.pops, chord: unstuckLog.chord, under: unstuckLog.under },
     connected: new Map()
   };
 }
@@ -156,8 +157,9 @@ export function tickPlayLog(now = performance.now()) {
   s.unstuck.hops = unstuckLog.hops - r.unstuckAtStart.hops;
   s.unstuck.pops = unstuckLog.pops - r.unstuckAtStart.pops;
   s.unstuck.rescues = unstuckLog.chord - r.unstuckAtStart.chord;
+  s.unstuck.under = unstuckLog.under - r.unstuckAtStart.under;
   // (where: the latest ones, up to ten, from this session)
-  const n = Math.min(10, s.unstuck.hops + s.unstuck.pops + s.unstuck.rescues);
+  const n = Math.min(10, s.unstuck.hops + s.unstuck.pops + s.unstuck.rescues + s.unstuck.under);
   s.unstuck.where = n > 0 ? unstuckLog.where.slice(-n).map((w) => ({ kind: w.kind, x: w.x, z: w.z })) : [];
 
   // controllers dropping out
