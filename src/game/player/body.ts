@@ -7,13 +7,13 @@ import { emit, poof, ring } from '../fx';
 import { rumble } from '../input';
 import { isInFountain, isInMud } from '../layout';
 import { PAINT_COLORS, paintColor, paintOf, paintSplashes, SNOW_PAINT } from '../paint';
-import { isInWater, waterLevelAt } from '../terrain';
+import { groundHeight, isInWater, waterLevelAt } from '../terrain';
 import { players, propPosition, props, shakeCamera, surfaces } from '../runtime';
 import { useGame } from '../store';
 import { GIANT_SIZE, RADIUS } from './constants';
 import { endFlop, releaseHeld, startFlip, startFlop, type FrameCtx } from './frame';
 import { ballistic } from './physics';
-import { safeSpot, type Rapier } from './rescue';
+import { note, safeSpot, unstuckLog, type Rapier } from './rescue';
 import { earnSticker } from '../stickers';
 import { randomStream } from '../rng';
 
@@ -295,6 +295,28 @@ export function landing(f: FrameCtx) {
     }
   }
   s.lastVy = lv.y;
+}
+
+/** How far an animal's middle may be below the ground before it's put back on top of it (m). */
+const UNDER_GROUND = 0.25;
+
+/**
+ * Never under the ground. A very hard landing can punch through it where it's thin (the sea and
+ * river beds sit just above the floor under the park), and an animal that gets underneath walks
+ * about under the world, or sticks half through it, stuck. Nowhere in the park is an animal ever
+ * meant to be below the ground (the tunnel, the pits, the water are all above it), so it's put
+ * straight back on top. Not while a ride holds it: the ride says where it is.
+ */
+export function keepAboveGround(f: FrameCtx, rb: RapierRigidBody) {
+  const { s, t } = f;
+  if (s.holdAt) return;
+  const g = groundHeight(t.x, t.z);
+  if (t.y > g - UNDER_GROUND) return;
+  rb.setTranslation({ x: t.x, y: g + f.rad + 0.05, z: t.z }, true);
+  const v = rb.linvel();
+  rb.setLinvel({ x: v.x, y: Math.max(0, v.y), z: v.z }, true);
+  unstuckLog.under += 1;
+  note(f.slot, 'under', t);
 }
 
 /** Fell out of the world? Pop back in next to a friend (or in the plaza). */

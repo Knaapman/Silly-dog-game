@@ -42,7 +42,7 @@ test('the play log keeps track of a session, and the grown-ups menu saves it as 
   expect(s.draws.max).toBeGreaterThan(10);
   expect(s.zones.farm).toBeGreaterThanOrEqual(10);
   expect(s.stickers).toContain('photo');
-  expect(s.unstuck).toEqual({ hops: 0, pops: 0, rescues: 0, where: [] });
+  expect(s.unstuck).toEqual({ hops: 0, pops: 0, rescues: 0, under: 0, where: [] });
   expect(s.errors).toEqual([]);
   await expect(page.getByTestId('playlog')).toContainText('1 session');
 

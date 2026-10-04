@@ -33,9 +33,9 @@ export const STUCK_RESCUE_AFTER = 7;
 const STUCK_RADIUS = 0.8;
 
 /** How often each has happened, and where the last few were (for tests and tuning). */
-export const unstuckLog = { chord: 0, hops: 0, pops: 0, where: [] as { slot: number; kind: 'hop' | 'pop'; x: number; z: number }[] };
+export const unstuckLog = { chord: 0, hops: 0, pops: 0, under: 0, where: [] as { slot: number; kind: 'hop' | 'pop' | 'under'; x: number; z: number }[] };
 debugInfo.unstuck = unstuckLog;
-const note = (slot: number, kind: 'hop' | 'pop', p: THREE.Vector3) => {
+export const note = (slot: number, kind: 'hop' | 'pop' | 'under', p: { x: number; z: number }) => {
   unstuckLog.where.push({ slot, kind, x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 });
   if (unstuckLog.where.length > 20) unstuckLog.where.shift();
 };
