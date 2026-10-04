@@ -1,4 +1,4 @@
-import { CapsuleCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
+import { CapsuleCollider, CuboidCollider, CylinderCollider, RigidBody } from '@react-three/rapier';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { playCrack, playGiggle, playPoof, playRoar, playRumble, playSneeze, SNEEZE_AT } from '../audio';
@@ -248,10 +248,23 @@ function Brontosaurus() {
           </mesh>
         </RigidBody>
       ))}
-      {/* neck: a walkable ramp up to the head */}
-      <Ramp from={[bx + 3.6, 4.1, bz]} to={[bx + 8.6, 7.2, bz]} width={1.5} color={green} thickness={0.9} />
-      <RigidBody type="fixed" colliders={false} position={[bx + 9.3, 7.2, bz]}>
-        <CylinderCollider args={[0.2, 1.2]} />
+      {/* along the top of its back, a flat path (unseen) to the neck: its round sides would roll you
+          off to the grass, and the neck along with you. A ridge of spines on the far side stops you
+          running straight off it at the top of the stairs. */}
+      <RigidBody type="fixed" colliders={false} position={[bx + 0.2, 4.52, bz + 0.1]}>
+        <CuboidCollider args={[2.8, 0.08, 0.9]} />
+        <CuboidCollider args={[2.8, 0.35, 0.12]} position={[0, 0.4, -1.0]} />
+      </RigidBody>
+      {Array.from({ length: 7 }, (_, i) => (
+        <mesh key={i} castShadow position={[bx - 2.4 + i * 0.85, 4.85, bz - 0.9]} material={lambert(dark)}>
+          <coneGeometry args={[0.32, 0.75, 4]} />
+        </mesh>
+      ))}
+      {/* neck: a walkable ramp up to the head, with a low ridge of spines each side to keep you on */}
+      <Ramp from={[bx + 3.6, 4.1, bz]} to={[bx + 8.9, 7.39, bz]} width={2} color={green} thickness={0.9} railColor={dark} railHeight={0.3} />
+      {/* the top of its head, to stand on: level with the end of the neck, so you walk right on */}
+      <RigidBody type="fixed" colliders={false} position={[bx + 9.6, 7.2, bz]}>
+        <CylinderCollider args={[0.2, 0.95]} />
       </RigidBody>
       <group ref={head} position={[bx + 9.4, 7.1, bz]}>
         <mesh castShadow scale={[1.3, 0.8, 1]} material={lambert(green)}>
