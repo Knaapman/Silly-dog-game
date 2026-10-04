@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
+const stickers = (game: Game) => game.page.evaluate(() => (window as any).__silly.useStickers.getState().got as string[]);
+
 test.describe('magic food', () => {
   test('the red spotty mushroom makes you a giant', async ({ page }) => {
     const game = new Game(page);
@@ -13,6 +15,7 @@ test.describe('magic food', () => {
     expect(p.power).toBe('giant');
     expect(p.size).toBeGreaterThan(2);
     expect(p.y).toBeGreaterThan(0.9); // the bigger ball stands on the ground, not in it
+    expect(await stickers(game)).toContain('giant');
     game.expectNoErrors();
   });
 
@@ -31,6 +34,7 @@ test.describe('magic food', () => {
     }
     expect(top).toBeGreaterThan(y0 + 5); // several toots in a row keep climbing
     expect((await game.poopStats()).poops).toBe(0);
+    expect(await stickers(game)).toContain('rocket');
     game.expectNoErrors();
   });
 
@@ -46,6 +50,7 @@ test.describe('magic food', () => {
     const y0 = (await game.player(1)).y;
     await game.tap('KeyR');
     expect(await game.maxY(1, 1)).toBeGreaterThan(y0 + 1);
+    expect(await stickers(game)).toContain('fire');
     game.expectNoErrors();
   });
 });

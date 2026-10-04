@@ -355,7 +355,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 |---|---|
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
 | 🎡 Carnival (north-west) | **Ferris wheel**: walk up onto its deck and to the front, and a hop takes you into the next gondola down, up past the star at the top (jump to get out), a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
-| ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers, a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
+| ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers (headbutt the ball, or roll a hamster ball, into the pins hard enough and they all go down: a strike), a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
 | 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with stairs onto its back, a neck you can walk up to its head and a tail you can slide down (headbutt its tummy and it giggles; tickle it five times quickly and... ah... ah... CHOO! everyone up on it is sneezed off onto the grass), a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
@@ -404,7 +404,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 74 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 95 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
@@ -483,7 +483,8 @@ minute it collects the garbage and counts memory, three.js geometries and textur
 bodies and the registries, and fails if any of them keeps growing after the first few minutes (a leak would make an
 hour of play slowly stutter). It is too long for every run: `SOAK_MINUTES=20 npx playwright test e2e/soak.spec.ts`.
 `e2e/stars.spec.ts` gets every golden star the way a child would (the launcher, the ride, the stairs and the walk up
-the brontosaurus's neck), so moving a landmark can't quietly leave a star out of reach.
+the brontosaurus's neck), so moving a landmark can't quietly leave a star out of reach. Likewise every sticker is
+earned by playing in some test (most in their attraction's own test, the rest in `e2e/stickers-play.spec.ts`).
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are

@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
+const stickers = (game: Game) => game.page.evaluate(() => (window as any).__silly.useStickers.getState().got as string[]);
+
 // Every golden star can be got the way a child gets there: the launcher, ride or climb that leads
 // to it (the "show me where" guide points the same way). Moving a landmark, a launcher's target or
 // a star must never leave one stranded out of reach (as the ferris wheel's once was: nobody could
@@ -63,6 +65,7 @@ test('volcano: jump into the crater and it erupts you up through the star', asyn
   const { VOLCANO } = await layout(game);
   await place(game, VOLCANO.center[0], VOLCANO.height + 1.5, VOLCANO.center[1]);
   expect(await until(game, 3, 8)).toBe(true);
+  expect(await stickers(game)).toContain('volcano');
 });
 
 test('slide tower: walk up the ramp onto the top', async () => {
@@ -91,6 +94,7 @@ test('lighthouse: the pirate ship cannon fires you onto the balcony', async () =
   expect(spot.d).toBeLessThan(SHIP.length);
   await place(game, spot.x, spot.y + 0.3, spot.z);
   expect(await until(game, 5, 8)).toBe(true);
+  expect(await stickers(game)).toContain('cannon');
 });
 
 test('snowy summit: the launch pad at the mountain foot', async () => {

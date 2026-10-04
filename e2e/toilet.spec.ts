@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
+const stickers = (game: Game) => game.page.evaluate(() => (window as any).__silly.useStickers.getState().got as string[]);
+
 test('the giant toilet flushes you (and your poop) across the park', async ({ page }) => {
   const game = new Game(page);
   await game.open();
@@ -29,5 +31,6 @@ test('the giant toilet flushes you (and your poop) across the park', async ({ pa
   await game.seconds(5);
   const landed = await game.player();
   expect(Math.hypot(landed.x - 4.8, landed.z + 2)).toBeGreaterThan(15);
+  expect(await stickers(game)).toContain('flush');
   game.expectNoErrors();
 });

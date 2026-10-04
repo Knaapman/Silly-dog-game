@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
+const stickers = (game: Game) => game.page.evaluate(() => (window as any).__silly.useStickers.getState().got as string[]);
+
 test.describe('eating and pooping', () => {
   test('food fills the belly, every bite comes out as a poop, an empty tummy toots', async ({ page }) => {
     const game = new Game(page);
@@ -34,6 +36,7 @@ test.describe('eating and pooping', () => {
     await game.seconds(3);
     expect((await game.poopStats()).poops).toBe(5);
     expect((await game.player()).belly).toBe(0);
+    expect(await stickers(game)).toEqual(expect.arrayContaining(['full', 'poop']));
 
     // empty: a toot hops a little and makes no poop
     const y0 = (await game.player()).y;
@@ -84,5 +87,6 @@ test.describe('eating and pooping', () => {
     expect(await game.poopStats()).toMatchObject({ poops: 1, flowers: 0 });
     await game.seconds(2);
     expect(await game.poopStats()).toMatchObject({ poops: 0, flowers: 1 });
+    expect(await stickers(game)).toContain('flower');
   });
 });
