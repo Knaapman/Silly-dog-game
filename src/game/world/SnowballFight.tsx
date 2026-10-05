@@ -15,6 +15,7 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { liftIfUnder } from './ground';
 
 // Snowball fight: two snow piles with little snowballs on top. Lick one to pick it up, lick again
 // to throw it. A friend it hits gets a splat, a hop and a dusting of snow (white paw prints!) that
@@ -155,6 +156,7 @@ function ThrowBall({ home }: { home: THREE.Vector3 }) {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry) return;
+    if (entry.heldBy == null) liftIfUnder(rb, BALL_R);
     const s = st.current;
     const now = gameNow();
     const grown = Math.min(1, (now - s.regrowAt) / REGROW_MS);

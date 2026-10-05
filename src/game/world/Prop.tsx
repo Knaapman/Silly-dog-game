@@ -25,6 +25,7 @@ import { allocPropId, players, registerProp, type PropEntry, type PropKind } fro
 import { useGame } from '../store';
 import { after, useGameFrame } from '../clock';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('prop');
 
@@ -334,6 +335,8 @@ export function Prop({ kind, position, rotation, color, splatty, edible, onEaten
     }
     tick.current += 1;
     if (tick.current % 30 === 0 && rb.translation().y < -10) reset();
+    // (a few times a second is plenty: it only matters once something's got under the ground)
+    else if (tick.current % 10 === 0 && entry.heldBy == null) liftIfUnder(rb, entry.radius);
   });
 
   const onCollisionEnter = (payload: CollisionEnterPayload) => {

@@ -14,6 +14,7 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { liftIfUnder } from './ground';
 
 // Hamster balls: four giant clear balls in a row at the top of the bowling lane. Walk into one and
 // you're inside; push the stick and it rolls (down the lane into the pins!). Roll into a friend
@@ -103,6 +104,7 @@ function HamsterBall({ index }: { index: number }) {
   useGameFrame((_, delta) => {
     const rb = body.current;
     if (!rb) return;
+    liftIfUnder(rb, R);
     const dt = Math.min(delta, 0.05);
     const now = gameNow();
     const t = rb.translation();

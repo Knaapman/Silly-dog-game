@@ -180,8 +180,10 @@ function Ground() {
       <CuboidCollider args={[hx + 2, 30, 0.5]} position={[0, 30, hz + 1]} />
       <CuboidCollider args={[0.5, 30, hz + 2]} position={[-hx - 1, 30, 0]} />
       <CuboidCollider args={[0.5, 30, hz + 2]} position={[hx + 1, 30, 0]} />
-      {/* and a floor under it all, in case anything ever gets past the heightfield's edge */}
-      <CuboidCollider args={[hx + 30, 0.5, hz + 40]} position={[0, -1.6, 0]} />
+      {/* and a floor under it all, in case anything ever gets past the heightfield's edge. Deep
+          down: just under the sea and river beds it caught anything that punched through them,
+          half in the bed, where nothing could get it back up (see keepAboveGround, liftIfUnder) */}
+      <CuboidCollider args={[hx + 30, 0.5, hz + 40]} position={[0, -12.5, 0]} />
     </RigidBody>
   );
 }

@@ -16,6 +16,7 @@ import { groundHeight, isInWater } from '../terrain';
 import { useGame } from '../store';
 import { eatFish, nearestFish } from './Fishing';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('cats');
 
@@ -222,6 +223,7 @@ function Cat({ index }: { index: number }) {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry) return;
+    if (entry.heldBy == null) liftIfUnder(rb, R);
     const dt = Math.min(delta, 0.05);
     if (dt <= 0) return;
     const c = s.current;
