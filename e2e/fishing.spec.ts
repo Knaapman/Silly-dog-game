@@ -172,3 +172,35 @@ test('a cat only eats a fish once it has landed, not one flying past overhead', 
   expect(await eaten()).toBe(1);
   game.expectNoErrors();
 });
+
+test("licking the sea right by the park's edge: the fish lands in the park, not beyond the wall", async ({ page }) => {
+  const game = new Game(page);
+  await game.open();
+  await game.start();
+  // swimming against the south wall, facing it
+  await game.hopTo(0, [0, 61.5], [0, 64.6]);
+  await game.seconds(0.6);
+  const before = (await fishState(game)).bites;
+  // (the leap and the splash back in are quick: follow it the whole way)
+  let farthest = 0;
+  let seen = false;
+  const follow = async (s: number) => {
+    for (let t = 0; t < s; t += 0.1) {
+      await game.seconds(0.1);
+      for (const f of (await fishState(game)).fish) {
+        seen = true;
+        farthest = Math.max(farthest, Math.abs(f.z));
+      }
+    }
+  };
+  for (let i = 0; i < 6 && (await fishState(game)).bites === before; i += 1) {
+    await game.tap('KeyQ');
+    await follow(0.3);
+  }
+  expect((await fishState(game)).bites).toBe(before + 1);
+  await follow(2.5);
+  expect(seen).toBe(true);
+  // inside the wall (its inside face is at 65.5)
+  expect(farthest).toBeLessThan(65.2);
+  game.expectNoErrors();
+});

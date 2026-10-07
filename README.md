@@ -480,8 +480,9 @@ and the built game starting offline (and a broken save: junk in every saved key 
 watch the real clock, so `npm run test:e2e` (`scripts/e2e.mjs`) runs them first, on their own, and then the test-mode
 tests two at a time (they give the same results however busy the machine is). GitHub Actions (`.github/workflows/ci.yml`) runs the type-check, unit tests and
 build, then the browser tests; `npm run ci` runs the same locally. Two "chaos" tests play the game with robot
-players mashing random buttons (four players for three minutes, and one child with the buddy) and fail on any error,
-broken position or animal leaving the world; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more (and `SOLO_SEEDS=1,2,3` more solo runs).
+players mashing random buttons (four players for three minutes, popping over to a random attraction every 20 s,
+and one child with the buddy) and fail on any error, broken position, animal leaving the world, anything stuck under
+the ground or beyond the park's walls, or a ride, tongue or piggyback still holding a player who isn't there; `CHAOS_SEEDS=1,2,3 npx playwright test e2e/chaos.spec.ts` runs more (and `SOLO_SEEDS=1,2,3` more solo runs).
 The **soak test** plays for much longer, with four robots and a surprise every 40 s, hopping round the park: once a
 minute it collects the garbage and counts memory, three.js geometries and textures, objects in the scene, physics
 bodies and the registries, and fails if any of them keeps growing after the first few minutes (a leak would make an

@@ -631,7 +631,10 @@ function Cat({ index }: { index: number }) {
       }
     } else if (m === 'fall') {
       c.fallT += dt;
-      if (c.fallT > 0.35 && onGround && t.y < 3) {
+      // landed: near the ground, wherever that is (up on the mountain too), or lying still on top
+      // of something (a roof, a bench) for a while
+      const landed = t.y - groundHeight(t.x, t.z) < 1.2 || c.fallT > 2;
+      if (c.fallT > 0.35 && onGround && landed) {
         if (c.tagBy != null) {
           // headbutted or thrown: that's a tag
           const p = players.get(c.tagBy);

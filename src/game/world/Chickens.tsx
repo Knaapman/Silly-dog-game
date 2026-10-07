@@ -112,6 +112,8 @@ function Chicken({ index }: { index: number }) {
     const t = rb.translation();
     const v = rb.linvel();
     const time = gameClock.time + index;
+    /** How high above the ground it is (the farm has hills; a thrown one can land anywhere). */
+    const up = t.y - groundHeight(t.x, t.z);
     c.timer -= dt;
     c.flap = Math.max(0, c.flap - dt);
 
@@ -130,9 +132,10 @@ function Chicken({ index }: { index: number }) {
 
     if (c.mode === 'tumble') {
       const moving = Math.hypot(v.x, v.y, v.z);
-      c.settle = moving < 1.2 && t.y < 0.8 ? c.settle + dt : 0;
+      c.settle = moving < 1.2 ? c.settle + dt : 0;
       c.flap = 0.2;
-      if (c.settle > 0.35) {
+      // on the ground, or lying still on top of something (a roof, a bale) a little longer
+      if (c.settle > (up < 0.8 ? 0.35 : 1.5)) {
         rb.setEnabledRotations(false, false, false, true);
         rb.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
         rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
@@ -179,7 +182,7 @@ function Chicken({ index }: { index: number }) {
           tmp.normalize();
         }
         c.facing = Math.atan2(tmp.x, tmp.z) + Math.sin(time * 3) * 0.4;
-        if (random() < dt * 1.5 && t.y < 0.6) {
+        if (random() < dt * 1.5 && up < 0.6) {
           vy = 4;
           c.flap = 0.5;
         }
@@ -293,7 +296,7 @@ function Chicken({ index }: { index: number }) {
       yaw.current.rotation.y += d * (1 - Math.exp(-12 * dt));
     }
     if (head.current) head.current.rotation.x = c.mode === 'peck' ? Math.max(0, Math.sin(time * 9)) * 1.1 : Math.sin(c.walk * 2) * 0.15;
-    const flapping = c.flap > 0 || c.mode === 'flee' || c.mode === 'held' || t.y > 0.8;
+    const flapping = c.flap > 0 || c.mode === 'flee' || c.mode === 'held' || up > 0.8;
     wings.current.forEach((w, i) => {
       if (!w) return;
       const side = i === 0 ? -1 : 1;

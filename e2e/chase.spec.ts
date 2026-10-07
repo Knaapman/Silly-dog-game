@@ -272,3 +272,25 @@ test('tag all four and the cats follow you in a line, then go home', async ({ pa
   for (let i = 0; i < 4; i += 1) expect(['idle', 'stalk']).toContain((await cat(game, i)).mode);
   game.expectNoErrors();
 });
+
+test('a cat headbutted up on the mountain lands, counts as tagged and runs off (like anywhere else)', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['birds', 'chickens'] });
+  await game.start();
+  // on the winter plateau, nine metres up (a cat carried up there and headbutted)
+  const [x, z] = [12, -56];
+  await game.teleport(0, x - 6, 0.5, z);
+  await page.evaluate(([x, z]) => {
+    const s = (window as any).__silly;
+    const b = s.chase.parkCats[0].getBody();
+    b.setTranslation({ x, y: s.terrain.groundHeight(x, z) + 0.6, z }, true);
+    b.setLinvel({ x: 2, y: 5, z: 0 }, true);
+    // (what a headbutt does to it)
+    [...s.runtime.props.values()].find((p: any) => p.kind === 'cat' && p.getBody() === b).onBonk(0);
+  }, [x, z] as const);
+  expect((await cat(game, 0)).mode).toBe('fall');
+  await game.seconds(3);
+  expect(['tagged', 'toTree', 'tree', 'flee']).toContain((await cat(game, 0)).mode);
+  expect((await tally(game))[0]).toBe(true);
+  game.expectNoErrors();
+});

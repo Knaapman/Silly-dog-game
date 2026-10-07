@@ -200,6 +200,10 @@ export function tongue(f: FrameCtx) {
 function lickingWater(f: FrameCtx) {
   const { tmp } = f;
   tmp.c.copy(tmp.mouth).addScaledVector(tmp.fwd, 1.4);
+  // (never past the park's edge: the sea goes on beyond it, and a fish that leapt out of there
+  // landed on the far side of the wall, out of reach)
+  tmp.c.x = Math.max(-WORLD_HALF_X + 0.5, Math.min(WORLD_HALF_X - 0.5, tmp.c.x));
+  tmp.c.z = Math.max(-WORLD_HALF_Z + 0.5, Math.min(WORLD_HALF_Z - 0.5, tmp.c.z));
   if (!isInWater(tmp.c.x, tmp.c.z)) return false;
   const level = waterLevelAt(tmp.c.x, tmp.c.z);
   if (tmp.mouth.y - level > 1.6) return false;
