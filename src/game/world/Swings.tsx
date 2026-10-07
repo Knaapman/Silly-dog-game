@@ -30,6 +30,11 @@ const BOARD_REACH = 0.8;
 const BOARD_SPEED = 2.5;
 /** Seconds after jumping off before you can sit again (you might land back on it). */
 const REBOARD = 1.2;
+/**
+ * Jumping off a swing that's hardly moving: a little hop at least this far (m), clear of the seat.
+ * (Straight down under it, a child who stood still was sat back on it a moment later.)
+ */
+const HOP_CLEAR = BOARD_REACH + 0.6;
 /** A seat swinging faster than this (m/s) bonks someone standing in its way, this close. */
 const KNOCK_SPEED = 3.5;
 const KNOCK_REACH = 0.9;
@@ -184,7 +189,8 @@ export function Swings() {
           const amp = amplitude(s);
           const ground = groundHeight(tmp.seat.x, tmp.seat.z);
           const f = fling(s, tmp.seat.y - ground - RADIUS - 0.1);
-          tmp.target.set(tmp.seat.x, 0, tmp.seat.z + f.along);
+          const along = Math.abs(f.along) >= HOP_CLEAR ? f.along : f.along < 0 ? -HOP_CLEAR : HOP_CLEAR;
+          tmp.target.set(tmp.seat.x, 0, tmp.seat.z + along);
           tmp.target.y = groundHeight(tmp.target.x, tmp.target.z);
           p.hold(null);
           p.launchTo(tmp.target, ground + f.apex + RADIUS);

@@ -108,7 +108,8 @@ itself. Playing alone, the buddy runs round pushing while you ride.
 **The swings** 🪑 on the east side of the playground: four seats on a big red and yellow frame. Walk into a seat
 and you sit down; hold the stick (any way at all, no timing needed) and you swing higher and higher. Jump and you
 let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
-ball pit (a sticker for flying off a big swing). A friend can headbutt the seat for a big push (a friend sticker),
+ball pit (a sticker for flying off a big swing). Off a swing that's hardly moving, a jump is a little hop forwards,
+clear of the seat, so you stay off. A friend can headbutt the seat for a big push (a friend sticker),
 and a seat swinging hard bonks anyone standing in its way. Playing alone, the buddy comes round behind your swing
 and gives you a push each time you come back to it, with a little hop. With a friend sitting on a swing, a child
 nearby who has never pushed one sees paw prints from the gap beside the seat round to behind it, and the headbutt
@@ -189,8 +190,8 @@ bucket, even opens the hat box, from afar. Playing alone? Hit the buddy and it t
 snowballs burst when they land and grow back on their pile; nothing is counted, it's just for fun.
 
 **The penguin shy** 🐧 on the mountain top, east of the snow piles: five little penguins stand on a striped
-wooden counter. Throw snowballs at them from a few steps away and each one you hit tumbles off backwards with a
-squawk (walk up and bump one and it only wobbles and squeaks: this is a throwing game). Knock all five off for a cheer,
+wooden counter. Throw snowballs at them from a few steps away and each one you hit tumbles off backwards into the
+snow behind with a squawk (walk up and bump one and it only wobbles and squeaks: this is a throwing game). Knock all five off for a cheer,
 a bell and a party (and a sticker); a few seconds later they hop back up one after the other, ready to go again.
 
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
@@ -287,8 +288,8 @@ with that controller) holds all four shoulder buttons. A ring of dots fills up r
 and after five seconds it poofs out and pops up on clear ground next to a friend (or on its own spot in the plaza
 when playing alone). Rides let go of it. Only that animal moves; nothing else in the park is reset.
 It also happens by itself, since small children won't remember the buttons: pushing the stick for three seconds
-without getting anywhere gives a big hop to wiggle free, and still stuck after seven, the animal pops out just the
-same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.) And an animal never
+without getting anywhere gives a big hop to wiggle free (for a moment it passes through things, straight up, so it
+gets out of a gap it's wedged in too), and still stuck after seven, the animal pops out just the same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.) And an animal never
 ends up under the ground: if a very hard landing ever punches through it (the sea and river beds are thin), or it gets
 underneath any other way, it's put straight back on top. So is everything else that rolls and flies about (balls,
 crates, snowballs, fish, cats, chickens...); the chaos test fails if anything stays under.
@@ -488,6 +489,9 @@ hour of play slowly stutter). It is too long for every run: `SOAK_MINUTES=20 npx
 `e2e/stars.spec.ts` gets every golden star the way a child would (the launcher, the ride, the stairs and the walk up
 the brontosaurus's neck), so moving a landmark can't quietly leave a star out of reach. Likewise every sticker is
 earned by playing in some test (most in their attraction's own test, the rest in `e2e/stickers-play.spec.ts`).
+`e2e/traps.spec.ts` looks at every collider in the park for a gap narrower than an animal between two things that
+stand (a counter with a board behind it, a slide's rail beside a tree trunk): an animal knocked down into one is held
+on both sides, with no ground under it to jump from. There must be none.
 
 Built with React 19, [react-three-fiber](https://github.com/pmndrs/react-three-fiber),
 [Rapier](https://rapier.rs/) physics (`@react-three/rapier`) and Zustand. All models, textures, sounds and music are

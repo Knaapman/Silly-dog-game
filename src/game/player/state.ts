@@ -48,6 +48,8 @@ export function createState(spawn: THREE.Vector3) {
     stuckFrom: new THREE.Vector3(),
     pendingBump: null as THREE.Vector3 | null,
     pendingHop: 0,
+    /** Seconds left passing through things, after the stuck hop (out of a gap it was wedged in). */
+    ghostFor: 0,
     /** Small upward nudge without a flip (the toot hop). */
     pendingNudge: 0,
     pendingLaunch: null as { target: THREE.Vector3; apex: number } | null,

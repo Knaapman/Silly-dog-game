@@ -100,9 +100,12 @@ export function PenguinShy() {
       p.wobble = Math.max(0, p.wobble - dt * 1.8);
       const gr = groups.current[i];
       if (gr) {
-        // tipped over backwards off the counter (away from the throwers, to the east), or wobbling
+        // tipped over backwards off the counter (away from the throwers, to the east) and down onto
+        // the snow behind it, or wobbling
+        const back = Math.min(1, p.fall * 2);
+        const drop = Math.max(0, p.fall * 2 - 1);
         gr.rotation.z = -p.fall * 1.6 + Math.sin(now / 45) * 0.25 * p.wobble;
-        gr.position.set(cx + p.fall * 0.55, top - p.fall * 0.55, zs[i]);
+        gr.position.set(cx + back * 0.75, top - drop * (PENGUIN_SHY.height - 0.2), zs[i]);
       }
     });
   });
@@ -110,14 +113,13 @@ export function PenguinShy() {
   const length = PENGUIN_SHY.count * PENGUIN_SHY.spacing + 0.6;
   return (
     <group>
-      {/* the counter, with a striped front, and a back board behind the penguins */}
+      {/* the counter, with a striped front (no board behind it: an animal that fell in between got stuck) */}
       <StaticBox position={[cx, g + PENGUIN_SHY.height / 2, cz]} size={[0.9, PENGUIN_SHY.height, length]} color="#b7793f" />
       {Array.from({ length: 6 }, (_, k) => (
         <mesh key={k} position={[cx - 0.46, g + PENGUIN_SHY.height / 2, cz + (k - 2.5) * (length / 6)]} material={lambert(k % 2 ? '#ffffff' : '#ef4444')}>
           <boxGeometry args={[0.02, PENGUIN_SHY.height * 0.9, length / 6]} />
         </mesh>
       ))}
-      <StaticBox position={[cx + 1.4, g + 1.1, cz]} size={[0.15, 2.2, length]} color="#8d5a36" />
       {zs.map((z, i) => (
         <group
           key={i}

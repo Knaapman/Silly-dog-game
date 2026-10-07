@@ -123,3 +123,47 @@ test('pushing against a wall and getting nowhere: a big hop after a few seconds,
   expect(dist(p, at)).toBeGreaterThan(20);
   game.expectNoErrors();
 });
+
+test('wedged in a gap narrower than itself (fallen in hard behind a counter): the big hop gets it out, no pop needed', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds', 'chickens'] });
+  await game.start();
+  // a counter and a tall board with a gap between them a bit narrower than an animal (as the
+  // penguin shy's once had), out on open grass
+  const [x, z] = [48, -27];
+  await page.evaluate(
+    ([x, z]) => {
+      const { world, rapier } = (window as any).__silly;
+      world.createCollider(rapier.ColliderDesc.cuboid(0.45, 0.5, 3).setTranslation(x, 0.5, z));
+      world.createCollider(rapier.ColliderDesc.cuboid(0.075, 1.1, 3).setTranslation(x + 1.4, 1.1, z));
+    },
+    [x, z] as const
+  );
+  // a hard landing (out of the balloon, say) right into the gap
+  await page.evaluate(
+    ([x, z]) => {
+      const b = (window as any).__silly.runtime.players.get(0).getBody();
+      b.setTranslation({ x: x + 0.7, y: 6, z }, true);
+      b.setLinvel({ x: 0, y: -20, z: 0 }, true);
+    },
+    [x, z] as const
+  );
+  await game.seconds(1.5);
+  const at = await game.player();
+  expect(at.y).toBeGreaterThan(0.6); // held up in the gap, not standing on the grass
+  expect(Math.abs(at.x - (x + 0.9))).toBeLessThan(0.4);
+  const unstuck = () => page.evaluate(() => JSON.parse(JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck)) as { hops: number; pops: number });
+  // pushing away from the counter: nowhere, then the hop at three seconds lifts it clear
+  await page.keyboard.down('KeyD');
+  await game.seconds(2.5);
+  expect(dist(await game.player(), at)).toBeLessThan(0.5);
+  await game.seconds(3.5);
+  await page.keyboard.up('KeyD');
+  const p = await game.player();
+  expect(dist(p, at)).toBeGreaterThan(1.5);
+  // (and off it ran: it got out right there, it wasn't popped back to the plaza)
+  const u = await unstuck();
+  expect(u.hops).toBe(1);
+  expect(u.pops).toBe(0);
+  game.expectNoErrors();
+});
