@@ -348,7 +348,7 @@ function BabyDino({ info, onGone }: { info: DinoInfo; onGone: (id: number) => vo
           return;
         }
       }
-      if (c.hopAt > 0 && now > c.hopAt && t.y < 1.5) {
+      if (c.hopAt > 0 && now > c.hopAt && t.y - groundHeight(t.x, t.z) < 1.5) {
         c.hopAt = 0;
         vy = 8;
         playCheep(t);

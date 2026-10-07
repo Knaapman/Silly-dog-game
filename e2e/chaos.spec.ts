@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
 // A robot "kid" per player mashing random buttons and running around, for minutes of game
-// time, with surprises going on. Anything that throws, goes NaN or falls out of the world fails.
+// time, with surprises going on, popping over to a random attraction every 20 s. Anything that
+// throws, goes NaN, falls out of the world or under the ground, leaves the park, or ends up held
+// or ridden by a player who isn't there fails.
 
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -32,14 +34,33 @@ const check = (game: Game) =>
       else if (Math.abs(x) > 82 || Math.abs(z) > 68 || y < -12 || y > 80) bad.push(`player ${p.slot} out of the world at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
       else if (under(x, y, z, 1)) bad.push(`player ${p.slot} under the ground at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
       if (!ok(p.size) || p.size < 0.5 || p.size > 3) bad.push(`player ${p.slot} size ${p.size}`);
+      if (p.grabbedBy != null && !s.runtime.players.get(p.grabbedBy)) bad.push(`player ${p.slot} held by player ${p.grabbedBy}, who isn't here`);
+      if (p.ridingOn != null && !s.runtime.players.get(p.ridingOn)) bad.push(`player ${p.slot} riding player ${p.ridingOn}, who isn't here`);
+      for (let k = p.ridingOn, n = 0; k != null && n < 8; n += 1, k = s.runtime.players.get(k)?.ridingOn ?? null) if (k === p.slot) bad.push(`player ${p.slot} rides itself (a circle of piggybacks)`);
     });
+    // every rider, driver or seat in the rides' state is somebody who's in the game
+    const seen = new Set<unknown>();
+    const walk = (o: any, path: string, depth: number) => {
+      if (!o || typeof o !== 'object' || seen.has(o) || depth > 4 || o.isVector3 || o.isQuaternion || o.isObject3D || o instanceof Map) return;
+      seen.add(o);
+      for (const k of Object.keys(o)) {
+        const v = o[k];
+        if ((k === 'rider' || k === 'driver') && typeof v === 'number' && !s.runtime.players.get(v)) bad.push(`${path}.${k} is player ${v}, who isn't here`);
+        if (k === 'riders' && Array.isArray(v)) v.forEach((r: unknown, i: number) => typeof r === 'number' && !s.runtime.players.get(r) && bad.push(`${path}.riders[${i}] is player ${r}, who isn't here`));
+        if (v && typeof v === 'object') walk(v, `${path}.${k}`, depth + 1);
+      }
+    };
+    walk(s.runtime.debugInfo, 'debugInfo', 0);
     s.runtime.props.forEach((p: any) => {
+      if (p.heldBy != null && !s.runtime.players.get(p.heldBy)) bad.push(`prop ${p.kind} ${p.id} held by player ${p.heldBy}, who isn't here`);
       const b = p.getBody?.();
       if (!b) return;
       const t = b.translation();
       if (![t.x, t.y, t.z].every(ok)) bad.push(`prop ${p.kind} ${p.id} NaN`);
       // (props are checked a few times a second: one can be a little way under for a moment)
       else if (p.enabled && p.heldBy == null && under(t.x, t.y, t.z, 1.5)) bad.push(`prop ${p.kind} ${p.id} under the ground at ${t.x.toFixed(1)},${t.y.toFixed(1)},${t.z.toFixed(1)}`);
+      // (the park's walls stand at 80.5 and 65.5: nothing in play gets past them)
+      else if (p.enabled && p.heldBy == null && (Math.abs(t.x) > 81 || Math.abs(t.z) > 66)) bad.push(`prop ${p.kind} ${p.id} outside the park at ${t.x.toFixed(1)},${t.y.toFixed(1)},${t.z.toFixed(1)}`);
     });
     return bad;
   });
@@ -118,8 +139,29 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
       },
       [r() * 2 - 1, r() * 2 - 1, r() * 2 - 1, r() * 2 - 1, r() < 0.6 ? pick([0, 1, 2, 3, 4, 5, 6, 7, 17]) : -1, r() < 0.6 ? pick([0, 1, 2, 3, 4, 5, 6, 7, 13]) : -1] as const
     );
+    // every 20 s, each animal off to a random attraction's bubble (otherwise they'd mostly play
+    // round the plaza, and the rides far away would never get mashed)
+    if (i % 80 === 4) {
+      const spots = await page.evaluate(() => {
+        const out: [number, number, number][] = [];
+        (window as any).__silly.runtime.hints.forEach((h: any) => out.push([h.position.x, h.position.y, h.position.z]));
+        return out;
+      });
+      for (const slot of [0, 1, 2, 3]) {
+        const [hx, hy, hz] = pick(spots);
+        await page.evaluate(
+          ([slot, x, y, z]) => {
+            const p = (window as any).__silly.runtime.players.get(slot);
+            if (!p || p.isLaunched()) return;
+            p.getBody().setTranslation({ x: x + 0.3, y: y + 0.6, z: z + 0.3 }, true);
+            p.getBody().setLinvel({ x: 0, y: 0, z: 0 }, true);
+          },
+          [slot, hx, hy, hz] as const
+        );
+      }
+    }
     // a surprise every 40 s; keep the album/menu closed if a pad opened them
-    if (i % 160 === 20) await page.evaluate((k) => (window as any).__silly.events.useEvents.getState().start(k), surprises[(i / 160) | 0 % 3]);
+    if (i % 160 === 20) await page.evaluate((k) => (window as any).__silly.events.useEvents.getState().start(k), surprises[((i / 160) | 0) % surprises.length]);
     await page.evaluate(() => {
       const g = (window as any).__silly.useGame.getState();
       if (g.albumOpen) g.setAlbumOpen(false);

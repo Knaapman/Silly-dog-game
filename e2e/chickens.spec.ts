@@ -66,3 +66,26 @@ test('all the chickens in: a party; later the gate opens and they wander home', 
   expect(out.length).toBeGreaterThanOrEqual(6);
   game.expectNoErrors();
 });
+
+test('a chicken thrown up on the mountain picks itself up and wanders off again', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['birds', 'cats'] });
+  await game.start();
+  const [x, z] = [12, -56];
+  await game.teleport(0, x - 8, 0.5, z);
+  const mode = () => game.page.evaluate(() => (window as any).__silly.runtime.debugInfo.chickens[0].mode as string);
+  await page.evaluate(([x, z]) => {
+    const s = (window as any).__silly;
+    const e = [...s.runtime.props.values()].filter((p: any) => p.kind === 'chicken')[0];
+    const b = e.getBody();
+    b.setTranslation({ x, y: s.terrain.groundHeight(x, z) + 1, z }, true);
+    b.setLinvel({ x: 1, y: 3, z: 0 }, true);
+    // (what letting go of it after carrying it with the tongue does)
+    e.onRelease?.();
+  }, [x, z] as const);
+  await game.seconds(0.2);
+  expect(await mode()).toBe('tumble');
+  await game.seconds(4);
+  expect(['dizzy', 'wander', 'peck', 'flee']).toContain(await mode());
+  game.expectNoErrors();
+});

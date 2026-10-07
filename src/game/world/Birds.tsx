@@ -123,7 +123,7 @@ function Flock({ index }: { index: number }) {
       let found: THREE.Vector3 | null = null;
       let foundId = -1;
       props.forEach((prop) => {
-        if (found || prop.kind !== 'poop' || prop.heldBy != null || !propPosition(prop, tmp) || tmp.y > 1.2) return;
+        if (found || prop.kind !== 'poop' || prop.heldBy != null || !propPosition(prop, tmp) || tmp.y - groundHeight(tmp.x, tmp.z) > 1.2) return;
         let crowded = false;
         players.forEach((p) => {
           if (distXZ(p.position.x, p.position.z, tmp.x, tmp.z) < 8) crowded = true;
