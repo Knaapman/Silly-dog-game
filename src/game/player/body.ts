@@ -1,7 +1,7 @@
 import type { RapierRigidBody } from '@react-three/rapier';
 import type { Ray, World } from '@dimforge/rapier3d-compat';
 import { playBoing, playBounce, playPower, playSlideWhistle, playSplash, playSquelch, playThud } from '../audio';
-import { ANIMAL_GROUPS } from '../collision';
+import { ANIMAL_GROUPS, SOLID_SOLVER } from '../collision';
 import { MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { emit, poof, ring } from '../fx';
 import { rumble } from '../input';
@@ -83,6 +83,10 @@ export function tickTimers(f: FrameCtx) {
   s.bounceCooldown -= dt;
   s.stunned -= dt;
   s.rideCooldown -= dt;
+  if (s.ghostFor > 0) {
+    s.ghostFor -= dt;
+    if (s.ghostFor <= 0) f.col?.setSolverGroups(SOLID_SOLVER);
+  }
   s.airTime = s.grounded ? 0 : s.airTime + dt;
   // A launch ends as soon as we touch down again, so nobody slides off the landing spot.
   if (s.launched > 0) {

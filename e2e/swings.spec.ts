@@ -169,3 +169,26 @@ test('playing alone: the buddy comes round behind your swing and pushes you high
   expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.swingHelp.slot)).toBeNull();
   game.expectNoErrors();
 });
+
+test('changed my mind: a jump off a swing that is hardly moving lands clear of it, and standing there you stay off', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds', 'chickens'] });
+  await game.start();
+  const S = await layout(game);
+  const [, cz] = S.center;
+  const x = seatX(S, 2);
+  await game.teleport(0, x, 0.1, cz + 0.5);
+  await game.seconds(0.5);
+  expect((await swings(game)).seats[2].rider).toBe(0);
+  await game.seconds(0.5);
+  // jump, and then do nothing at all
+  await game.tap('Space');
+  await game.seconds(4);
+  const s = await swings(game);
+  expect(s.seats[2].rider).toBeNull();
+  expect(s.flights).toBe(1);
+  const me = await game.player();
+  expect(me.launched).toBe(false);
+  expect(Math.hypot(me.x - x, me.z - cz)).toBeGreaterThan(1.2);
+  game.expectNoErrors();
+});

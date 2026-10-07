@@ -182,6 +182,11 @@ export function movement(f: FrameCtx) {
     v.x *= 0.6;
     v.z *= 0.6;
   }
+  // the stuck hop goes straight up while it passes through things (never sideways through a fence)
+  if (s.ghostFor > 0) {
+    v.x = 0;
+    v.z = 0;
+  }
 
   rb.setLinvel(v, true);
 }

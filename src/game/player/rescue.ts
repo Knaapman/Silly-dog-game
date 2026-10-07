@@ -3,6 +3,7 @@ import type { useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { playBoing, playPoof, playXylo } from '../audio';
 import { gameNow } from '../clock';
+import { GHOST_SOLVER } from '../collision';
 import { WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { poof, ring } from '../fx';
 import { rumble } from '../input';
@@ -31,6 +32,11 @@ export const STUCK_HOP_AFTER = 3;
 export const STUCK_RESCUE_AFTER = 7;
 /** Getting less than this far (along the ground) from where the pushing started is "nowhere". */
 const STUCK_RADIUS = 0.8;
+/**
+ * The stuck hop passes through things for this long (s): wedged in a gap narrower than itself (behind
+ * a counter, between a slide and a tree), an animal is held on both sides and no hop lifts it out.
+ */
+export const STUCK_HOP_GHOST = 0.3;
 
 /** How often each has happened, and where the last few were (for tests and tuning). */
 export const unstuckLog = { chord: 0, hops: 0, pops: 0, under: 0, where: [] as { slot: number; kind: 'hop' | 'pop' | 'under'; x: number; z: number }[] };
@@ -149,6 +155,8 @@ export function autoUnstick(f: FrameCtx, world: RAPIER.World, rapier: Rapier) {
   s.stuckFor += f.dt;
   if (before < STUCK_HOP_AFTER && s.stuckFor >= STUCK_HOP_AFTER) {
     s.pendingHop = 9;
+    s.ghostFor = STUCK_HOP_GHOST;
+    f.col?.setSolverGroups(GHOST_SOLVER);
     playBoing(s.pos, 1.2);
     unstuckLog.hops += 1;
     note(f.slot, 'hop', s.pos);

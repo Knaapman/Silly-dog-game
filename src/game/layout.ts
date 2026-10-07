@@ -254,8 +254,9 @@ export const SNOW_PILES: Vec2[] = [at(Z.winter, 4, -4), at(Z.winter, 12, -8)];
 /**
  * The penguin shy: five penguins standing on a wooden counter on the east of the mountain top, facing
  * west towards the snow piles (`along` is the counter's direction). Knock them off with snowballs.
+ * Two metres of open snow behind it, before the ski jump's ramp (no gap an animal could get wedged in).
  */
-export const PENGUIN_SHY = { center: at(Z.winter, 15.5, -3), count: 5, spacing: 1.05, height: 1 };
+export const PENGUIN_SHY = { center: at(Z.winter, 14.5, -3), count: 5, spacing: 1.05, height: 1 };
 /** Where you build your own snowman: roll a big snowball into the ring, then two more onto it. */
 export const SNOWMAN_BUILD = { center: at(Z.winter, 9, 2), radius: 1.4 };
 
@@ -679,13 +680,13 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
   // round the hub, and between the hub and its neighbours
   ...treesOf((i) => (i % 2 === 0 ? 'round' : 'blossom'), [[-24, -10], [-30, -2], [-26, 30], [13, -13], [10, -12], [16, 12], [8, 26], [-30, -40], [-70, -26], [-66, -40], [-38, -42], [-66, 26], [-38, 31], [-63.5, 47]]),
   // east: by the sports, the dino park and the playground
-  ...treesOf((i) => (i % 2 === 0 ? 'pine' : 'round'), [[40, -14], [72, 20], [74, -30], [50, -62], [40, -40], [40, -52], [38.5, 45.5], [46, 26]]),
+  ...treesOf((i) => (i % 2 === 0 ? 'pine' : 'round'), [[40, -14], [72, 20], [74, -30], [50, -62], [40, -40], [40, -52], [38.5, 45.5], [48.5, 26.5]]),
   // on the mountain's slopes
   ...treesOf('pine', [[-16, -46], [34, -36], [-8, -36], [32, -30], [44, -50]]),
   // beach palms
   ...treesOf('palm', [[-22, 30], [-19, 42], [12, 44], [16, 50], [-22, 52], [38, 51]]),
   // snow pines on the plateau
-  ...treesOf('snowpine', [[-6, -64], [36, -62], [32, -48], [-12, -46], [14, -64], [8, -45], [-2, -63]])
+  ...treesOf('snowpine', [[-6, -62.6], [36, -62], [33.5, -48], [-12, -46], [14, -62.6], [8, -45], [-2, -63]])
 ];
 
 export function distXZ(ax: number, az: number, bx: number, bz: number) {
