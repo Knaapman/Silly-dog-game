@@ -25,10 +25,12 @@ const check = (game: Game) =>
     const s = (window as any).__silly;
     const bad: string[] = [];
     const ok = (v: number) => Number.isFinite(v);
+    const under = (x: number, y: number, z: number, by: number) => y < s.terrain.groundHeight(x, z) - by;
     s.runtime.players.forEach((p: any) => {
       const { x, y, z } = p.position;
       if (![x, y, z].every(ok)) bad.push(`player ${p.slot} position ${x},${y},${z}`);
       else if (Math.abs(x) > 82 || Math.abs(z) > 68 || y < -12 || y > 80) bad.push(`player ${p.slot} out of the world at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
+      else if (under(x, y, z, 1)) bad.push(`player ${p.slot} under the ground at ${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`);
       if (!ok(p.size) || p.size < 0.5 || p.size > 3) bad.push(`player ${p.slot} size ${p.size}`);
     });
     s.runtime.props.forEach((p: any) => {
@@ -36,6 +38,8 @@ const check = (game: Game) =>
       if (!b) return;
       const t = b.translation();
       if (![t.x, t.y, t.z].every(ok)) bad.push(`prop ${p.kind} ${p.id} NaN`);
+      // (props are checked a few times a second: one can be a little way under for a moment)
+      else if (p.enabled && p.heldBy == null && under(t.x, t.y, t.z, 1.5)) bad.push(`prop ${p.kind} ${p.id} under the ground at ${t.x.toFixed(1)},${t.y.toFixed(1)},${t.z.toFixed(1)}`);
     });
     return bad;
   });
@@ -143,6 +147,7 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   console.log(`seed ${seed}: ${((simMs / (CHUNKS * 15)) || 0).toFixed(2)} ms per simulated frame (4 players, no drawing)`);
   if (stuck.length) console.log(`seed ${seed} possibly stuck: ${stuck.join(' | ')}`);
   console.log(`seed ${seed} unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
+  console.log(`seed ${seed} lifted: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.lifted))}`);
   console.log(`seed ${seed} stickers: ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
   await game.seconds(1, true);
   await page.screenshot({ path: 'test-results/chaos-end.png' });

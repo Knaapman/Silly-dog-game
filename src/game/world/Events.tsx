@@ -17,6 +17,7 @@ import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { cameraFoci } from '../views';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('events');
 
@@ -144,6 +145,7 @@ function GoldenChicken() {
     const rb = body.current;
     const s = st.current;
     if (!rb || s.done) return;
+    liftIfUnder(rb, 0.35);
     const t = rb.translation();
     eventSpot.chicken.set(t.x, t.y, t.z);
     const age = (gameNow() - startedAt) / 1000;
@@ -627,6 +629,7 @@ function GiantBall() {
     const s = st.current;
     const rb = body.current;
     if (s.done || !rb) return;
+    liftIfUnder(rb, GIANT_BALL_R);
     const t = rb.translation();
     eventSpot.ball.set(t.x, t.y, t.z);
     // the first time it comes down out of the sky: BOOM

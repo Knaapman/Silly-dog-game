@@ -85,7 +85,9 @@ test('carry blocks onto the tower with your tongue: five high is a cheer and a s
   await game.seconds(2.5);
   s = await blocks(game);
   expect(s.crashes).toBe(1);
-  expect(s.tallest).toBeLessThanOrEqual(2);
+  // (the blocks the headbutt reaches fly off together, and whether the one above them rides
+  // along or tumbles off is down to how they spin)
+  expect(s.tallest).toBeLessThanOrEqual(3);
   game.expectNoErrors();
 });
 
@@ -108,6 +110,12 @@ test('set down with no tower in reach, a block just sits there; left lying far a
   expect(s.snaps).toBe(0);
   expect(s.list[i].holder).toBe(null);
   expect(Math.hypot(s.pos[i].x - before.x, s.pos[i].z - before.z)).toBeLessThan(1); // not thrown
+  // lying on the grass (it once sank straight through the ground, out of sight)
+  const g = await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [s.pos[i].x, s.pos[i].z] as const);
+  expect(s.pos[i].y - g).toBeGreaterThan(0.4);
+  expect(s.pos[i].y - g).toBeLessThan(0.8);
+  await game.seconds(3);
+  expect((await blocks(game)).pos[i].y - g).toBeGreaterThan(0.4);
 
   // now far away: it hops home after a while
   await page.evaluate(

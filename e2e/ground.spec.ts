@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { Game } from './game';
 
-// Never under the ground (body.ts keepAboveGround). The sea and river beds lie just above the
-// floor under the park, so a very hard landing could punch through and leave an animal stuck under
-// the water, half through the bed; and one that got under the ground anywhere walked about beneath
-// the world. Now it's put straight back on top, and the play log counts it.
+// Never under the ground (keepAboveGround for the animals, liftIfUnder for the things that roll and
+// fly about). The floor under the park used to lie just under the sea and river beds, so a very hard
+// landing could punch an animal (or a ball) through and leave it wedged there, half through the bed;
+// and one that got under the ground anywhere walked about beneath the world. Now the floor is deep
+// down, and anything under the ground is put straight back on top (the play log counts animals).
 
 const state = (game: Game) =>
   game.page.evaluate(() => {
@@ -64,4 +65,40 @@ test('an animal that gets under the ground is put straight back on top (and it i
   await game.seconds(2);
   expect((await state(game)).above).toBeGreaterThan(0.3);
   game.expectNoErrors();
+});
+
+test('an animal pushed just under the riverbed is not left wedged in it', async ({ page }) => {
+  const game = new Game(page);
+  // just below the bed (-0.6): nothing holds it there half in the bed; it's back on top, swimming
+  await drop(game, 24, -0.95, -6);
+  await game.seconds(1);
+  const s = await state(game);
+  expect(s.above).toBeGreaterThan(0.3);
+  expect(s.swimming).toBe(true);
+});
+
+test('a ball that gets under the ground comes back up too (like crates, cats and the rest)', async ({ page }) => {
+  const game = new Game(page);
+  const lifted = () => page.evaluate(() => (window as any).__silly.runtime.debugInfo.lifted.count as number);
+  // the football: just under the seabed, and inside the mountain
+  for (const [x, y, z] of [
+    [10, -1.2, 60],
+    [0, 4, -45]
+  ]) {
+    await page.evaluate(
+      ([x, y, z]) => {
+        const p = [...(window as any).__silly.runtime.props.values()].find((p: any) => p.kind === 'soccer');
+        const b = p.getBody();
+        b.setTranslation({ x, y, z }, true);
+        b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        b.wakeUp();
+      },
+      [x, y, z] as const
+    );
+    await game.seconds(1);
+    const [ball] = await game.props('soccer');
+    const g = await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [ball.x, ball.z] as const);
+    expect(ball.y - g).toBeGreaterThan(0.2);
+  }
+  expect(await lifted()).toBeGreaterThanOrEqual(2);
 });

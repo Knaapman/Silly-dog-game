@@ -19,6 +19,7 @@ import { cameraFoci } from '../views';
 import { SnowballFight } from './SnowballFight';
 import { PenguinShy } from './PenguinShy';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('winter');
 
@@ -177,6 +178,7 @@ function SnowBall({ home, index }: { home: Vec3; index: number }) {
   useGameFrame((_, delta) => {
     const rb = body.current;
     if (!rb) return;
+    liftIfUnder(rb, radius.current);
     const t = rb.translation();
     const v = rb.linvel();
     const speed = Math.hypot(v.x, v.z);

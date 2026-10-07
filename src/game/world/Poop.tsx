@@ -16,6 +16,7 @@ import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { earnSticker } from '../stickers';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('poop');
 
@@ -201,6 +202,7 @@ const Poop = memo(function Poop({ data }: { data: PoopData }) {
   useGameFrame((_, delta) => {
     const rb = body.current;
     if (!rb || gone.current) return;
+    liftIfUnder(rb, 0.24 * size);
     const age = (gameNow() - born.current) / 1000;
     const p = rb.translation();
     if (p.y < -10) return finishRef.current('quiet');

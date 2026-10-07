@@ -290,7 +290,8 @@ It also happens by itself, since small children won't remember the buttons: push
 without getting anywhere gives a big hop to wiggle free, and still stuck after seven, the animal pops out just the
 same. (Not at the park's edge: the hedge just stops you there. Standing still never triggers it.) And an animal never
 ends up under the ground: if a very hard landing ever punches through it (the sea and river beds are thin), or it gets
-underneath any other way, it's put straight back on top.
+underneath any other way, it's put straight back on top. So is everything else that rolls and flies about (balls,
+crates, snowballs, fish, cats, chickens...); the chaos test fails if anything stays under.
 
 The grown-ups menu has sound, music, volume, tidy up the park, full screen, back to the start screen, a **controller
 tester**, the sticker album, a picture of all controls, and:

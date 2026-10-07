@@ -11,6 +11,7 @@ import { allocPropId, debugInfo, players, registerProp, spawners, type PropEntry
 import { earnSticker } from '../stickers';
 import { groundHeight, isInWater, waterLevelAt } from '../terrain';
 import { useHint } from './common';
+import { liftIfUnder } from './ground';
 
 // Fishing with your tongue: lick the water from the shore (the lagoon, the sea, the river, even
 // the fountain) and now and then a fish leaps out, up over your head and onto the bank behind
@@ -163,6 +164,7 @@ function FishBody({ index }: { index: number }) {
     const rb = body.current;
     const e = entry.current;
     if (!rb || !e || !state.active) return;
+    if (e.heldBy == null) liftIfUnder(rb, R);
     const dt = Math.min(delta, 0.05);
     const now = gameNow();
     const t = rb.translation();

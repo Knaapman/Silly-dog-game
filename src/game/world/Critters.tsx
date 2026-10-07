@@ -10,6 +10,7 @@ import { useGame } from '../store';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { groundHeight } from '../terrain';
 import { randomStream } from '../rng';
+import { liftIfUnder } from './ground';
 
 const random = randomStream('critters');
 
@@ -103,6 +104,7 @@ function Cow({ index }: { index: number }) {
     const rb = body.current;
     const entry = entryRef.current;
     if (!rb || !entry) return;
+    if (entry.heldBy == null) liftIfUnder(rb, COW_RADIUS);
     const dt = Math.min(delta, 0.05);
     const c = s.current;
     const t = rb.translation();
@@ -286,6 +288,7 @@ function BabyDino({ info, onGone }: { info: DinoInfo; onGone: (id: number) => vo
     const entry = entryRef.current;
     const c = s.current;
     if (!rb || !entry || c.gone) return;
+    if (entry.heldBy == null) liftIfUnder(rb, entry.radius);
     const dt = Math.min(delta, 0.05);
     const now = gameNow();
     const t = rb.translation();
