@@ -34,6 +34,14 @@ const CRASH_FROM = 4;
 /** Lying still this long, this far from the middle (s, m): back home. */
 const HOME_AFTER = 40;
 const AWAY = 10;
+/**
+ * Solver groups for a carried block: it pushes nothing and nothing pushes it (it passes through the
+ * tower on the way to it), but its contacts with everything are still kept, so put down it lands on
+ * the ground again. (Not a sensor: a block picked up while it lay asleep lost its contact with the
+ * ground for good when it was made solid again, and sank straight through the grass.)
+ */
+const GHOST = 0;
+const SOLID = 0xffffffff;
 
 type Block = { holder: number | null; placedBy: number | null; stillSince: number; below: number; above: number; height: number };
 
@@ -221,7 +229,7 @@ export function Blocks() {
           b.holder = slot;
           b.placedBy = null;
           // carried, it passes through things (no knocking the tower over on the way to it)
-          colliders.current[i]?.setSensor(true);
+          colliders.current[i]?.setSolverGroups(GHOST);
           return true;
         },
         onRelease: (thrown) => {
@@ -229,7 +237,7 @@ export function Blocks() {
           const p = b.holder != null ? players.get(b.holder) : undefined;
           b.holder = null;
           const placed = thrown && p ? place(i, p) : false;
-          colliders.current[i]?.setSensor(false);
+          colliders.current[i]?.setSolverGroups(SOLID);
           return placed;
         }
       };
