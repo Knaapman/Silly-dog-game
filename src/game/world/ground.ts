@@ -5,8 +5,8 @@ import { groundHeight } from '../terrain';
 /** A thing whose middle is this far below the ground has got under it (m). */
 const UNDER = 0.3;
 
-/** How many times something was put back on top of the ground (for the tests). */
-export const lifted = { count: 0 };
+/** How many times something was put back on top of the ground, and the last few spots (for the tests). */
+export const lifted = { count: 0, where: [] as [number, number][] };
 debugInfo.lifted = lifted;
 
 /**
@@ -24,5 +24,7 @@ export function liftIfUnder(rb: RapierRigidBody, radius: number) {
   const v = rb.linvel();
   rb.setLinvel({ x: v.x, y: Math.max(0, v.y), z: v.z }, true);
   lifted.count += 1;
+  lifted.where.push([Math.round(t.x), Math.round(t.z)]);
+  if (lifted.where.length > 8) lifted.where.shift();
   return true;
 }

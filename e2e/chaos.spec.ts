@@ -147,6 +147,7 @@ test(`chaos: four players mashing everything for three minutes (seed ${seed})`, 
   console.log(`seed ${seed}: ${((simMs / (CHUNKS * 15)) || 0).toFixed(2)} ms per simulated frame (4 players, no drawing)`);
   if (stuck.length) console.log(`seed ${seed} possibly stuck: ${stuck.join(' | ')}`);
   console.log(`seed ${seed} unstuck: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.unstuck))}`);
+  console.log(`seed ${seed} lifted: ${await page.evaluate(() => JSON.stringify((window as any).__silly.runtime.debugInfo.lifted))}`);
   console.log(`seed ${seed} stickers: ${await page.evaluate(() => (window as any).__silly.useStickers.getState().got.length)}`);
   await game.seconds(1, true);
   await page.screenshot({ path: 'test-results/chaos-end.png' });
