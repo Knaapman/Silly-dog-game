@@ -109,3 +109,34 @@ test('a spool left lying far away goes home after a while', async ({ page }) => 
   expect(Math.hypot(spool.x - hx, spool.z - hz)).toBeLessThan(2.5);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy picks up another kite and runs round you with it, and puts it down when you do', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const [hx, hz] = await hill(game);
+  await game.teleport(1, hx + 3, 3, hz + 3);
+  await pickUp(game, 0);
+  // the child stands still on the hill; the buddy fetches a spool and gets its kite way up
+  let buddyKite = -1;
+  let top = 0;
+  for (let k = 0; k < 40 && top < 0.7; k += 1) {
+    await game.seconds(0.5);
+    const s = await kites(game);
+    buddyKite = s.list.findIndex((x) => x.holder === 1);
+    top = buddyKite >= 0 ? s.list[buddyKite].h : 0;
+  }
+  expect(buddyKite).toBeGreaterThan(0);
+  expect(top).toBeGreaterThan(0.7);
+  // still the child's own kite, and no friend sticker for flying with the buddy
+  expect((await kites(game)).list[0].holder).toBe(0);
+  expect(await stickers(game)).not.toContain('kitefriends');
+  // the child puts theirs down: the buddy puts its kite down too
+  await game.tap('KeyQ');
+  for (let k = 0; k < 10 && (await kites(game)).list.some((x) => x.holder != null); k += 1) await game.seconds(0.5);
+  expect((await kites(game)).list.every((x) => x.holder == null)).toBe(true);
+  game.expectNoErrors();
+});

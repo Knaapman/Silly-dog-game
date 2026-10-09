@@ -22,6 +22,8 @@ import { ferris } from './Carnival';
 import { herd, type HerdChicken } from './Chickens';
 import { onTube, riverTubes, sleds, TUBE_BOARD, TUBE_COURSE } from './Rides';
 import { tickling } from './DinoPark';
+import { kites } from './Kites';
+import { onCar, train } from './Train';
 import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
 import { randomStream } from '../rng';
 
@@ -292,8 +294,36 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     const myTube = riverTubes.list.find((t) => t.mode === 'ride' && onTube(me, t));
     const tubing = !myTube && riverTubes.list.some((t) => onTube(kid, t)) && distXZ(me.position.x, me.position.z, JETTY_END.x, JETTY_END.z) < 15;
     const nextTube = tubing ? riverTubes.list.find((t) => t.mode === 'wait' && Math.abs(t.s - TUBE_BOARD) < 0.3) : undefined;
+    // the child is on the train: on the next wagon while it waits at the station, and sit tight
+    const kidCar = onCar(kid);
+    const myCar = kidCar >= 0 ? onCar(me) : -1;
+    // the child is flying a kite: fly another one beside them
+    const kidKite = kites.list.some((k) => k.holder === kid.slot);
+    const myKite = kites.list.some((k) => k.holder === me.slot);
     // the child is rounding up chickens by the coop: a loose one to walk in
     const stray = kidStanding ? strayChicken(kid, me, b, now) : null;
+
+    const fx = Math.sin(me.facing);
+    const fz = Math.cos(me.facing);
+    /** How the tongue would rate something (lower is better, Infinity: out of reach), like actions.ts does. */
+    const tongue = (p: THREE.Vector3, radius: number) => {
+      const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
+      const reach = d - radius;
+      const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
+      return reach > 2.6 || (facing < 0.15 && reach > 0.8) ? Infinity : reach - facing + 1;
+    };
+    /** Walk up to `p` and stop a step short, facing it; lick when there (and it's the thing the tongue would get, not the child). */
+    const fetch = (p: THREE.Vector3, grab: boolean, radius = 0.55) => {
+      const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
+      target.set(p.x + ((me.position.x - p.x) / d) * 1.1, 0, p.z + ((me.position.z - p.z) / d) * 1.1);
+      stopAt = 0.25;
+      const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
+      const ok = !grab || tongue(p, radius) < tongue(kid.position, RADIUS) - 0.2;
+      if (ok && d < 1.7 && facing > 0.8 && now > b.nextHop) {
+        b.nextHop = now + 1000;
+        press.lick = true;
+      }
+    };
 
     let stopAt = 1.2;
     /** Standing somewhere on purpose (no wandering, no silliness). */
@@ -331,6 +361,24 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0.25;
       target.copy(swingHelp.goto);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (myCar >= 0) {
+      // riding the train with the child: stay on the wagon
+      busy = true;
+      stopAt = 0.5;
+      target.set(train.cars[myCar].x, 0, train.cars[myCar].z);
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (kidCar >= 0 && train.speed < 0.3) {
+      // hop onto the wagon next to the child's (not the engine: its cab fills the deck)
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const pick = [kidCar - 1, kidCar + 1].filter((j) => j >= 1 && j < train.cars.length).sort((i, j) => distXZ(me.position.x, me.position.z, train.cars[i].x, train.cars[i].z) - distXZ(me.position.x, me.position.z, train.cars[j].x, train.cars[j].z))[0];
+      const car = train.cars[pick];
+      target.set(car.x, 0, car.z);
+      stopAt = 0.3;
+      if (distXZ(me.position.x, me.position.z, car.x, car.z) < 2.4 && me.grounded && now > b.nextHop) {
+        b.nextHop = now + 800;
+        press.jump = true;
+      }
     } else if (myTube) {
       // riding the river: sit tight in the middle of the ring
       busy = true;
@@ -355,6 +403,31 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0;
       target.set(raceSled.x, 0, raceSled.z);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (kidKite && !myKite) {
+      // pick up a spool lying about (not too far off: the child's on the hill with theirs)
+      let pick = -1;
+      let pd = KITE_FROM;
+      kites.list.forEach((k, j) => {
+        const p = kites.spool[j];
+        if (k.holder != null || !p) return;
+        const d = distXZ(me.position.x, me.position.z, p.x, p.z);
+        if (d < pd) {
+          pd = d;
+          pick = j;
+        }
+      });
+      if (pick >= 0) {
+        busy = true;
+        b.pending = b.pending.filter((p) => p.action !== 'jump');
+        fetch(kites.spool[pick], true, 0.3);
+      }
+    } else if (kidKite && myKite) {
+      // run round the child, fast: up goes the kite (and the child's up there with theirs)
+      busy = true;
+      const kd = distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z);
+      const a = Math.atan2(me.position.z - kid.position.z, me.position.x - kid.position.x) + (kd > KITE_LAP + 2 ? 0 : 0.8);
+      target.set(kid.position.x + Math.cos(a) * KITE_LAP, 0, kid.position.z + Math.sin(a) * KITE_LAP);
+      stopAt = 0;
     } else if (stray && inCoop(me.position.x, me.position.z, -0.4)) {
       // in the coop (followed one in): out through the gate first, not pushing at the fence from inside
       busy = true;
@@ -435,27 +508,6 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       // the child is building a tower: fetch blocks for it
       busy = true;
       b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const fx = Math.sin(me.facing);
-      const fz = Math.cos(me.facing);
-      /** How the tongue would rate something (lower is better, Infinity: out of reach), like actions.ts does. */
-      const tongue = (p: THREE.Vector3, radius: number) => {
-        const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
-        const reach = d - radius;
-        const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
-        return reach > 2.6 || (facing < 0.15 && reach > 0.8) ? Infinity : reach - facing + 1;
-      };
-      /** Walk up to `p` and stop a step short, facing it; lick when there (and it's the block the tongue would get, not the child). */
-      const fetch = (p: THREE.Vector3, grab: boolean) => {
-        const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
-        target.set(p.x + ((me.position.x - p.x) / d) * 1.1, 0, p.z + ((me.position.z - p.z) / d) * 1.1);
-        stopAt = 0.25;
-        const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
-        const ok = !grab || tongue(p, 0.55) < tongue(kid.position, RADIUS) - 0.2;
-        if (ok && d < 1.7 && facing > 0.8 && now > b.nextHop) {
-          b.nextHop = now + 1000;
-          press.lick = true;
-        }
-      };
       const mine = blocks.list.findIndex((bl) => bl.holder === me.slot);
       const tower = blocks.kidTop;
       if (mine >= 0) {
@@ -540,6 +592,11 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         target.set(kid.position.x + Math.cos(b.circle) * r, 0, kid.position.z + Math.sin(b.circle) * r);
       }
     }
+    // flying a kite, and the child's put theirs down: ours down too
+    if (myKite && !kidKite && now > b.nextHop) {
+      b.nextHop = now + 1000;
+      press.lick = true;
+    }
     // still carrying a block, and the child's stopped building: put it down
     if (!kidBuilding(kid, now) && blocks.list.some((bl) => bl.holder === me.slot) && now > b.nextHop) {
       b.nextHop = now + 1000;
@@ -582,6 +639,10 @@ const JETTY_END = (() => {
   const p = TUBE_COURSE.at(TUBE_BOARD);
   return new THREE.Vector3(p.x - TUBE_RIDE.radius - 0.6, 0, p.z);
 })();
+
+/** Kites: a spool this close (m) to fetch; laps round the child this far out. */
+const KITE_FROM = 14;
+const KITE_LAP = 4.5;
 
 /** Tickling: a child's tickle this recent (ms) and the buddy joins in, from this far out from the middle. */
 const TICKLE_HELP = 4000;

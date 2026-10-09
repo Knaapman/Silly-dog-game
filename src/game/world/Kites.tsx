@@ -42,8 +42,8 @@ const FLOATS = 0.6;
 
 type Kite = { holder: number | null; h: number; pos: THREE.Vector3; still: number; standFor: number; highFor: number; jumpHelp: boolean; seenJump: number; helpAt: THREE.Vector3 };
 
-/** For the tests. ranHigh / glided: children who've had a kite up high / floated on one (no more help). */
-export const kites = { list: [] as Kite[], high: 0, together: 0, homes: 0, ranHigh: new Learned(), glided: new Learned(), paws: [] as { shown: number; mask: number }[] };
+/** For the tests (and the buddy). spool: where each spool is. ranHigh / glided: children who've had a kite up high / floated on one (no more help). */
+export const kites = { list: [] as Kite[], spool: [] as THREE.Vector3[], high: 0, together: 0, homes: 0, ranHigh: new Learned(), glided: new Learned(), paws: [] as { shown: number; mask: number }[] };
 
 export function Kites() {
   const [hx, hz] = KITES.hill;
@@ -150,6 +150,7 @@ export function Kites() {
       const rb = bodies.current[i];
       if (!rb) return;
       const t = rb.translation();
+      (kites.spool[i] ??= new THREE.Vector3()).set(t.x, t.y, t.z);
       const p = k.holder != null ? players.get(k.holder) : undefined;
       if (p) {
         // climbing with how fast you run; drifting down slowly when you stop
