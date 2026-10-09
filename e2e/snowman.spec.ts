@@ -108,3 +108,43 @@ test('build a snowman from three rolled snowballs, knock it down, build another'
   expect((await snowman()).pieces).toHaveLength(1);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy rolls the middle for your snowman (and leaves the head for you)', async ({ page }) => {
+  test.setTimeout(150_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  const [BX, BZ] = await page.evaluate(() => (window as any).__silly.layout.SNOWMAN_BUILD.center as [number, number]);
+  const ball = (i: number, call: string, ...args: number[]) =>
+    page.evaluate(([i, call, args]) => (window as any).__silly.runtime.debugInfo.snowballs[i][call](...args), [i, call, args] as const);
+  const pieces = () => page.evaluate(() => (window as any).__silly.useSnowman.getState().pieces.length as number);
+  // the child puts the bottom in (rolled big off to the west, then into the ring)
+  for (let k = 0; k < 30 && ((await ball(0, 'radius')) as number) < 0.95; k += 1) {
+    await ball(0, 'place', 15.5, -56.5);
+    await game.seconds(0.1);
+    for (let j = 0; j < 3; j += 1) {
+      await ball(0, 'roll', -6, 0);
+      await game.seconds(0.4);
+    }
+  }
+  await ball(0, 'place', BX - 3, BZ);
+  await game.seconds(0.1);
+  await ball(0, 'roll', 4, 0);
+  await game.seconds(1.2);
+  expect(await pieces()).toBe(1);
+  // the child stands by and watches: the buddy fetches a snowball, rolls it big, brings it over.
+  // (The other loose snowballs go off to one side: knocked rolling by a big carried one, a loose
+  // snowball can end up on the snowman by accident, which isn't what this is about.)
+  await ball(0, 'place', BX - 14, BZ - 6);
+  await ball(1, 'place', BX - 14, BZ + 6);
+  await game.teleport(0, BX - 3.5, 1, BZ + 2);
+  await game.teleport(1, BX - 6, 1, BZ - 2);
+  for (let k = 0; k < 60 && (await pieces()) < 2; k += 1) await game.seconds(1);
+  expect(await pieces()).toBe(2);
+  // but the head is the child's: it doesn't bring another
+  await game.seconds(10);
+  expect(await pieces()).toBe(2);
+  expect(await page.evaluate(() => (window as any).__silly.useSnowman.getState().builtAt as number)).toBe(-1);
+  game.expectNoErrors();
+});

@@ -26,6 +26,9 @@ const BACK_GAP = 0.25;
 
 type Penguin = { down: boolean; fall: number; wobble: number; upAt: number };
 
+/** For the buddy: the penguins (down or not) and where each one stands. */
+export const shy = { list: [] as Penguin[], at: [] as THREE.Vector3[] };
+
 export function PenguinShy() {
   const [cx, cz] = PENGUIN_SHY.center;
   const g = groundHeight(cx, cz);
@@ -33,6 +36,8 @@ export function PenguinShy() {
   const zs = useMemo(() => Array.from({ length: PENGUIN_SHY.count }, (_, i) => cz + (i - (PENGUIN_SHY.count - 1) / 2) * PENGUIN_SHY.spacing), [cz]);
   const st = useRef({ list: zs.map((): Penguin => ({ down: false, fall: 0, wobble: 0, upAt: 0 })), hits: 0, wobbles: 0, rounds: 0, lastHit: 0 });
   debugInfo.penguins = st.current;
+  shy.list = st.current.list;
+  shy.at = useMemo(() => zs.map((z) => new THREE.Vector3(cx, top + 0.35, z)), [zs, cx, top]);
   const groups = useRef<(THREE.Group | null)[]>([]);
 
   useEffect(() => {

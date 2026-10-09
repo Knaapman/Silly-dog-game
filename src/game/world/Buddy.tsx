@@ -5,7 +5,7 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { BRONTO, CHICKEN_COOP, distXZ, TUBE_RIDE, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
+import { BRONTO, CHICKEN_COOP, distXZ, PENGUIN_SHY, SNOW, SNOWMAN_BUILD, TUBE_RIDE, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, physics, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
@@ -24,6 +24,10 @@ import { onTube, riverTubes, sleds, TUBE_BOARD, TUBE_COURSE } from './Rides';
 import { tickling } from './DinoPark';
 import { kites } from './Kites';
 import { onCar, train } from './Train';
+import { shy } from './PenguinShy';
+import { buddyThrow, threwLately } from './SnowballFight';
+import { rolling } from './Winter';
+import { SNOWMAN_MIN, useSnowman } from '../snowman';
 import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
 import { randomStream } from '../rng';
 
@@ -85,6 +89,8 @@ type Brain = {
   nextBoing: number;
   /** The chicken being walked to the coop, where it was when we started on it, and since when (game ms); ones that wouldn't budge, left alone until then. */
   herding: { chicken: HerdChicken | null; from: THREE.Vector3; since: number; skip: Map<HerdChicken, number> };
+  /** When the child was last seen building a snowman (game ms). */
+  snowmanAt: number;
 };
 
 const scratch = { target: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3() };
@@ -114,7 +120,8 @@ export function Buddy() {
     via: null,
     apartFor: 0,
     nextBoing: 0,
-    herding: { chicken: null, from: new THREE.Vector3(), since: 0, skip: new Map() }
+    herding: { chicken: null, from: new THREE.Vector3(), since: 0, skip: new Map() },
+    snowmanAt: -1e9
   });
 
   // after the input is read (priority -10), before the animals move (0)
@@ -297,6 +304,14 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     // the child is on the train: on the next wagon while it waits at the station, and sit tight
     const kidCar = onCar(kid);
     const myCar = kidCar >= 0 ? onCar(me) : -1;
+    // the child is building a snowman: roll a snowball for it too (the bottom or the middle: the
+    // head is always the child's)
+    const pieces = useSnowman.getState().pieces.length;
+    const [rx, rz] = SNOWMAN_BUILD.center;
+    const kidRing = distXZ(kid.position.x, kid.position.z, rx, rz);
+    if (pieces < 2 && kidRing < SNOW_NEAR && (pieces > 0 || rolling.some((sb) => sb.entry()?.heldBy === kid.slot || pushing(sb, kid)))) b.snowmanAt = now;
+    const snowman = pieces < 2 && now - b.snowmanAt < SNOW_KEEP;
+    const myBall = rolling.find((sb) => sb.entry()?.heldBy === me.slot);
     // the child is flying a kite: fly another one beside them
     const kidKite = kites.list.some((k) => k.holder === kid.slot);
     const myKite = kites.list.some((k) => k.holder === me.slot);
@@ -403,6 +418,41 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0;
       target.set(raceSled.x, 0, raceSled.z);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (snowman && !myBall) {
+      // a snowball to roll: one lying about, not the child's
+      let pick: (typeof rolling)[number] | undefined;
+      let pd = SNOW_FROM;
+      for (const sb of rolling) {
+        const e = sb.entry();
+        const at = sb.at();
+        if (!e || !at || !e.enabled || e.heldBy != null || pushing(sb, kid)) continue;
+        const d = distXZ(me.position.x, me.position.z, at.x, at.z);
+        if (d < pd) {
+          pd = d;
+          pick = sb;
+        }
+      }
+      const at = pick?.at();
+      if (pick && at) {
+        busy = true;
+        b.pending = b.pending.filter((p) => p.action !== 'jump');
+        fetch(tmp.set(at.x, at.y, at.z), true, pick.r());
+      }
+    } else if (snowman && myBall) {
+      // carrying it: round and round through the snow till it's big enough, then into the ring
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      if (myBall.r() < SNOWMAN_MIN[pieces] + 0.08) {
+        // (round a patch of open snow south of the piles: clear of the ring, the ice, the snowmen)
+        const cx = SNOW.center[0] + SNOW_LAPS[0];
+        const cz = SNOW.center[1] + SNOW_LAPS[1];
+        const a = Math.atan2(me.position.z - cz, me.position.x - cx) + 0.9;
+        target.set(cx + Math.cos(a) * SNOW_LAP, 0, cz + Math.sin(a) * SNOW_LAP);
+        stopAt = 0;
+      } else {
+        target.set(rx, 0, rz);
+        stopAt = 0.2;
+      }
     } else if (kidKite && !myKite) {
       // pick up a spool lying about (not too far off: the child's on the hill with theirs)
       let pick = -1;
@@ -450,6 +500,21 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       const back = behind > 0.7 ? HERD_CLOSE : HERD_ROUND;
       target.set(stray.pos.x + ax * back, 0, stray.pos.z + az * back);
       stopAt = 0.3;
+    } else if (threwLately(kid.slot, now, SHY_HELP) && distXZ(kid.position.x, kid.position.z, PENGUIN_SHY.center[0], PENGUIN_SHY.center[1]) < SHY_NEAR) {
+      // the child is throwing snowballs at the penguins: throw some too, from in front of the
+      // counter, off to the child's other side. Never the last one standing: that's the child's.
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const [px, pz] = PENGUIN_SHY.center;
+      const side = kid.position.z > pz ? -1 : 1;
+      target.set(px - SHY_FROM, 0, pz + side * 1.6);
+      stopAt = 0.5;
+      const up = shy.list.map((p, i) => (p.down ? -1 : i)).filter((i) => i >= 0);
+      if (up.length > 1 && distXZ(me.position.x, me.position.z, target.x, target.z) < 1 && me.grounded && now > b.nextHop) {
+        // (the nearest one standing on our side)
+        const pick = up.reduce((a, i) => (Math.abs(shy.at[i].z - me.position.z) < Math.abs(shy.at[a].z - me.position.z) ? i : a), up[0]);
+        if (buddyThrow(me.slot, shy.at[pick])) b.nextHop = now + SHY_EVERY;
+      }
     } else if (now - tickling.childAt < TICKLE_HELP && !tickling.sneezing && distXZ(kid.position.x, kid.position.z, BRONTO.center[0], BRONTO.center[1]) < 6) {
       // the child is tickling the brontosaurus: tickle it too (from across its tummy, not bonking
       // the child), and it sneezes all the sooner
@@ -592,6 +657,11 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         target.set(kid.position.x + Math.cos(b.circle) * r, 0, kid.position.z + Math.sin(b.circle) * r);
       }
     }
+    // carrying a snowball, and the snowman's not ours to help with now: put it down
+    if (myBall && !snowman && now > b.nextHop) {
+      b.nextHop = now + 1000;
+      press.lick = true;
+    }
     // flying a kite, and the child's put theirs down: ours down too
     if (myKite && !kidKite && now > b.nextHop) {
       b.nextHop = now + 1000;
@@ -640,9 +710,29 @@ const JETTY_END = (() => {
   return new THREE.Vector3(p.x - TUBE_RIDE.radius - 0.6, 0, p.z);
 })();
 
+/** Snowman: the child this close to the ring (m) counts as building, for this long (ms) after; snowballs this close to fetch; laps this far out. */
+const SNOW_NEAR = 12;
+const SNOW_KEEP = 8000;
+const SNOW_FROM = 16;
+const SNOW_LAP = 3.5;
+/** Where those laps go round, from the middle of the snow. */
+const SNOW_LAPS = [1, -9.5] as const;
+
+/** Is the child pushing (or right up against) this snowball? */
+function pushing(sb: (typeof rolling)[number], kid: PlayerRuntime) {
+  const at = sb.at();
+  return !!at && distXZ(at.x, at.z, kid.position.x, kid.position.z) < sb.r() + 1.2;
+}
+
 /** Kites: a spool this close (m) to fetch; laps round the child this far out. */
 const KITE_FROM = 14;
 const KITE_LAP = 4.5;
+
+/** Penguin shy: the child threw this recently (ms) this close by (m): throw too, from this far in front, this often (ms). */
+const SHY_HELP = 8000;
+const SHY_NEAR = 10;
+const SHY_FROM = 5.5;
+const SHY_EVERY = 2600;
 
 /** Tickling: a child's tickle this recent (ms) and the buddy joins in, from this far out from the middle. */
 const TICKLE_HELP = 4000;
