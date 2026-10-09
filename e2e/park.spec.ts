@@ -210,3 +210,39 @@ test('the train: over the river bridge, through the tunnel, along the trestle, a
   expect((await game.player(0)).y).toBeGreaterThan(2.8);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy hops on the next wagon and rides the train with the child', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  /** Which car each of them stands on (-1: none). */
+  const cars = () =>
+    page.evaluate(() => {
+      const s = (window as any).__silly;
+      const t = s.runtime.debugInfo.train;
+      const on = (i: number) => {
+        const q = s.runtime.players.get(i).position;
+        return t.findIndex((c: any) => Math.hypot(q.x - c.x, q.z - c.z) < 1.9 && q.y > c.y + 0.5);
+      };
+      return { kid: on(0), buddy: on(1), front: { x: t[0].x as number, z: t[0].z as number } };
+    });
+  // the train waits at the station: the child on the third car, the buddy on the platform a little way off
+  const c = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.train.map((x: any) => [x.x, x.y, x.z]) as number[][]);
+  await game.teleport(0, c[2][0], c[2][1] + 1.6, c[2][2]);
+  await game.teleport(1, 31.6, 1.5, c[1][2] - 2);
+  let s = await cars();
+  for (let k = 0; k < 10 && s.buddy < 0; k += 1) {
+    await game.seconds(0.5);
+    s = await cars();
+  }
+  expect(s.buddy).toBeGreaterThan(0);
+  expect(s.buddy).not.toBe(s.kid);
+  // and off they go together: both still aboard well down the line
+  await game.seconds(8);
+  s = await cars();
+  expect(Math.hypot(s.front.x - c[0][0], s.front.z - c[0][2])).toBeGreaterThan(15);
+  expect(s.kid).toBe(2);
+  expect(s.buddy).toBeGreaterThan(0);
+  game.expectNoErrors();
+});

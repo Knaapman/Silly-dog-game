@@ -150,7 +150,7 @@ nobody aboard, it waits). Playing alone, the buddy hops in with you (and jumps o
 **Kites** 🪁 on the grassy hill north of the mesa: three spools of string lie on the top, each with its kite beside
 it. Lick a spool to pick it up and run: the wind takes the kite out on its string, and the faster you run the higher
 it climbs (when you stop, it sinks back down). With it flying high, a jump turns into a slow, floaty glide; from the
-top of the hill, a long one. A kite way up is a sticker, and two friends' kites up high at once a friend sticker.
+top of the hill, a long one. A kite way up is a sticker, and two friends' kites up high at once a friend sticker. Playing alone, the buddy picks up another kite and runs rings round you with it (and puts it down when you do).
 Spools carried off and left lying about go home after a while. Help without words, only when it seems needed: holding
 a spool and standing still a moment, white paw prints appear ahead of you ("run!"), fading as soon as you do; with the
 kite high and no jump yet, the jump bubble shows over you until you jump. Once it has worked, that help doesn't come
@@ -352,7 +352,7 @@ menu or the album never also do something in the game.
 The park is a ring of eight areas around a fountain plaza, with the mountain across the north and the sea along the
 south. Signposts with pictures point the way, and a **train** loops round the middle of it: up an embankment onto a stone
 bridge over the river, through the tunnel under the mesa, up onto a wooden trestle along the sea, and it stops at the
-station on the east side (stand on a wagon to ride along). A footbridge over the west track lets you look down on it.
+station on the east side (stand on a wagon to ride along; playing alone, the buddy hops on the next wagon). A footbridge over the west track lets you look down on it.
 Every bridge over water is high enough to float or swim under: the river tubes pass under the arched footbridge, and you
 can wade up the river under the railway bridge or swim out of the lagoon under the trestle into the sea.
 

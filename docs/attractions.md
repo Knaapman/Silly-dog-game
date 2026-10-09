@@ -56,9 +56,9 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 | Roundabout | hop on | run beside it or headbutt to push | jump, or flung off when it whizzes | push a friend, sticker | pushes you | walk (not to riders) |
 | Carousel | step on | round and round | walk or jump off | — | — | walk |
 | Ferris wheel | walk to the front of the deck: a hop takes you into the gondola at the bottom | up and round, past the star | jump out | a gondola each | comes up in a gondola behind you | walk, on the deck |
-| Train | stand on a wagon at the station | round the park | jump off | — | — | walk |
+| Train | stand on a wagon at the station | round the park | jump off | — | hops on the next wagon | walk |
 | See-saw | jump onto an end | fling a friend | jump off | needs a friend | sits on the far end | jump |
-| Kites | lick a spool | run, the kite climbs; jump to glide | lick again to drop | two kites up, sticker | — | lick; paws "run"; jump once high |
+| Kites | lick a spool | run, the kite climbs; jump to glide | lick again to drop | two kites up, sticker | flies another kite, running round you | lick; paws "run"; jump once high |
 
 ### Games and toys
 

@@ -140,7 +140,19 @@ function Track() {
   );
 }
 
-type CarState = { x: number; y: number; z: number; dx: number; dz: number; yaw: number; pitch: number; w: number; vy: number; speed: number };
+export type CarState = { x: number; y: number; z: number; dx: number; dz: number; yaw: number; pitch: number; w: number; vy: number; speed: number };
+
+/** For the buddy (and the tests): the cars and how fast the train is going. */
+export const train = { cars: [] as CarState[], speed: 0 };
+
+/** Which car (index) this animal is standing on, or -1. */
+export function onCar(p: { position: THREE.Vector3 }) {
+  return train.cars.findIndex((c) => {
+    const ox = p.position.x - c.x;
+    const oz = p.position.z - c.z;
+    return Math.abs(ox * c.dx + oz * c.dz) < 1.95 && Math.abs(ox * c.dz - oz * c.dx) < 1.15 && p.position.y > c.y + 0.8 && p.position.y < c.y + 2.6;
+  });
+}
 
 const CAR_COLORS = ['#ff4d5e', '#ffd23f', '#3b82f6', '#22c55e'];
 
@@ -294,6 +306,8 @@ export function Train() {
     }
     st.s = (st.s + speed.current * dt) % LENGTH;
     debugInfo.train = cars.current;
+    train.cars = cars.current;
+    train.speed = speed.current;
 
     cars.current.forEach((c, i) => {
       trackAt(st.s - i * CAR_GAP, p);
