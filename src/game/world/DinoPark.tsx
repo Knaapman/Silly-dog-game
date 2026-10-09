@@ -141,6 +141,9 @@ function Volcano() {
 const TICKLES = 5;
 const TICKLE_WINDOW = 6;
 
+/** For the buddy: when a child last tickled the brontosaurus (game ms), and whether it's about to sneeze. */
+export const tickling = { childAt: -1e9, sneezing: false };
+
 function Brontosaurus() {
   const [bx, bz] = BRONTO.center;
   const green = '#7ed957';
@@ -161,10 +164,11 @@ function Brontosaurus() {
         id: 9210,
         position: new THREE.Vector3(bx, 1.4, bz),
         radius: 2.6,
-        onBonk: () => {
+        onBonk: (slot) => {
           const s = st.current;
           if (s.sneezeAt >= 0) return;
           const now = gameNow();
+          if (!players.get(slot)?.bot) tickling.childAt = now;
           s.tickles = [...s.tickles.filter((t) => now - t < TICKLE_WINDOW * 1000), now];
           s.wiggle = 1;
           playGiggle([bx + 9.4, 7, bz], 0.45);
@@ -214,6 +218,7 @@ function Brontosaurus() {
     const s = st.current;
     const now = gameNow();
     s.wiggle = Math.max(0, s.wiggle - delta * 1.5);
+    tickling.sneezing = s.sneezeAt >= 0;
     if (s.sneezeAt >= 0 && now >= s.sneezeAt) {
       s.sneezeAt = -1;
       s.sneezes += 1;

@@ -37,7 +37,7 @@ through it (up the ramp from the mountainside, wave the flag, watch the train co
 Two rides use the new ground. **River tubing**: rubber rings wait in a line at a jetty below the railway bridge; step onto
 the one at the end of the jetty and it floats off down the middle of the river, spinning gently, under the arched
 footbridge, and tips you out onto the bank before the stepping stones (then bobs back up at the jetty). Friends can
-share a ring, or jump from one to another. **Sledding**: two sleds wait on the west rim of the mountain's top; walk into
+share a ring, or jump from one to another (playing alone, the buddy takes the next ring and floats along behind you). **Sledding**: two sleds wait on the west rim of the mountain's top; walk into
 one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
 you off the hill at the bottom. Playing alone, the buddy jumps on the other sled and races you down. The path up the mountain has log steps now.
 
@@ -361,7 +361,7 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
 | ⛲ Plaza (middle) | Fountain with three **geysers** that throw you onto its top, the present box (random hat), the **hat rack**, the big red button (puts the park back), and the **bubble machine** on the grass to the south-east |
 | 🎡 Carnival (north-west) | **Ferris wheel**: walk up onto its deck and to the front, and a hop takes you into the next gondola down, up past the star at the top (jump to get out), a spinning **carousel**, a **high striker**: headbutt the pad to ring the bell |
 | ⚽ Sports (north-east) | Soccer goal, bowling lane with bumpers (headbutt the ball, or roll a hamster ball, into the pins hard enough and they all go down: a strike), a crate tower to knock over, a long row of **giant dominoes**, and **hamster balls** at the top of the bowling lane |
-| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with stairs onto its back, a neck you can walk up to its head and a tail you can slide down (headbutt its tummy and it giggles; tickle it five times quickly and... ah... ah... CHOO! everyone up on it is sneezed off onto the grass), a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
+| 🌋 Dino park (east) | A **volcano**: jump into the crater and it erupts you into the sky. A brontosaurus with stairs onto its back, a neck you can walk up to its head and a tail you can slide down (headbutt its tummy and it giggles; tickle it five times quickly and... ah... ah... CHOO! everyone up on it is sneezed off onto the grass; playing alone, the buddy tickles it from the other side), a roaring T-rex, and **eggs** that hatch baby dinos who follow you in a line and copy your jumps and noises, and the **hot air balloon** on the grass beside the T-rex |
 | 🛝 Playground (south-east) | Slide tower, bouncy castle, ball pit, **swings**, trampolines, and **see-saws**: jump on one end to fling a friend on the other |
 | 🏖️ Beach (south) | A lagoon to wade in, a lighthouse on its island, a **pirate ship** whose cannon fires you onto the lighthouse, sandcastles to smash, ducks and beach balls that float |
 | ⛄ Winter (north, up the mountain) | The snowy summit with a launch pad at the mountain's foot, a ski jump off the edge, a slippery ice pond, snowmen to headbutt, snowballs that grow as you push them, a snowman to build, a snowball fight |

@@ -49,6 +49,37 @@ test('river tubing: step on at the jetty, float down the river under the bridge,
   game.expectNoErrors();
 });
 
+test('playing alone, the buddy takes the next tube and floats down the river after the child', async ({ page }) => {
+  test.setTimeout(240_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  // the buddy on the bank by the jetty; the child walks onto the tube at the jetty's end and off it goes
+  await game.teleport(1, 14, 1, -17);
+  await game.teleport(0, 18, 1, -13);
+  await game.seconds(0.5);
+  await game.hold('KeyD', 0.7);
+  // the buddy steps onto the next one and floats off too
+  let riding = 0;
+  for (let k = 0; k < 40 && riding < 2; k += 1) {
+    await game.seconds(0.5);
+    riding = (await tubes(game)).filter((x) => x.mode === 'ride').length;
+  }
+  expect(riding).toBe(2);
+  // on its tube, not in the river, all the way down to the take-out
+  let tippedOut = false;
+  for (let k = 0; k < 60 && !tippedOut; k += 1) {
+    await game.seconds(0.5);
+    const b = await game.player(1);
+    expect(await page.evaluate(() => (window as any).__silly.runtime.players.get(1).swimming as boolean)).toBe(false);
+    tippedOut = b.launched && b.z > 18;
+  }
+  expect(tippedOut).toBe(true);
+  game.expectNoErrors();
+});
+
 test('sledding: walk into a sled on the mountain top, whoosh down the slope, fly off the hill', async ({ page }) => {
   const game = new Game(page);
   await game.open();

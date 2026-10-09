@@ -37,7 +37,7 @@ const GAP = 2.5;
 const TOP = WATER_LEVEL + 0.27;
 
 type TubeMode = 'wait' | 'ride' | 'sink';
-type TubeState = {
+export type TubeState = {
   mode: TubeMode;
   s: number;
   speed: number;
@@ -56,8 +56,11 @@ type TubeState = {
 
 const TUBE_COLORS = ['#ff4d5e', '#3b82f6', '#ffd23f'];
 
+/** For the buddy: the river tubes (to float down after the child). */
+export const riverTubes: { list: TubeState[] } = { list: [] };
+
 /** Is this animal standing (or sitting, or flopped) on this tube? */
-function onTube(p: PlayerRuntime, t: TubeState) {
+export function onTube(p: PlayerRuntime, t: TubeState) {
   return !p.isLaunched() && distXZ(p.position.x, p.position.z, t.x, t.z) < TUBE_RIDE.radius + 0.1 && p.position.y > t.y - 0.1 && p.position.y < t.y + 1.8;
 }
 
@@ -127,6 +130,7 @@ export function TubeRide() {
   );
   const jettyEnd = useMemo(() => TUBE_COURSE.at(TUBE_BOARD).x - TUBE_RIDE.radius - 0.15, []);
   debugInfo.tubes = tubes.current;
+  riverTubes.list = tubes.current;
   const landing = useMemo(() => new THREE.Vector3(), []);
 
   useGameFrame((_, delta) => {
