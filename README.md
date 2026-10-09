@@ -181,7 +181,7 @@ your tongue and run about with it, or push it along). Roll a big one into the ri
 middle-sized one against it and it hops up on top; then a small one for the head. The last one on: coal eyes, a
 carrot nose, a smile, stick arms, a top hat and a scarf, a cheer and a party (and a sticker). A headbutt while it's
 being built only makes it wobble; once it's finished, one headbutt knocks it flying, ready to build another. There
-are three snowballs, so friends can each roll one.
+are three snowballs, so friends can each roll one. Playing alone, the buddy rolls one too (the bottom or the middle: it never brings the head, that one is yours).
 
 **Snowball fight** ❄️ on the mountain top: two snow piles with little snowballs on them. Lick one to pick it up, lick
 again to throw it (it's a lob: throw it from a few steps away). A friend it hits gets a splat, a hop and a dusting of
@@ -194,6 +194,7 @@ snowballs burst when they land and grow back on their pile; nothing is counted, 
 wooden counter. Throw snowballs at them from a few steps away and each one you hit tumbles off backwards into the
 snow behind with a squawk (walk up and bump one and it only wobbles and squeaks: this is a throwing game). Knock all five off for a cheer,
 a bell and a party (and a sticker); a few seconds later they hop back up one after the other, ready to go again.
+Playing alone, the buddy throws at them too once you've started, but it always leaves the last one for you.
 
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over

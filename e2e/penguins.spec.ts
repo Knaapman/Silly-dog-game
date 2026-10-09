@@ -65,3 +65,28 @@ test('snowballs from a few steps away knock the penguins off one by one: all fiv
   expect(s.list.every((p) => !p.down)).toBe(true);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy throws at the penguins too, and leaves the last one for the child', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const S = await layout(game);
+  const [cx, cz] = S.center;
+  // one throw from the child, then they just watch (the buddy out of the tongue's way behind them)
+  const z = cz + S.spacing * 2;
+  await game.hopTo(0, [cx - 8, z], [cx - 6, z]);
+  await game.teleport(1, cx - 10, 1, cz - 3);
+  await snowballInMouth(game);
+  await game.tap('KeyQ');
+  await game.seconds(8);
+  const s = await shy(game);
+  const buddyThrows = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.snowballFight.buddyThrows as number);
+  expect(s.hits).toBeGreaterThanOrEqual(3);
+  // the last one standing is the child's to knock off
+  expect(s.list.filter((p) => !p.down).length).toBe(1);
+  expect(s.rounds).toBe(0);
+  expect(buddyThrows).toBeGreaterThanOrEqual(2);
+  game.expectNoErrors();
+});

@@ -69,9 +69,9 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 | Building blocks | lick to carry, lick to place | a tower of five, then knock it down | together, sticker | fetches blocks | lick |
 | Xylophone | walk or jump on the keys | copy the bluebird's tune | anyone can play it back | only makes music | jump |
 | Paint buckets | headbutt one | get painted, all four colours | splash friends | — | headbutt |
-| Snowman | roll snowballs into the ring | bottom, middle, head (a ghost snowman shows it) | a snowball each | — | — |
+| Snowman | roll snowballs into the ring | bottom, middle, head (a ghost snowman shows it) | a snowball each | rolls the bottom or the middle, never the head | — |
 | Snowball fight | lick a pile, lick to throw | hit a friend | sticker | throws back | lick |
-| Penguin shy | throw snowballs | all five off | — | — | — (lick at the snow piles) |
+| Penguin shy | throw snowballs | all five off | — | throws too, leaves the last one | — (lick at the snow piles) |
 | Fishing | lick the water | a fish; throw it at a friend or to the cat | fish slap, sticker | — | lick (one spot) |
 | Chicken round-up | chase them | all eight in the coop | from both sides | walks loose ones to the gate | — |
 | Ball pit | wade, jump in from high | the splash | — | — | jump |

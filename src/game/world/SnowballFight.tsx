@@ -39,6 +39,8 @@ type Ball = { st: BallState; body: () => RapierRigidBody | null; entry: PropEntr
 const balls: Ball[] = [];
 /** For tests: hits so far and the buddy's throws back. */
 export const snowballFight = { hits: 0, buddyThrows: 0, balls };
+/** When each player last threw a snowball (game ms). */
+const lastThrow = new Map<number, number>();
 
 /** Splat: the friend hit gets snowy, hops, and (if it's the buddy) throws one back. */
 function hitAnimal(p: PlayerRuntime, by: number) {
@@ -63,14 +65,21 @@ function hitAnimal(p: PlayerRuntime, by: number) {
 function throwBack(botSlot: number, targetSlot: number) {
   const bot = players.get(botSlot);
   const target = players.get(targetSlot);
-  if (!bot || !target || bot.isLaunched() || distXZ(bot.position.x, bot.position.z, target.position.x, target.position.z) > THROW_BACK_RANGE) return;
-  const ball = balls.find((b) => b.entry.heldBy == null && b.entry.enabled && b.st.thrownBy == null);
-  const rb = ball?.body();
-  if (!ball || !rb) return;
-  const from = new THREE.Vector3().subVectors(target.position, bot.position).setY(0).normalize().multiplyScalar(0.7).add(bot.position);
-  from.y += 0.9;
+  if (!bot || !target || distXZ(bot.position.x, bot.position.z, target.position.x, target.position.z) > THROW_BACK_RANGE) return;
   const to = target.position.clone();
   to.y += 0.2;
+  buddyThrow(botSlot, to);
+}
+
+/** The buddy throws a snowball at `to` (one appears in its mouth): false if it can't just now. */
+export function buddyThrow(botSlot: number, to: THREE.Vector3) {
+  const bot = players.get(botSlot);
+  if (!bot || bot.isLaunched()) return false;
+  const ball = balls.find((b) => b.entry.heldBy == null && b.entry.enabled && b.st.thrownBy == null);
+  const rb = ball?.body();
+  if (!ball || !rb) return false;
+  const from = new THREE.Vector3().subVectors(to, bot.position).setY(0).normalize().multiplyScalar(0.7).add(bot.position);
+  from.y += 0.9;
   const v = new THREE.Vector3();
   ballistic(from, to, Math.max(from.y, to.y) + 1.4, v);
   rb.setTranslation(from, true);
@@ -80,6 +89,12 @@ function throwBack(botSlot: number, targetSlot: number) {
   ball.st.awaySince = -1;
   playThrow(from);
   snowballFight.buddyThrows += 1;
+  return true;
+}
+
+/** Has this child thrown a snowball in the last `ms`? */
+export function threwLately(slot: number, now: number, ms: number) {
+  return now - (lastThrow.get(slot) ?? -1e9) < ms || balls.some((b) => b.entry.heldBy === slot);
 }
 
 function burst(t: { x: number; y: number; z: number }, by: number | null) {
@@ -130,6 +145,7 @@ function ThrowBall({ home }: { home: THREE.Vector3 }) {
       onRelease: () => {
         s.thrownBy = s.holder;
         s.thrownAt = gameNow();
+        if (s.holder != null) lastThrow.set(s.holder, s.thrownAt);
         s.holder = null;
       }
     };
