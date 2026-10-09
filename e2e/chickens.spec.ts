@@ -67,6 +67,23 @@ test('all the chickens in: a party; later the gate opens and they wander home', 
   game.expectNoErrors();
 });
 
+test('playing alone by the coop, the buddy walks the chickens in', async ({ page }) => {
+  test.setTimeout(240_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(5);
+  // the child stands by the coop and watches; the buddy does the rounding up (the gate helps it along)
+  const C = await page.evaluate(() => (window as any).__silly.layout.CHICKEN_COOP);
+  await game.teleport(0, C.center[0] - 9, 0.5, C.center[1] - 6);
+  for (let k = 0; k < 18 && (await coop(game)).doneAt < 0; k += 1) await game.seconds(10);
+  const done = await coop(game);
+  expect(done.penned.every(Boolean)).toBe(true);
+  expect(done.doneAt).toBeGreaterThanOrEqual(0);
+  game.expectNoErrors();
+});
+
 test('a chicken thrown up on the mountain picks itself up and wanders off again', async ({ page }) => {
   const game = new Game(page);
   await game.open(1, { off: ['birds', 'cats'] });

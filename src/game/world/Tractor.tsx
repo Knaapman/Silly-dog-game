@@ -33,6 +33,8 @@ const TONGUE = 1.9;
 const MAX_SWING = 1.35;
 const BODY = { w: 1.7, l: 3.1, bottom: 0.45, top: 1.4 };
 const BED = { w: 1.9, l: 2.8, floor: 0.7, wall: 0.45 };
+/** Under the hood and the trailer's floor, solid down to this far off the ground (it's where the wheels are). */
+const SKIRT = 0.12;
 const SEAT: [number, number, number] = [0, 1.9, -0.55];
 /** Left alone away from home this long (seconds), it pops back home. */
 const HOME_AFTER = 90;
@@ -411,10 +413,13 @@ export function Tractor() {
     <>
       <RigidBody ref={body} type="kinematicPosition" colliders={false} position={[s0.x, groundHeight(s0.x, s0.z), s0.z]} rotation={[0, s0.yaw, 0]}>
         <CuboidCollider ref={hood} args={[BODY.w / 2 - 0.25, (BODY.top - BODY.bottom) / 2, BODY.l / 2]} position={[0, (BODY.top + BODY.bottom) / 2, 0]} />
+        {/* down to the wheels' feet: a chicken that runs at it can't wedge itself in under the hood */}
+        <CuboidCollider args={[BODY.w / 2 - 0.25, (BODY.bottom - SKIRT) / 2, BODY.l / 2 - 0.1]} position={[0, (BODY.bottom + SKIRT) / 2, 0]} />
         <TractorModel />
       </RigidBody>
       <RigidBody ref={cart} type="kinematicPosition" colliders={false} position={[s0.tx, groundHeight(s0.tx, s0.tz), s0.tz]} rotation={[0, s0.tyaw, 0]}>
         <CuboidCollider ref={bed} args={[BED.w / 2, 0.1, BED.l / 2]} position={[0, BED.floor - 0.1, 0]} />
+        <CuboidCollider args={[BED.w / 2 - 0.1, (BED.floor - 0.2 - SKIRT) / 2, BED.l / 2 - 0.1]} position={[0, (BED.floor - 0.2 + SKIRT) / 2, 0]} />
         {[-1, 1].map((sd) => (
           <CuboidCollider key={`s${sd}`} args={[0.05, BED.wall / 2, BED.l / 2]} position={[(sd * BED.w) / 2, BED.floor + BED.wall / 2, 0]} />
         ))}
