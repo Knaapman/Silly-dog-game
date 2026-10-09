@@ -233,9 +233,11 @@ const KICK_JUMP = 450;
 const hoopFlash = SLED_RUN.hoops.map(() => -1e9);
 /** Downhill is west (-x): an animal on a sled faces that way. */
 const SLED_FACING = -Math.PI / 2;
+/** For the buddy: both sleds (to race the child down on the other one). */
+export const sleds: SledState[] = [];
 
 type SledMode = 'park' | 'ride' | 'away';
-type SledState = {
+export type SledState = {
   mode: SledMode;
   x: number;
   z: number;
@@ -287,6 +289,7 @@ function Sled({ index }: { index: number }) {
   const seat = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
   ((debugInfo.sleds ??= []) as SledState[])[index] = st.current;
+  sleds[index] = st.current;
   useHint([sx, groundHeight(sx, sz) + 0.6, sz], 'walk', 3);
 
   const park = (s: SledState) => {

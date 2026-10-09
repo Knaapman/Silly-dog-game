@@ -5,7 +5,7 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { distXZ, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
+import { CHICKEN_COOP, distXZ, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, physics, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
@@ -19,6 +19,9 @@ import { moles } from './Moles';
 import { blocks, kidBuilding } from './Blocks';
 import { roundabout } from './Roundabout';
 import { ferris } from './Carnival';
+import { herd, type HerdChicken } from './Chickens';
+import { sleds } from './Rides';
+import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
 import { randomStream } from '../rng';
 
 const random = randomStream('buddy');
@@ -77,6 +80,8 @@ type Brain = {
   /** How long the child has been out of reach (up on something, or down where we can't get). */
   apartFor: number;
   nextBoing: number;
+  /** The chicken being walked to the coop, where it was when we started on it, and since when (game ms); ones that wouldn't budge, left alone until then. */
+  herding: { chicken: HerdChicken | null; from: THREE.Vector3; since: number; skip: Map<HerdChicken, number> };
 };
 
 const scratch = { target: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3() };
@@ -105,7 +110,8 @@ export function Buddy() {
     kidFlying: false,
     via: null,
     apartFor: 0,
-    nextBoing: 0
+    nextBoing: 0,
+    herding: { chicken: null, from: new THREE.Vector3(), since: 0, skip: new Map() }
   });
 
   // after the input is read (priority -10), before the animals move (0)
@@ -279,6 +285,11 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       return makeInputFrame();
     }
 
+    // the child is off down the sled run: the other sled, if it's close by, to race them down
+    const raceSled = sleds.some((s) => s && s.rider === kid.slot) ? sleds.find((s) => s && s.mode === 'park' && distXZ(s.x, s.z, me.position.x, me.position.z) < 12) : undefined;
+    // the child is rounding up chickens by the coop: a loose one to walk in
+    const stray = kidStanding ? strayChicken(kid, me, b, now) : null;
+
     let stopAt = 1.2;
     /** Standing somewhere on purpose (no wandering, no silliness). */
     let busy = false;
@@ -315,6 +326,34 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0.25;
       target.copy(swingHelp.goto);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (raceSled) {
+      // walk into it, and down we go a moment behind the child
+      busy = true;
+      stopAt = 0;
+      target.set(raceSled.x, 0, raceSled.z);
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (stray && inCoop(me.position.x, me.position.z, -0.4)) {
+      // in the coop (followed one in): out through the gate first, not pushing at the fence from inside
+      busy = true;
+      target.set(GATE_OUT.x, 0, GATE_OUT.z - 1);
+      stopAt = 0.3;
+    } else if (stray) {
+      // circle round behind it and walk it in: chickens run from us just as they do from the
+      // child. Lined up with the gate: on in through it; anywhere else: round to the front of the
+      // gate first (straight at the coop it would only be pushed into the fence beside the gate)
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const lined = Math.abs(stray.pos.x - GATE_IN.x) < CHICKEN_COOP.gate / 2 - 0.2 && stray.pos.z < GATE_IN.z && stray.pos.z > GATE_OUT.z - 3;
+      const goal = lined ? GATE_IN : GATE_OUT;
+      const gd = Math.max(0.01, distXZ(stray.pos.x, stray.pos.z, goal.x, goal.z));
+      const ax = (stray.pos.x - goal.x) / gd;
+      const az = (stray.pos.z - goal.z) / gd;
+      const md = Math.max(0.01, distXZ(me.position.x, me.position.z, stray.pos.x, stray.pos.z));
+      const behind = ((me.position.x - stray.pos.x) * ax + (me.position.z - stray.pos.z) * az) / md;
+      // not behind it yet: round at a distance (close by, it would run off the wrong way); then in
+      const back = behind > 0.7 ? HERD_CLOSE : HERD_ROUND;
+      target.set(stray.pos.x + ax * back, 0, stray.pos.z + az * back);
+      stopAt = 0.3;
     } else if (moles.active && distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]) < 6) {
       // the child is bonking moles: bonk some too. Not the ones right by the child (those are
       // theirs), not one that's only just come up, and never the golden one: that's for the child.
@@ -499,6 +538,50 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
   b.pending = b.pending.filter((p) => p.at > now);
   for (const p of due) press[p.action] = true;
   return makeInputFrame(x, z, press);
+}
+
+/** Herding: the child this close to the coop's gate, and loose chickens this close to it, count. */
+const HERD_NEAR = 16;
+const HERD_FROM = 24;
+/** Behind a chicken: this close pushes it on (it runs from 3.6 m); going round, this far. */
+const HERD_CLOSE = 2;
+const HERD_ROUND = 4.6;
+/** Not moved this far (m) in this long (ms): it isn't going anywhere; leave it alone this long. */
+const HERD_BUDGE = 1.5;
+const HERD_STUCK = 8000;
+const HERD_SKIP = 20000;
+
+/** A loose chicken near the coop for the buddy to walk in, while the child is about there. */
+function strayChicken(kid: PlayerRuntime, me: PlayerRuntime, b: Brain, now: number): HerdChicken | null {
+  if (useCoop.getState().doneAt >= 0) return null;
+  if (distXZ(kid.position.x, kid.position.z, GATE_OUT.x, GATE_OUT.z) > HERD_NEAR) return null;
+  let best: HerdChicken | null = null;
+  let bd = Infinity;
+  for (const c of herd) {
+    if (!c || c.penned || c.leaving || c.mode === 'held' || c.mode === 'tumble' || inCoop(c.pos.x, c.pos.z, -0.6) || (b.herding.skip.get(c) ?? 0) > now) continue;
+    if (distXZ(c.pos.x, c.pos.z, GATE_OUT.x, GATE_OUT.z) > HERD_FROM) continue;
+    // (one in the mud last: we'd only get stuck in it)
+    const d = distXZ(c.pos.x, c.pos.z, me.position.x, me.position.z) + (isInMud(c.pos.x, c.pos.z) ? 30 : 0);
+    if (d < bd) {
+      bd = d;
+      best = c;
+    }
+  }
+  // one that hasn't gone anywhere for a while with us right by it (wedged somewhere): another one
+  const h = b.herding;
+  if (best !== h.chicken) {
+    h.chicken = best;
+    h.since = now;
+    if (best) h.from.copy(best.pos);
+  } else if (best && (distXZ(best.pos.x, best.pos.z, h.from.x, h.from.z) > HERD_BUDGE || distXZ(best.pos.x, best.pos.z, me.position.x, me.position.z) > HERD_ROUND + 1)) {
+    // (it's only stuck if it stays put with us right there)
+    h.since = now;
+    h.from.copy(best.pos);
+  } else if (best && now - h.since > HERD_STUCK) {
+    h.skip.set(best, now + HERD_SKIP);
+    h.chicken = null;
+  }
+  return best;
 }
 
 /**

@@ -39,7 +39,7 @@ the one at the end of the jetty and it floats off down the middle of the river, 
 footbridge, and tips you out onto the bank before the stepping stones (then bobs back up at the jetty). Friends can
 share a ring, or jump from one to another. **Sledding**: two sleds wait on the west rim of the mountain's top; walk into
 one and it pushes off down the snow and the stone (steer to the sides with the stick), faster and faster, and throws
-you off the hill at the bottom. The path up the mountain has log steps now.
+you off the hill at the bottom. Playing alone, the buddy jumps on the other sled and races you down. The path up the mountain has log steps now.
 
 **Sledding challenges.** Three rings of stars float over the sled run: steer through one (stick up and down) and
 the sled goes faster, and each one lets it go faster still. Off the hill, the faster you were going the further you
@@ -62,7 +62,8 @@ hop out. Playing alone, the buddy jumps into a car too while you drive and chase
 coop east of the pasture: the gate faces their yard, and a chicken running near the gate darts in. Once in, they stay
 in. The sign by the coop has a dot for each chicken, lit when it's in; all eight in is a party (and a sticker). After
 a while the gate opens and they trot back out to their yard, ready to be rounded up again. It works alone, and it's
-easier with friends coming at them from both sides.
+easier with friends coming at them from both sides. Playing alone near the coop, the buddy helps: it circles
+round behind a loose chicken and walks it to the gate (one that won't budge, it leaves for later).
 
 **The giant xylophone** 🎵 in the playground: eight big rainbow keys on the ground, low notes to the west. Walk,
 run or jump along them and they play. Behind them a little bluebird on a post sings a short tune and lights up each key

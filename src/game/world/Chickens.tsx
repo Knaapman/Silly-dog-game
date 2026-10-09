@@ -20,6 +20,10 @@ type Mode = 'wander' | 'peck' | 'flee' | 'tumble' | 'dizzy' | 'held';
 
 const RADIUS = 0.3;
 
+/** For the buddy: each chicken, where it is and whether it's in the coop (or on its way out again). */
+export type HerdChicken = { pos: THREE.Vector3; penned: boolean; leaving: boolean; mode: Mode };
+export const herd: HerdChicken[] = [];
+
 function Chicken({ index }: { index: number }) {
   const body = useRef<RapierRigidBody>(null);
   const yaw = useRef<THREE.Group>(null);
@@ -46,9 +50,11 @@ function Chicken({ index }: { index: number }) {
     /** In the coop (and staying there), being let out, how long a penned one has been outside. */
     penned: false,
     leaving: false,
-    outFor: 0
+    outFor: 0,
+    pos: home.clone()
   });
   ((debugInfo.chickens ??= []) as unknown[])[index] = s.current;
+  herd[index] = s.current;
   const entryRef = useRef<PropEntry | null>(null);
   const resetToken = useGame((st) => st.resetToken);
   const tmp = useMemo(() => new THREE.Vector3(), []);
@@ -112,6 +118,7 @@ function Chicken({ index }: { index: number }) {
     const t = rb.translation();
     const v = rb.linvel();
     const time = gameClock.time + index;
+    c.pos.set(t.x, t.y, t.z);
     /** How high above the ground it is (the farm has hills; a thrown one can land anywhere). */
     const up = t.y - groundHeight(t.x, t.z);
     c.timer -= dt;

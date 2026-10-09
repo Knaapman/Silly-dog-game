@@ -84,6 +84,30 @@ test('sledding: walk into a sled on the mountain top, whoosh down the slope, fly
   game.expectNoErrors();
 });
 
+test('playing alone, the buddy hops on the other sled and races the child down', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  // up on the mountain top together: the child walks into one sled...
+  await game.teleport(0, -4, 1, -55);
+  await game.teleport(1, -3, 1, -50);
+  await game.seconds(2);
+  expect((await sleds(game)).map((s) => s.mode)).toEqual(['park', 'park']);
+  await game.hold('KeyA', 0.4);
+  // ...and the buddy jumps on the other and comes down too
+  let both = false;
+  for (let k = 0; k < 20 && !both; k += 1) {
+    await game.seconds(0.25);
+    both = (await sleds(game)).every((s) => s.mode !== 'park');
+  }
+  expect(both).toBe(true);
+  for (let k = 0; k < 40 && (await game.player(1)).x > -36; k += 1) await game.seconds(0.25);
+  expect((await game.player(1)).x).toBeLessThan(-36); // off the bottom of the run
+  game.expectNoErrors();
+});
+
 test('the arched footbridge: up, over the river, down again, dry feet', async ({ page }) => {
   const game = new Game(page);
   await game.open();

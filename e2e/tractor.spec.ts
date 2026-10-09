@@ -64,3 +64,33 @@ test('drive the tractor with a friend in the trailer; the barn wall stops it; ju
   expect(out.y - (await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [out.x, out.z] as const))).toBeLessThan(1);
   game.expectNoErrors();
 });
+
+test('nothing small gets in under the parked tractor or its trailer (a chicken once wedged itself under the hood)', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds', 'chickens'] });
+  await game.start();
+  // from 3 m out on every side, chicken height off the ground, straight at the middle: something solid on the way
+  const misses = await page.evaluate(() => {
+    const s = (window as any).__silly;
+    const t = s.runtime.debugInfo.tractor;
+    const out: string[] = [];
+    for (const [x, z, name] of [
+      [t.x, t.z, 'tractor'],
+      [t.tx, t.tz, 'trailer']
+    ] as [number, number, string][])
+      for (let a = 0; a < 8; a += 1) {
+        const dx = Math.sin((a * Math.PI) / 4);
+        const dz = Math.cos((a * Math.PI) / 4);
+        for (const h of [0.2, 0.35]) {
+          const ox = x + dx * 3;
+          const oz = z + dz * 3;
+          const ray = new s.rapier.Ray({ x: ox, y: s.terrain.groundHeight(ox, oz) + h, z: oz }, { x: -dx, y: 0, z: -dz });
+          const hit = s.world.castRay(ray, 3, true, s.rapier.QueryFilterFlags.EXCLUDE_SENSORS | s.rapier.QueryFilterFlags.EXCLUDE_DYNAMIC, undefined, undefined, undefined, (c: any) => c.shape.type !== s.rapier.ShapeType.HeightField);
+          if (!hit) out.push(`${name} from ${a * 45}° at ${h} m`);
+        }
+      }
+    return out;
+  });
+  expect(misses).toEqual([]);
+  game.expectNoErrors();
+});

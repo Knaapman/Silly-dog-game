@@ -34,7 +34,7 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 
 | Attraction | Get on | Play | Get off | Co-op | Buddy | Bubble |
 |---|---|---|---|---|---|---|
-| Sled | walk into it | stick steers, star hoops | flung off the hill at the bottom; a jump at the top flies further | second sled | — | walk |
+| Sled | walk into it | stick steers, star hoops | flung off the hill at the bottom; a jump at the top flies further | second sled | takes the other sled down | walk |
 | Zipline | step up to the handles | (it carries you) | jump, or the end over the lagoon | a handle per child | not allowed on | walk |
 | Water slide | walk into the top of a lane | (it carries you) | the end, splash | two lanes side by side, sticker | hops into the other lane | walk, at the stairs |
 | Tractor | walk to the seat | stick drives, noise = horn | jump | friends ride the trailer, sticker | can't drive | walk |
@@ -73,7 +73,7 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 | Snowball fight | lick a pile, lick to throw | hit a friend | sticker | throws back | lick |
 | Penguin shy | throw snowballs | all five off | — | — | — (lick at the snow piles) |
 | Fishing | lick the water | a fish; throw it at a friend or to the cat | fish slap, sticker | — | lick (one spot) |
-| Chicken round-up | chase them | all eight in the coop | from both sides | — | — |
+| Chicken round-up | chase them | all eight in the coop | from both sides | walks loose ones to the gate | — |
 | Ball pit | wade, jump in from high | the splash | — | — | jump |
 | High striker | headbutt the pad | ring the bell | — | — | headbutt |
 | Brontosaurus | headbutt the tummy five times | the sneeze | — | — | headbutt |
