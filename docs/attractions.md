@@ -52,7 +52,7 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 
 | Attraction | Get on | Play | Get off | Co-op | Buddy | Bubble |
 |---|---|---|---|---|---|---|
-| River tubes | step onto the end one | floats down the river | jump, or tipped out at the end | share a ring | — | walk |
+| River tubes | step onto the end one | floats down the river | jump, or tipped out at the end | share a ring | takes the next ring | walk |
 | Roundabout | hop on | run beside it or headbutt to push | jump, or flung off when it whizzes | push a friend, sticker | pushes you | walk (not to riders) |
 | Carousel | step on | round and round | walk or jump off | — | — | walk |
 | Ferris wheel | walk to the front of the deck: a hop takes you into the gondola at the bottom | up and round, past the star | jump out | a gondola each | comes up in a gondola behind you | walk, on the deck |
@@ -76,7 +76,7 @@ Co-op: what a friend adds. Buddy: what the computer buddy does when one child pl
 | Chicken round-up | chase them | all eight in the coop | from both sides | walks loose ones to the gate | — |
 | Ball pit | wade, jump in from high | the splash | — | — | jump |
 | High striker | headbutt the pad | ring the bell | — | — | headbutt |
-| Brontosaurus | headbutt the tummy five times | the sneeze | — | — | headbutt |
+| Brontosaurus | headbutt the tummy five times | the sneeze | — | tickles it too | headbutt |
 | Sky course | jump | the bell at the top | — | — | walk, jump |
 | Soccer, bowling, crates | headbutt, push | goal, strike | — | — | — |
 | Cats, birds, treasure | chase; listen | tag all four; find all five | — | turns cats back | — (sound, the dog's bark) |

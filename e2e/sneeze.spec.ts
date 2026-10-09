@@ -65,3 +65,22 @@ test('a few tickles now and then only make it giggle', async ({ page }) => {
   expect(b.tickles.length).toBeGreaterThanOrEqual(1);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy tickles too: slow tickles from the child still end in a sneeze', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const [bx, bz] = await center(game);
+  await game.teleport(1, bx - 4, 0.5, bz + 6);
+  await game.hopTo(0, [bx + 0.5, bz + 5.5], [bx + 0.5, bz + 3]);
+  // a tickle every two seconds: three at most in the window, never enough on its own
+  for (let k = 0; k < 6 && (await bronto(game)).sneezes === 0; k += 1) {
+    await game.tap('KeyE');
+    await game.seconds(2);
+  }
+  expect((await bronto(game)).sneezes).toBe(1);
+  expect(await stickers(game)).toContain('sneeze');
+  game.expectNoErrors();
+});

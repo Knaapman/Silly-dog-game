@@ -5,7 +5,7 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { CHICKEN_COOP, distXZ, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
+import { BRONTO, CHICKEN_COOP, distXZ, TUBE_RIDE, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, physics, players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
@@ -20,7 +20,8 @@ import { blocks, kidBuilding } from './Blocks';
 import { roundabout } from './Roundabout';
 import { ferris } from './Carnival';
 import { herd, type HerdChicken } from './Chickens';
-import { sleds } from './Rides';
+import { onTube, riverTubes, sleds, TUBE_BOARD, TUBE_COURSE } from './Rides';
+import { tickling } from './DinoPark';
 import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
 import { randomStream } from '../rng';
 
@@ -287,6 +288,10 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
 
     // the child is off down the sled run: the other sled, if it's close by, to race them down
     const raceSled = sleds.some((s) => s && s.rider === kid.slot) ? sleds.find((s) => s && s.mode === 'park' && distXZ(s.x, s.z, me.position.x, me.position.z) < 12) : undefined;
+    // on a river tube: stay on it; the child on one: the one waiting at the jetty, to float after them
+    const myTube = riverTubes.list.find((t) => t.mode === 'ride' && onTube(me, t));
+    const tubing = !myTube && riverTubes.list.some((t) => onTube(kid, t)) && distXZ(me.position.x, me.position.z, JETTY_END.x, JETTY_END.z) < 15;
+    const nextTube = tubing ? riverTubes.list.find((t) => t.mode === 'wait' && Math.abs(t.s - TUBE_BOARD) < 0.3) : undefined;
     // the child is rounding up chickens by the coop: a loose one to walk in
     const stray = kidStanding ? strayChicken(kid, me, b, now) : null;
 
@@ -326,6 +331,24 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       stopAt = 0.25;
       target.copy(swingHelp.goto);
       b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (myTube) {
+      // riding the river: sit tight in the middle of the ring
+      busy = true;
+      stopAt = 0.3;
+      target.set(myTube.x, 0, myTube.z);
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+    } else if (tubing) {
+      // step off the jetty onto the tube waiting there (the child's own, if it hasn't gone yet: we
+      // share), or wait at the end of the jetty for the next one to come up (not swim after them)
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      if (nextTube) {
+        stopAt = 0;
+        target.set(nextTube.x, 0, nextTube.z);
+      } else {
+        stopAt = 0.3;
+        target.copy(JETTY_END);
+      }
     } else if (raceSled) {
       // walk into it, and down we go a moment behind the child
       busy = true;
@@ -354,6 +377,20 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       const back = behind > 0.7 ? HERD_CLOSE : HERD_ROUND;
       target.set(stray.pos.x + ax * back, 0, stray.pos.z + az * back);
       stopAt = 0.3;
+    } else if (now - tickling.childAt < TICKLE_HELP && !tickling.sneezing && distXZ(kid.position.x, kid.position.z, BRONTO.center[0], BRONTO.center[1]) < 6) {
+      // the child is tickling the brontosaurus: tickle it too (from across its tummy, not bonking
+      // the child), and it sneezes all the sooner
+      busy = true;
+      b.pending = b.pending.filter((p) => p.action !== 'jump');
+      const [tx, tz] = BRONTO.center;
+      const kd = Math.max(0.01, distXZ(kid.position.x, kid.position.z, tx, tz));
+      const md = distXZ(me.position.x, me.position.z, tx, tz);
+      target.set(tx - ((kid.position.x - tx) / kd) * TICKLE_FROM, 0, tz - ((kid.position.z - tz) / kd) * TICKLE_FROM);
+      stopAt = 0.4;
+      if (md < TICKLE_FROM + 0.4 && distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z) > 2.5 && now > b.nextHop) {
+        b.nextHop = now + 1100;
+        press.bonk = true;
+      }
     } else if (moles.active && distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]) < 6) {
       // the child is bonking moles: bonk some too. Not the ones right by the child (those are
       // theirs), not one that's only just come up, and never the golden one: that's for the child.
@@ -539,6 +576,16 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
   for (const p of due) press[p.action] = true;
   return makeInputFrame(x, z, press);
 }
+
+/** The end of the tube jetty, where the buddy waits for its tube. */
+const JETTY_END = (() => {
+  const p = TUBE_COURSE.at(TUBE_BOARD);
+  return new THREE.Vector3(p.x - TUBE_RIDE.radius - 0.6, 0, p.z);
+})();
+
+/** Tickling: a child's tickle this recent (ms) and the buddy joins in, from this far out from the middle. */
+const TICKLE_HELP = 4000;
+const TICKLE_FROM = 2.6;
 
 /** Herding: the child this close to the coop's gate, and loose chickens this close to it, count. */
 const HERD_NEAR = 16;
