@@ -99,7 +99,7 @@ const SNOWBALL_MAX = 1.9;
 const SNOWBALL_GROWTH = 0.05;
 
 /** For the buddy: each rolling snowball, how big it is, where it is and its prop entry. */
-export const rolling: { r: () => number; at: () => { x: number; y: number; z: number } | undefined; entry: () => PropEntry | null }[] = [];
+export const rolling: { r: () => number; at: () => { x: number; y: number; z: number } | undefined; speed: () => number; entry: () => PropEntry | null }[] = [];
 
 /** Push it through the snow and it grows. Headbutt a big one and it bursts. Roll it onto the snowman. */
 function SnowBall({ home, index }: { home: Vec3; index: number }) {
@@ -166,7 +166,15 @@ function SnowBall({ home, index }: { home: Vec3; index: number }) {
   }, [resetToken]);
 
   useEffect(() => {
-    rolling[index] = { r: () => radius.current, at: () => body.current?.translation(), entry: () => entryRef.current };
+    rolling[index] = {
+      r: () => radius.current,
+      at: () => body.current?.translation(),
+      speed: () => {
+        const v = body.current?.linvel();
+        return v ? Math.hypot(v.x, v.z) : 0;
+      },
+      entry: () => entryRef.current
+    };
     ((debugInfo.snowballs ??= []) as unknown[])[index] = {
       radius: () => radius.current,
       position: () => body.current?.translation(),

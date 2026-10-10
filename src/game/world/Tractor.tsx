@@ -16,7 +16,8 @@ import { useSurface } from './surface';
 
 // The farm tractor, with a trailer. Walk up to the seat to drive: push the stick where you want
 // to go and the tractor turns and trundles that way (like walking, just bigger). Friends climb
-// in the trailer and get bumped along. Jump to hop out. The horn is the noise button.
+// in the trailer and get bumped along. Jump to hop out. The horn is the noise button. Playing
+// alone, the buddy jumps in the trailer while you drive.
 //
 // It's moved by the game (not pushed about by physics): before every step it checks that
 // neither it nor the trailer would end up inside something solid (a building, a tree, a
@@ -64,6 +65,20 @@ type TractorState = {
   bspin: number;
   bumped: Map<number, number>;
 };
+
+/** For the buddy: the tractor as it is now. */
+export const tractor = { state: null as TractorState | null };
+
+/** Is this animal standing in the trailer? */
+export function inTrailer(p: { position: THREE.Vector3 }) {
+  const s = tractor.state;
+  if (!s) return false;
+  const lx = p.position.x - s.tx;
+  const lz = p.position.z - s.tz;
+  const along = lx * Math.sin(s.tyaw) + lz * Math.cos(s.tyaw);
+  const across = lx * Math.cos(s.tyaw) - lz * Math.sin(s.tyaw);
+  return Math.abs(along) < BED.l / 2 && Math.abs(across) < BED.w / 2 && p.position.y > groundHeight(s.tx, s.tz) + BED.floor;
+}
 
 function makeState(): TractorState {
   const [hx, hz] = TRACTOR.home;
@@ -188,6 +203,7 @@ export function Tractor() {
   const hood = useRef<RapierCollider>(null);
   const st = useRef<TractorState>(makeState());
   debugInfo.tractor = st.current;
+  tractor.state = st.current;
   const tmp = useMemo(
     () => ({ e: new THREE.Euler(), q: new THREE.Quaternion(), v: new THREE.Vector3(), seat: new THREE.Vector3(), side: new THREE.Vector3(), rot: new THREE.Quaternion() }),
     []
@@ -359,7 +375,8 @@ export function Tractor() {
       // someone else in the trailer while it's going: a friend sticker
       if (s.speed > 2) {
         players.forEach((p) => {
-          if (p.slot === driver!.slot) return;
+          // (a friend: the buddy riding along doesn't count)
+          if (p.slot === driver!.slot || p.bot) return;
           const lx = p.position.x - s.tx;
           const lz = p.position.z - s.tz;
           const along = lx * Math.sin(s.tyaw) + lz * Math.cos(s.tyaw);

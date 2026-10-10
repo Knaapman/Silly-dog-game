@@ -94,3 +94,39 @@ test('nothing small gets in under the parked tractor or its trailer (a chicken o
   expect(misses).toEqual([]);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy jumps in the trailer while you drive (no friend sticker for that)', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const t0 = await tractor(game);
+  // the buddy a few steps off the trailer's side; the child sits on the seat (and doesn't drive yet)
+  await game.teleport(1, t0.tx + 4, 1, t0.tz + 2);
+  await game.teleport(0, t0.x - Math.sin(t0.yaw) * 0.55, 1, t0.z - Math.cos(t0.yaw) * 0.55 + 1.3);
+  await game.seconds(0.5);
+  expect((await tractor(game)).driver).toBe(0);
+  const inTrailer = () =>
+    page.evaluate(() => {
+      const s = (window as any).__silly;
+      const t = s.runtime.debugInfo.tractor;
+      const p = s.runtime.players.get(1).position;
+      return Math.hypot(p.x - t.tx, p.z - t.tz) < 1.4 && p.y > s.terrain.groundHeight(t.tx, t.tz) + 0.7;
+    });
+  let aboard = false;
+  for (let k = 0; k < 20 && !aboard; k += 1) {
+    await game.seconds(0.5);
+    aboard = await inTrailer();
+  }
+  expect(aboard).toBe(true);
+  // off we drive: the buddy comes along in the trailer
+  await game.hold('KeyW', 2.2);
+  await game.seconds(0.6);
+  const t1 = await tractor(game);
+  expect(Math.hypot(t1.x - t0.x, t1.z - t0.z)).toBeGreaterThan(5);
+  expect(await inTrailer()).toBe(true);
+  expect(await stickers(game)).not.toContain('trailer');
+  game.expectNoErrors();
+});

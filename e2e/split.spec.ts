@@ -51,9 +51,11 @@ test('split screen: far apart, a view each that follows its animal; back togethe
   await game.seconds(1.5);
   expect((await views(game)).split).toBe(true);
 
-  // back together: one view
+  // back together: one view, but not straight away (a moment close by isn't enough)
   await game.teleport(1, -2, 1, 6);
   await game.seconds(1.5, true);
+  expect((await views(game)).split).toBe(true);
+  await game.seconds(2, true);
   v = await views(game);
   expect(v.split).toBe(false);
   expect(v.slots).toEqual([]);
@@ -151,8 +153,43 @@ test('split screen: an arrow at the edge of each view points the way to the frie
   await game.screenshot('test-results/friend-arrows.png');
   // back together: one view, no arrows
   await game.teleport(1, -3, 1, 6);
-  await game.seconds(2, true);
+  await game.seconds(4, true);
   expect((await views(game)).split).toBe(false);
   await expect(arrow(-1, 1)).toHaveAttribute('data-visible', 'false');
+  game.expectNoErrors();
+});
+
+test('split screen: whizzing past on the zipline, the views stay split (no joining up for a moment on the way by)', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await game.join('kb2');
+  const Z = await page.evaluate(() => (window as any).__silly.layout.ZIPLINE);
+  // one child stands right under the cable, halfway along; the other goes up to the zipline
+  const ground = await page.evaluate((Z) => {
+    const t = 0.55;
+    return { x: Z.from[0] + (Z.to[0] - Z.from[0]) * t, z: Z.from[1] + (Z.to[1] - Z.from[1]) * t };
+  }, Z);
+  await game.teleport(0, ground.x, 1, ground.z);
+  await page.evaluate((Z) => {
+    const s = (window as any).__silly;
+    const b = s.runtime.players.get(1).getBody();
+    b.setTranslation({ x: Z.from[0] + 1, y: s.terrain.groundHeight(Z.from[0], Z.from[1]) + Z.platform + 1, z: Z.from[1] }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+  }, Z);
+  await game.seconds(2, true);
+  expect((await views(game)).split).toBe(true);
+  // off down the zipline, right over the other child's head, and on to the lagoon: split all the way
+  let riding = true;
+  let closest = Infinity;
+  for (let k = 0; k < 60 && riding; k += 1) {
+    await game.seconds(0.25, true);
+    expect((await views(game)).split).toBe(true);
+    closest = Math.min(closest, await apart(game, 0, 1));
+    riding = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.zipline.handles.some((h: any) => h.mode === 'ride' && h.rider === 1));
+  }
+  expect(riding).toBe(false);
+  expect(closest).toBeLessThan(4); // (it really did go right by)
   game.expectNoErrors();
 });

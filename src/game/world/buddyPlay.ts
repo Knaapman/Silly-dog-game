@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import type { ActionName } from '../input';
 import { BRONTO, CHICKEN_COOP, distXZ, isInMud, MOLES, PENGUIN_SHY, ROUNDABOUT, SEESAWS, SNOW, SNOWMAN_BUILD, TUBE_RIDE } from '../layout';
-import { seesawLow, type PlayerRuntime } from '../runtime';
+import { players, seesawLow, type PlayerRuntime } from '../runtime';
 import { parkCats } from '../chase';
 import { SNOWMAN_MIN, useSnowman } from '../snowman';
 import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
-import { swingHelp } from './Swings';
+import { swingSeats } from './Swings';
+import { zipline } from './Zipline';
+import { inTrailer, tractor } from './Tractor';
 import { moles } from './Moles';
 import { blocks, kidBuilding } from './Blocks';
 import { roundabout } from './Roundabout';
@@ -16,7 +18,7 @@ import { tickling } from './DinoPark';
 import { kites } from './Kites';
 import { onCar, train } from './Train';
 import { shy } from './PenguinShy';
-import { buddyThrow, threwLately } from './SnowballFight';
+import { buddyThrow, holdingBall, nearestBall, snowballFight, threwLately, THROW_BACK_RANGE } from './SnowballFight';
 import { rolling } from './Winter';
 import type { Brain } from './Buddy';
 
@@ -132,15 +134,68 @@ const runUp: Play = {
 
 // ---- rides ----
 
-const swingPush: Play = {
+const swing: Play = {
   name: 'swing',
   kind: 'join',
   act: (c) => {
-    if (swingHelp.slot !== c.me.slot) return false;
-    // the child is on a swing: stand behind it (the swing does the pushing, with our hop)
-    c.stopAt = 0.25;
-    c.target.copy(swingHelp.goto);
+    const { riders, x: xs, z: sz } = swingSeats;
+    const kidSeat = riders.indexOf(c.kid.slot);
+    if (kidSeat < 0) return false;
     calm(c.b);
+    if (riders.includes(c.me.slot)) {
+      // on the swing next to the child's: swinging along (Swings.tsx does the swinging)
+      c.target.copy(c.me.position);
+      return true;
+    }
+    // the child is on a swing: sit on the one next to it (the nearer side of the two, if both are free)
+    const free = [kidSeat - 1, kidSeat + 1].filter((i) => i >= 0 && i < xs.length && riders[i] == null);
+    const pick = free.sort((a, b) => Math.abs(xs[a] - c.me.position.x) - Math.abs(xs[b] - c.me.position.x))[0];
+    if (pick == null) return false;
+    c.target.set(xs[pick], 0, sz);
+    c.stopAt = 0;
+    return true;
+  }
+};
+
+const zip: Play = {
+  name: 'zipline',
+  kind: 'join',
+  act: (c) => {
+    const riders = zipline.riders();
+    if (!riders.includes(c.kid.slot) || riders.includes(c.me.slot)) return false;
+    const { at } = zipline;
+    if (distXZ(c.me.position.x, c.me.position.z, at.x, at.z) > 20) return false;
+    // the child is off down the zipline: up onto the platform after them, and the next handle takes us
+    calm(c.b);
+    c.target.set(at.x, 0, at.z);
+    c.stopAt = 0;
+    return true;
+  }
+};
+
+const trailer: Play = {
+  name: 'trailer',
+  kind: 'join',
+  act: (c) => {
+    const s = tractor.state;
+    const { b, me, now } = c;
+    if (!s || s.driver !== c.kid.slot) return false;
+    if (inTrailer(me)) {
+      // riding in the trailer behind the child: stay in it
+      calm(b);
+      c.target.set(s.tx, 0, s.tz);
+      c.stopAt = 0.4;
+      return true;
+    }
+    // the child is driving the tractor: while it's going slowly, jump in the trailer
+    if (Math.abs(s.speed) > 1.5 || distXZ(me.position.x, me.position.z, s.tx, s.tz) > 15) return false;
+    calm(b);
+    c.target.set(s.tx, 0, s.tz);
+    c.stopAt = 0;
+    if (distXZ(me.position.x, me.position.z, s.tx, s.tz) < 2.2 && me.grounded && now > b.nextHop) {
+      b.nextHop = now + 800;
+      c.press.jump = true;
+    }
     return true;
   }
 };
@@ -238,10 +293,10 @@ const SNOW_LAP = 3.5;
 /** Where those laps go round, from the middle of the snow. */
 const SNOW_LAPS = [1, -9.5] as const;
 
-/** Is the child pushing (or right up against) this snowball? */
+/** Is the child pushing this snowball (right up against it, and it's rolling)? */
 function pushing(sb: (typeof rolling)[number], kid: PlayerRuntime) {
   const at = sb.at();
-  return !!at && distXZ(at.x, at.z, kid.position.x, kid.position.z) < sb.r() + 1.2;
+  return !!at && distXZ(at.x, at.z, kid.position.x, kid.position.z) < sb.r() + 1.2 && sb.speed() > 0.6;
 }
 
 /** Helping with the snowman right now: the bottom or the middle still to come (the head is always the child's). */
@@ -426,10 +481,57 @@ const chickens: Play = {
 };
 
 /** Penguin shy: the child threw this recently (ms) this close by (m): throw too, from this far in front, this often (ms). */
-const SHY_HELP = 8000;
+const SHY_HELP = 15000;
 const SHY_NEAR = 10;
 const SHY_FROM = 5.5;
 const SHY_EVERY = 2600;
+
+/** Snowballs this close (m) on a pile are worth fetching. */
+const SNOWBALL_FROM = 20;
+/** Thrown at by the child: a snowball back at them within this long (ms), or never mind. */
+const THROW_BACK_FOR = 12000;
+
+const throwBack: Play = {
+  name: 'throw back',
+  kind: 'join',
+  act: (c) => {
+    const { me, now } = c;
+    const tb = snowballFight.throwBack;
+    if (!tb) return false;
+    const by = players.get(tb.by);
+    if (!by || now - tb.at > THROW_BACK_FOR) {
+      snowballFight.throwBack = null;
+      return false;
+    }
+    calm(c.b);
+    if (!holdingBall(me.slot)) {
+      // hit! a snowball from the pile, and...
+      const ball = nearestBall(me.position.x, me.position.z, SNOWBALL_FROM);
+      if (!ball) {
+        snowballFight.throwBack = null;
+        return false;
+      }
+      c.fetch(ball, true, 0.35);
+      return true;
+    }
+    // ...back at them (walking closer if they're too far for a throw)
+    const d = distXZ(me.position.x, me.position.z, by.position.x, by.position.z);
+    if (d > THROW_BACK_RANGE - 2) {
+      c.target.copy(by.position);
+      c.stopAt = THROW_BACK_RANGE - 3;
+      return true;
+    }
+    c.target.copy(me.position);
+    c.tmp.copy(by.position);
+    c.tmp.y += 0.2;
+    if (buddyThrow(me.slot, c.tmp)) snowballFight.throwBack = null;
+    return true;
+  },
+  // nobody to throw at any more: put the snowball down
+  tidy: (c) => {
+    if (holdingBall(c.me.slot) && !snowballFight.throwBack && !threwLately(c.kid.slot, c.now, SHY_HELP)) putDown(c);
+  }
+};
 
 const penguins: Play = {
   name: 'penguins',
@@ -440,6 +542,13 @@ const penguins: Play = {
     // the child is throwing snowballs at the penguins: throw some too, from in front of the
     // counter, off to the child's other side. Never the last one standing: that's the child's.
     calm(b);
+    if (!holdingBall(me.slot)) {
+      // a snowball from a pile first
+      const ball = nearestBall(me.position.x, me.position.z, SNOWBALL_FROM);
+      if (!ball) return false;
+      c.fetch(ball, true, 0.35);
+      return true;
+    }
     const [px, pz] = PENGUIN_SHY.center;
     const side = kid.position.z > pz ? -1 : 1;
     c.target.set(px - SHY_FROM, 0, pz + side * 1.6);
@@ -632,4 +741,4 @@ const cats: Play = {
 };
 
 /** In order: the first that applies wins. */
-export const PLAYS: Play[] = [launcher, ferrisWait, runUp, swingPush, trainRide, tubes, sledRace, snowman, kite, chickens, penguins, tickle, molehills, roundaboutPush, towerBlocks, seesaw, cats];
+export const PLAYS: Play[] = [launcher, ferrisWait, runUp, swing, zip, trailer, trainRide, tubes, sledRace, throwBack, snowman, kite, chickens, penguins, tickle, molehills, roundaboutPush, towerBlocks, seesaw, cats];

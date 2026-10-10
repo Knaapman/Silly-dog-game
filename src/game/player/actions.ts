@@ -166,7 +166,10 @@ export function tongue(f: FrameCtx) {
   if (s.held != null) {
     const prop = props.get(s.held);
     const pb = prop?.getBody();
-    if (!prop || !pb || !prop.enabled || s.flopped) {
+    if (prop && prop.heldBy !== f.slot) {
+      // taken from us (the buddy's throw lets go of it like this): no longer ours to hold
+      s.held = null;
+    } else if (!prop || !pb || !prop.enabled || s.flopped) {
       releaseHeld(f, false);
     } else {
       propPosition(prop, tmp.p);

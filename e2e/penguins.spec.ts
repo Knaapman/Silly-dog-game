@@ -80,7 +80,7 @@ test('playing alone, the buddy throws at the penguins too, and leaves the last o
   await game.teleport(1, cx - 10, 1, cz - 3);
   await snowballInMouth(game);
   await game.tap('KeyQ');
-  await game.seconds(8);
+  await game.seconds(14);
   const s = await shy(game);
   const buddyThrows = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.snowballFight.buddyThrows as number);
   expect(s.hits).toBeGreaterThanOrEqual(3);

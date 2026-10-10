@@ -219,7 +219,7 @@ test('swing with a friend: paw prints show the friend where to stand, the headbu
   game.expectNoErrors();
 });
 
-test('swing playing alone: the buddy pushes, no paw prints for anyone, and the child jumps off when they choose', async ({ page }) => {
+test('swing playing alone: the buddy swings beside you, no paw prints for anyone, and the child jumps off when they choose', async ({ page }) => {
   const game = new Game(page);
   await game.open();
   await game.start();
@@ -241,7 +241,7 @@ test('swing playing alone: the buddy pushes, no paw prints for anyone, and the c
     expect((await shown(game)).filter((h) => h.action === 'bonk')).toHaveLength(0);
   }
   expect(most).toBe(0);
-  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.swingHelp.pushes)).toBeGreaterThanOrEqual(2);
+  expect((await swing(game, 2)).rider).toBe(1); // the buddy, on the swing beside
   await game.tap('Space');
   await game.seconds(0.2);
   expect((await swing(game, 3)).rider).toBeNull();

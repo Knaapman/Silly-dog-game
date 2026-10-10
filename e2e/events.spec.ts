@@ -92,6 +92,31 @@ test('the golden chicken runs round water, not back towards whoever chases it', 
   game.expectNoErrors();
 });
 
+test('surprise: the present floats over a building, not through it', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  const B = await page.evaluate(() => (window as any).__silly.layout.BARN);
+  const [bx, bz] = B.center;
+  // stand by the barn's east wall: the present circles round us, over the barn and back
+  await game.teleport(0, bx + B.width / 2 + 1.5, 1, bz);
+  await start(game, 'present');
+  let over = 0;
+  let lowest = Infinity;
+  for (let k = 0; k < 120; k += 1) {
+    await game.seconds(0.25);
+    const pr = (await ev(game)).present;
+    if (Math.abs(pr.x - bx) < B.width / 2 - 0.5 && Math.abs(pr.z - bz) < B.depth / 2 - 0.5) {
+      over += 1;
+      const g = await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [pr.x, pr.z] as const);
+      lowest = Math.min(lowest, pr.y - g);
+    }
+  }
+  expect(over).toBeGreaterThan(4); // (it did go over the barn)
+  expect(lowest).toBeGreaterThan(B.wallHeight + 0.5); // above the walls, never inside
+  game.expectNoErrors();
+});
+
 test('surprise: a present on a balloon gives everybody a new hat', async ({ page }) => {
   const game = new Game(page);
   await game.open();

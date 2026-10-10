@@ -3,7 +3,7 @@ import { Game } from './game';
 
 // The swings: walk into a seat and sit; push the stick and it swings higher and higher; jump and
 // you fly off the way it's going. A friend's headbutt is a big push; a seat swinging hard bonks
-// whoever stands in its way; playing alone, the buddy comes round behind you and pushes.
+// whoever stands in its way; playing alone, the buddy sits on the swing next to you and swings along.
 
 type SeatState = { theta: number; omega: number; rider: number | null };
 const swings = (game: Game) =>
@@ -133,7 +133,7 @@ test('a friend headbutts the seat for a big push (a friend sticker); a seat swin
   game.expectNoErrors();
 });
 
-test('playing alone: the buddy comes round behind your swing and pushes you higher', async ({ page }) => {
+test('playing alone: the buddy sits on the swing next to yours and swings along, and jumps off when you do', async ({ page }) => {
   const game = new Game(page);
   await game.open();
   await game.start();
@@ -146,27 +146,28 @@ test('playing alone: the buddy comes round behind your swing and pushes you high
   await game.seconds(1);
   await game.hold('KeyW', 0.7);
   expect((await swings(game)).seats[3].rider).toBe(0);
-  // no stick: just sit there, and wait for a push
-  await game.seconds(12);
-  const help = await page.evaluate(() => {
-    const h = (window as any).__silly.runtime.debugInfo.swingHelp;
-    return { slot: h.slot as number | null, pushes: h.pushes as number, spot: { x: h.spot.x as number, z: h.spot.z as number } };
-  });
-  expect(help.slot).not.toBeNull();
-  expect(help.pushes).toBeGreaterThanOrEqual(2);
-  const buddy = await game.player(help.slot!);
-  expect(buddy.z).toBeLessThan(cz - 0.8);
-  expect(Math.abs(buddy.x - x)).toBeLessThan(1);
-  const s = await swings(game);
-  expect(amp(s.seats[3])).toBeGreaterThan(0.6);
-  // (it went round the side to get there, not through the swing's way)
+  // no stick: the child just sits there; the buddy comes and sits on the swing beside (the only one next to seat 3)
+  let s = await swings(game);
+  for (let k = 0; k < 24 && s.seats[2].rider == null; k += 1) {
+    await game.seconds(0.5);
+    s = await swings(game);
+  }
+  expect(s.seats[2].rider).toBe(1);
+  // and swings: nicely high, though the child isn't swinging yet
+  await game.seconds(6);
+  s = await swings(game);
+  expect(amp(s.seats[2])).toBeGreaterThan(0.4);
+  expect(s.seats[3].rider).toBe(0);
+  // (it got there without being bonked by a seat)
   expect(s.knocks).toBe(0);
   await game.seconds(0.2, true);
   await game.screenshot('test-results/swings-buddy.png');
-  // off the swing: the buddy stops pushing
+  // the child jumps off: a moment later, so does the buddy
   await game.tap('Space');
-  await game.seconds(0.5);
-  expect(await page.evaluate(() => (window as any).__silly.runtime.debugInfo.swingHelp.slot)).toBeNull();
+  await game.seconds(0.1);
+  expect((await swings(game)).seats[3].rider).toBeNull();
+  await game.seconds(1);
+  expect((await swings(game)).seats[2].rider).toBeNull();
   game.expectNoErrors();
 });
 
