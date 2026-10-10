@@ -1,4 +1,4 @@
-import { TRACK_LIFTS, TRAIN } from './layout';
+import { distXZ, TRACK_LIFTS, TRAIN } from './layout';
 
 // The train's track: a rounded rectangle round TRAIN.center. `trackAt(s)` gives the point `s`
 // metres along it and the way it runs there. The train runs east along the south straight
@@ -68,7 +68,7 @@ export function trackDist(x: number, z: number) {
   const az = Math.abs(z - TZ);
   if (ax <= CX) return Math.abs(az - TRAIN.halfZ);
   if (az <= CZ) return Math.abs(ax - TRAIN.halfX);
-  return Math.abs(Math.hypot(ax - CX, az - CZ) - R);
+  return Math.abs(distXZ(ax, az, CX, CZ) - R);
 }
 
 /** The nearest point on the track: how far away it is, and how far along the track. */
@@ -79,7 +79,7 @@ export function trackNearest(x: number, z: number, out = { d: 0, s: 0 }) {
     let u: number;
     if (seg.kind === 'line') {
       u = Math.max(0, Math.min(seg.len, (x - seg.from[0]) * seg.dir[0] + (z - seg.from[1]) * seg.dir[1]));
-      d = Math.hypot(x - (seg.from[0] + seg.dir[0] * u), z - (seg.from[1] + seg.dir[1] * u));
+      d = distXZ(x, z, seg.from[0] + seg.dir[0] * u, seg.from[1] + seg.dir[1] * u);
     } else {
       // the arc runs clockwise from a0 through a quarter turn
       let a = Math.atan2(z - seg.center[1], x - seg.center[0]);
@@ -89,7 +89,7 @@ export function trackNearest(x: number, z: number, out = { d: 0, s: 0 }) {
       back = Math.max(0, Math.min(Math.PI / 2, back));
       a = seg.a0 - back;
       u = back * R;
-      d = Math.hypot(x - (seg.center[0] + Math.cos(a) * R), z - (seg.center[1] + Math.sin(a) * R));
+      d = distXZ(x, z, seg.center[0] + Math.cos(a) * R, seg.center[1] + Math.sin(a) * R);
     }
     if (d < out.d) {
       out.d = d;
