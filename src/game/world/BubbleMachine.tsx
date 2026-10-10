@@ -12,6 +12,7 @@ import { earnSticker } from '../stickers';
 import { useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { groundHeight } from '../terrain';
+import { topUnder } from './ground';
 import { StaticBox, useHint } from './common';
 import { randomStream } from '../rng';
 
@@ -158,7 +159,8 @@ export function BubbleMachine() {
         return;
       }
       const age = (now - b.bornAt) / 1000;
-      const g = groundHeight(b.x, b.z);
+      // (over whatever is under it: a roof, a wall, the ground; never through a building)
+      const g = topUnder(b.x, b.z, b.r);
       const p = b.rider != null ? rider(b.rider) : undefined;
       if (b.rider != null && !p) {
         // its animal left (or popped out with the "I'm stuck" buttons): pop
@@ -190,7 +192,7 @@ export function BubbleMachine() {
       }
       b.x += (b.vx + Math.sin(now / 700 + i * 2) * 0.25) * dt;
       b.z += (b.vz + Math.cos(now / 900 + i) * 0.25) * dt;
-      // (never down into the ground, e.g. drifting over a hill)
+      // (never down into the ground or a roof, e.g. drifting over a hill or the barn)
       b.y = Math.max(b.y, g + b.r * 0.9);
 
       // animals touching it: a little one pops, a big empty one swallows you, a full one pops
