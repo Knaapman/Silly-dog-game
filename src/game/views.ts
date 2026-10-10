@@ -44,8 +44,8 @@ export function seeAllHelp(cam: THREE.Camera) {
   for (let slot = 0; slot < 4; slot += 1) cam.layers.enable(hintLayer(slot));
 }
 
-/** The views as the camera rig last set them up (empty when the screen isn't split). */
-export const views = { split: false, list: [] as View[] };
+/** The views as the camera rig last set them up (empty when the screen isn't split), and the shared camera as last drawn. */
+export const views = { split: false, list: [] as View[], shared: null as THREE.Camera | null };
 
 /** For the overlay (frames and dividers): which players have a view, in screen order. */
 export const useViews = create<{ split: boolean; slots: number[] }>(() => ({ split: false, slots: [] }));
@@ -79,6 +79,7 @@ export function renderViews(gl: THREE.WebGLRenderer, scene: THREE.Scene, shared:
   // (count the whole frame's draw calls, however many views it takes: see perf.ts)
   gl.info.autoReset = false;
   gl.info.reset();
+  views.shared = shared;
   drawViews(gl, scene, shared);
   perf.calls = gl.info.render.calls;
   perf.triangles = gl.info.render.triangles;

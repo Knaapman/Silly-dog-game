@@ -246,7 +246,9 @@ so friends can drop in and out at any time. All players share one camera that zo
 splits, a view each that follows their own animal (two side by side; three: two on top and one along the bottom;
 four: a 2×2 grid), framed in the child's colour with their shape in the corner. Come back together and it joins up
 again (it waits until they're clearly closer, so it doesn't flick back and forth). The buddy never gets a view of
-its own. Grown-ups can turn split screen off; then friends are gently pulled back together instead.
+its own. In each view, a friend who's out of sight gets a little arrow at the edge, in their colour with their
+shape on it, pointing the way to them like a compass (gone again as soon as you can see them; never for the buddy,
+which always comes to you). Grown-ups can turn split screen off; then friends are gently pulled back together instead.
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
 

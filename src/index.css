@@ -105,3 +105,8 @@ body {
     zoom: 1.6;
   }
 }
+
+/* friend arrows (FriendArrows.tsx): only while the friend is out of sight */
+.friend-arrow[data-visible='false'] {
+  display: none;
+}
