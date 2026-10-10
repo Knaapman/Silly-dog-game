@@ -690,7 +690,10 @@ export const TREES: { at: Vec2; kind: TreeKind }[] = [
 ];
 
 export function distXZ(ax: number, az: number, bx: number, bz: number) {
-  return Math.hypot(ax - bx, az - bz);
+  // (not Math.hypot: this is asked for thousands of times a frame, and hypot is several times slower)
+  const dx = ax - bx;
+  const dz = az - bz;
+  return Math.sqrt(dx * dx + dz * dz);
 }
 
 /** Down among the balls in the ball pit (wading is slow). */

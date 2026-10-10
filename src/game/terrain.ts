@@ -70,7 +70,7 @@ const BLEND = 3.5;
 const LIFT_TOP = 2.2;
 const liftTmp = { d: 0, s: 0 };
 
-type Extra = { level?: number; levelB?: number; blend?: number; linear?: boolean };
+type Extra = { level?: number; levelB?: number; blend?: number; linear?: boolean; /** (where it can reach: worked out once, by `boxOf`) */ box?: Box };
 export type Flat = Extra & (
   | { kind: 'disc'; c: Vec2; r: number }
   | { kind: 'seg'; a: Vec2; b: Vec2; r: number }
@@ -85,7 +85,7 @@ function segNear(x: number, z: number, a: Vec2, b: Vec2, out: { d: number; t: nu
   const dx = b[0] - a[0];
   const dz = b[1] - a[1];
   const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / Math.max(1e-6, dx * dx + dz * dz)));
-  out.d = Math.hypot(x - (a[0] + dx * t), z - (a[1] + dz * t));
+  out.d = distXZ(x, z, a[0] + dx * t, a[1] + dz * t);
   out.t = t;
   return out;
 }
@@ -99,23 +99,36 @@ function smoothstep(t: number) {
 /** Distance to the river's centre line, and the channel floor level at the nearest point. */
 export function riverAt(x: number, z: number, out = { d: Infinity, level: 0 }) {
   out.d = Infinity;
-  for (let i = 1; i < RIVER.length; i += 1) {
-    segNear(x, z, RIVER[i - 1].p, RIVER[i].p, near);
-    if (near.d < out.d) {
-      out.d = near.d;
-      out.level = RIVER[i - 1].level + (RIVER[i].level - RIVER[i - 1].level) * near.t;
+  for (let i = 0; i < RIVER_SEGS.length; i += 6) {
+    const ax = RIVER_SEGS[i];
+    const az = RIVER_SEGS[i + 1];
+    const dx = RIVER_SEGS[i + 2];
+    const dz = RIVER_SEGS[i + 3];
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / Math.max(1e-6, dx * dx + dz * dz)));
+    const ex = x - (ax + dx * t);
+    const ez = z - (az + dz * t);
+    const d = Math.sqrt(ex * ex + ez * ez);
+    if (d < out.d) {
+      out.d = d;
+      out.level = RIVER_SEGS[i + 4] + RIVER_SEGS[i + 5] * t;
     }
   }
   return out;
 }
+/** The river's stretches, flat for speed: start x, z, run x, z, floor level at the start, its rise. */
+const RIVER_SEGS = new Float64Array(
+  RIVER.slice(1).flatMap(({ p, level }, i) => {
+    const from = RIVER[i];
+    return [from.p[0], from.p[1], p[0] - from.p[0], p[1] - from.p[1], from.level, level - from.level];
+  })
+);
 const riverTmp = { d: Infinity, level: 0 };
 
 /** Where a flat can reach (its reach plus its blend): outside this box it leaves the ground alone. */
 type Box = { x0: number; x1: number; z0: number; z1: number };
-const boxes = new WeakMap<Flat, Box>();
 function boxOf(f: Flat): Box {
-  let b = boxes.get(f);
-  if (b) return b;
+  if (f.box) return f.box;
+  let b: Box;
   const e = f.blend ?? BLEND;
   if (f.kind === 'disc') b = { x0: f.c[0] - f.r - e, x1: f.c[0] + f.r + e, z0: f.c[1] - f.r - e, z1: f.c[1] + f.r + e };
   else if (f.kind === 'seg') {
@@ -147,7 +160,7 @@ function boxOf(f: Flat): Box {
       b.z1 = Math.max(b.z1, p.z + m);
     }
   } else b = { x0: -Infinity, x1: Infinity, z0: SEA.coast - e, z1: Infinity };
-  boxes.set(f, b);
+  f.box = b;
   return b;
 }
 
@@ -261,10 +274,38 @@ function relief(x: number, z: number) {
   return 2.2 * Math.pow(Math.max(0, w + 0.2), 1.3);
 }
 
+/**
+ * The flats that can reach into each square of the park (in their order), so the ground height,
+ * asked for thousands of times a second, only looks at the few that are near. Same answer as
+ * going through them all.
+ */
+const BUCKET = 8;
+const BUCKETS_X = Math.ceil((TERRAIN.maxX - TERRAIN.minX) / BUCKET);
+const BUCKETS_Z = Math.ceil((TERRAIN.maxZ - TERRAIN.minZ) / BUCKET);
+let buckets: Flat[][] | null = null;
+function flatsNear(x: number, z: number) {
+  const ix = Math.floor((x - TERRAIN.minX) / BUCKET);
+  const iz = Math.floor((z - TERRAIN.minZ) / BUCKET);
+  if (ix < 0 || iz < 0 || ix >= BUCKETS_X || iz >= BUCKETS_Z) return FLATS;
+  if (!buckets) {
+    buckets = [];
+    for (let j = 0; j < BUCKETS_Z; j += 1)
+      for (let i = 0; i < BUCKETS_X; i += 1) {
+        const x0 = TERRAIN.minX + i * BUCKET;
+        const z0 = TERRAIN.minZ + j * BUCKET;
+        buckets.push(FLATS.filter((f) => {
+          const b = boxOf(f);
+          return b.x1 > x0 && b.x0 < x0 + BUCKET && b.z1 > z0 && b.z0 < z0 + BUCKET;
+        }));
+      }
+  }
+  return buckets[iz * BUCKETS_X + ix];
+}
+
 /** The ground height at a point in the park. */
 export function groundHeight(x: number, z: number) {
   let h = relief(x, z);
-  for (const f of FLATS) {
+  for (const f of flatsNear(x, z)) {
     const w = weight(f, x, z);
     if (w <= 0) continue;
     const level = f.kind === 'lift' ? trackHeight(liftTmp.s) : f.kind === 'river' ? riverTmp.level : f.levelB != null && f.kind === 'seg' ? (f.level ?? 0) + (f.levelB - (f.level ?? 0)) * near.t : (f.level ?? 0);
