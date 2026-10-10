@@ -294,3 +294,42 @@ test('a cat headbutted up on the mountain lands, counts as tagged and runs off (
   expect((await tally(game))[0]).toBe(true);
   game.expectNoErrors();
 });
+
+test('bird flocks fly over things on their way (trees, roofs, the mountain), never through them', async ({ page }) => {
+  test.setTimeout(240_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'chickens'] });
+  await game.start();
+  const through: string[] = [];
+  for (let k = 0; k < 360; k += 1) {
+    // keep scaring them up, so they fly about a lot
+    if (k % 25 === 0)
+      await page.evaluate(() => {
+        for (const f of (window as any).__silly.chase.flocks) if (f && f.landed) f.scare(f.center.clone().add({ x: 1, y: 0, z: 0 }), null);
+      });
+    await game.seconds(0.25);
+    through.push(
+      ...(await page.evaluate(() => {
+        const s = (window as any).__silly;
+        const R = s.rapier;
+        const spots = s.layout.BIRD_SPOTS as number[][];
+        const out: string[] = [];
+        for (const f of s.chase.flocks) {
+          if (!f || f.landed) continue;
+          const c = f.center;
+          // (taking off and landing, at a spot, isn't flying through anything)
+          if (spots.some((p) => Math.hypot(p[0] - c.x, p[2] - c.z) < 3.5)) continue;
+          s.world.intersectionsWithShape({ x: c.x, y: c.y, z: c.z }, { x: 0, y: 0, z: 0, w: 1 }, new R.Ball(0.6), (col: any) => {
+            const b = col.parent();
+            if (b && b.isDynamic()) return true;
+            out.push(`flock ${f.index} at ${c.x.toFixed(0)},${c.y.toFixed(0)},${c.z.toFixed(0)}`);
+            return false;
+          }, R.QueryFilterFlags.EXCLUDE_SENSORS);
+        }
+        return out;
+      }))
+    );
+  }
+  expect(through).toEqual([]);
+  game.expectNoErrors();
+});

@@ -124,3 +124,25 @@ test('the machine keeps blowing bubbles, off towards the plaza', async ({ page }
   await game.screenshot('test-results/bubble-machine.png');
   game.expectNoErrors();
 });
+
+test('a bubble drifting over a building floats over the roof, not through it', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds', 'chickens'] });
+  await game.start();
+  const B = await page.evaluate(() => (window as any).__silly.layout.BARN);
+  const [bx, bz] = B.center;
+  await page.evaluate(() => (window as any).__silly.runtime.debugInfo.bubbles.setAuto(false));
+  // a big bubble blown right over the barn
+  await page.evaluate(([x, z]) => (window as any).__silly.runtime.debugInfo.bubbles.blow(1.2, x, z), [bx, bz] as const);
+  await game.seconds(3);
+  const b = await page.evaluate(() => {
+    const s = (window as any).__silly.runtime.debugInfo.bubbles.state.list.find((q: any) => q.alive);
+    return s ? { x: s.x as number, y: s.y as number, z: s.z as number, r: s.r as number } : null;
+  });
+  expect(b).not.toBeNull();
+  const g = await page.evaluate(([x, z]) => (window as any).__silly.terrain.groundHeight(x, z) as number, [b!.x, b!.z] as const);
+  // still over the barn, and its bottom above the walls
+  expect(Math.abs(b!.x - bx)).toBeLessThan(B.width / 2);
+  expect(b!.y - b!.r - g).toBeGreaterThan(B.wallHeight);
+  game.expectNoErrors();
+});

@@ -10,6 +10,7 @@ import { lambert } from '../materials';
 import { noises, players, props, propPosition } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
+import { topUnder } from './ground';
 import { useGame } from '../store';
 import { randomStream } from '../rng';
 
@@ -22,6 +23,9 @@ const random = randomStream('birds');
 
 const PER_FLOCK = 7;
 const ALT = 8;
+/** Flying, a flock is about this wide (m), and keeps this far above whatever is under it. */
+const FLOCK_R = 2.5;
+const CLEAR = 1.5;
 const FLY_SPEED = 8;
 const LOOKS = [
   { body: '#9ea7b3', head: '#6b7b8c', wing: '#7d8896', belly: '#c7ced6' }, // pigeons
@@ -290,6 +294,8 @@ function Flock({ index }: { index: number }) {
         (1 - q) * (1 - q) * st.from.y + 2 * (1 - q) * q * st.mid.y + q * q * tmp.y,
         (1 - q) * (1 - q) * st.from.z + 2 * (1 - q) * q * st.mid.z + q * q * tmp.z
       );
+      // (over whatever is on the way, a tree, a roof, the mountain: never through it)
+      st.center.y = Math.max(st.center.y, topUnder(st.center.x, st.center.z, FLOCK_R) + CLEAR);
       if (q >= 1) st.phase = 'land';
     } else if (st.phase === 'land') {
       if (birds.every((b) => b.down)) {
