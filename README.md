@@ -49,7 +49,7 @@ record: a cheer and a party. Past the red line: a sticker.
 
 **The tractor** 🚜 is parked at the farm, with a trailer. Walk up to its seat to drive: push the stick where you want
 to go and it turns and trundles that way (put-put, puffs from the chimney). Friends climb in the trailer and get
-bumped along (or jump out). It shoves balls, crates and bowling pins out of the way, bumps any animal in front of it
+bumped along (or jump out); playing alone, the buddy jumps in the trailer. It shoves balls, crates and bowling pins out of the way, bumps any animal in front of it
 with a boing, scatters the cats, and stops dead at walls, trees, hedges and the water's edge (it never drives
 through anything). The noise button is the horn; jump to hop out. Left somewhere, it trundles home by itself after a
 while (well: it pops back).
@@ -111,8 +111,8 @@ and you sit down; hold the stick (any way at all, no timing needed) and you swin
 let go and fly off the way the seat is going: at the top of a big swing forwards, right over the grass towards the
 ball pit (a sticker for flying off a big swing). Off a swing that's hardly moving, a jump is a little hop forwards,
 clear of the seat, so you stay off. A friend can headbutt the seat for a big push (a friend sticker),
-and a seat swinging hard bonks anyone standing in its way. Playing alone, the buddy comes round behind your swing
-and gives you a push each time you come back to it, with a little hop. With a friend sitting on a swing, a child
+and a seat swinging hard bonks anyone standing in its way. Playing alone, the buddy sits on the swing next to yours
+and swings along (nicely high even before you get going, and as high as you), and when you jump off, so does it. With a friend sitting on a swing, a child
 nearby who has never pushed one sees paw prints from the gap beside the seat round to behind it, and the headbutt
 bubble once there; after their first push, no more prints for them. Getting off is always the rider's own jump.
 
@@ -187,7 +187,7 @@ are three snowballs, so friends can each roll one. Playing alone, the buddy roll
 again to throw it (it's a lob: throw it from a few steps away). A friend it hits gets a splat, a hop and a dusting of
 snow that melts after ten seconds or so (and leaves white paw prints until it does); hitting a friend is a friend
 sticker. A snowball hits things just like a headbutt does: it knocks a snowman down, shakes a tree, tips a paint
-bucket, even opens the hat box, from afar. Playing alone? Hit the buddy and it throws one right back. Thrown
+bucket, even opens the hat box, from afar. Playing alone? Hit the buddy and it runs to a pile for a snowball and throws one back. Thrown
 snowballs burst when they land and grow back on their pile; nothing is counted, it's just for fun.
 
 **The penguin shy** 🐧 on the mountain top, east of the snow piles: five little penguins stand on a striped
@@ -199,7 +199,8 @@ Playing alone, the buddy throws at them too once you've started, but it always l
 **The zipline** 🚡 starts on a little platform on the mountain top's south rim, where the path comes up. Step up to the
 handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). There's a handle for every child (four, each bar
-in a player colour), so friends go one just behind the other; empty handles slide back up by themselves.
+in a player colour), so friends go one just behind the other; empty handles slide back up by themselves. Playing
+alone, the buddy grabs the next handle and whizzes down behind you.
 
 **The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
 tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
@@ -245,7 +246,8 @@ so friends can drop in and out at any time. All players share one camera that zo
 **Split screen:** when the children wander so far apart that the camera would have to zoom right out, the screen
 splits, a view each that follows their own animal (two side by side; three: two on top and one along the bottom;
 four: a 2×2 grid), framed in the child's colour with their shape in the corner. Come back together and it joins up
-again (it waits until they're clearly closer, so it doesn't flick back and forth). The buddy never gets a view of
+again, but only once they've been together a few seconds, and never while someone is whizzing past on the zipline
+or flying through the air (so it doesn't flick back and forth). The buddy never gets a view of
 its own. In each view, a friend who's out of sight gets a little arrow at the edge, in their colour with their
 shape on it, pointing the way to them like a compass (gone again as soon as you can see them; never for the buddy,
 which always comes to you). Grown-ups can turn split screen off; then friends are gently pulled back together instead.
@@ -566,7 +568,7 @@ src/
       SnowballFight.tsx the snow piles and little snowballs to throw (a hit: a splat and a dusting of snow)
       BubbleMachine.tsx the bubble machine and its bubbles (a big one carries you off; jump to pop it)
       BallPit.tsx       the ball pit: a sea of little balls on springs that part and splash, and big real ones
-      Swings.tsx        the swings: sit, hold the stick to swing higher, jump to fly off; friends (and the buddy) push
+      Swings.tsx        the swings: sit, hold the stick to swing higher, jump to fly off; friends push; the buddy swings beside you
       Dominoes.tsx      the giant dominoes: bump one and the chain runs along the row to the bell; they stand back up
       HotAirBalloon.tsx the hot air balloon: climb in, up, round a loop over the park, down; jump out on the way
       HamsterBalls.tsx  hamster balls: climb in, roll with the stick, bump; they float, and pop home when left

@@ -39,14 +39,14 @@ Each behaviour is one entry in `src/game/world/buddyPlay.ts`, marked `join` or `
 | Attraction | Get on | Play | Get off | Co-op | Buddy | Bubble |
 |---|---|---|---|---|---|---|
 | Sled | walk into it | stick steers, star hoops | flung off the hill at the bottom; a jump at the top flies further | second sled | takes the other sled down | walk |
-| Zipline | step up to the handles | (it carries you) | jump, or the end over the lagoon | a handle per child | not allowed on | walk |
+| Zipline | step up to the handles | (it carries you) | jump, or the end over the lagoon | a handle per child | takes the next handle | walk |
 | Water slide | walk into the top of a lane | (it carries you) | the end, splash | two lanes side by side, sticker | hops into the other lane | walk, at the stairs |
-| Tractor | walk to the seat | stick drives, noise = horn | jump | friends ride the trailer, sticker | can't drive | walk |
+| Tractor | walk to the seat | stick drives, noise = horn | jump | friends ride the trailer, sticker | rides in the trailer | walk |
 | Bumper cars | walk into a car | stick drives | jump | crash into each other | drives too, chases you | walk |
 | Hamster balls | walk into a still ball | stick rolls it | jump | ball bumps, sticker | takes the next ball | walk |
 | Hot air balloon | walk onto the pad | (a loop over the park) | jump (on the pad too), or step out on landing | up to four, sticker | hops in, jumps out after you | walk |
 | Bubble | walk into a big bubble | stick drifts | jump pops it, or it pops after 7 s | a friend bumps it to pop | — | walk, at the machine |
-| Swings | walk into a seat | hold the stick to swing higher | jump flies off (off a still swing, a hop clear of the seat) | headbutt push, sticker; paw prints show where | pushes you | walk; paws + headbutt for the pusher |
+| Swings | walk into a seat | hold the stick to swing higher | jump flies off (off a still swing, a hop clear of the seat) | headbutt push, sticker; paw prints show where | swings on the next seat, jumps off with you | walk; paws + headbutt for the pusher |
 | Giant carrot | lick the leaves | stick away pulls | jump lets go | up to four, faster, sticker | comes to pull | lick |
 | Cannon (ship) | walk into it | fired onto the lighthouse, 0.9 s | (lands) | — | follows you | walk |
 | Launch pads, geysers | walk onto it | fly | (lands) | — | follows you | walk |

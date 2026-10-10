@@ -8,7 +8,7 @@ import { MOVE, PARTY_POINTS, WORLD_HALF_X, WORLD_HALF_Z } from '../config';
 import { burstConfetti, emit, poof, ring } from '../fx';
 import { distXZ } from '../layout';
 import { lambert } from '../materials';
-import { allocPropId, debugInfo, players, playersCentroid, registerFood, registerProp, shakeCamera, type PlayerRuntime, type Surface } from '../runtime';
+import { allocPropId, debugInfo, physics, players, playersCentroid, registerFood, registerProp, shakeCamera, type PlayerRuntime, type Surface } from '../runtime';
 import { useSurface } from './surface';
 import { settings } from '../settings';
 import { earnSticker } from '../stickers';
@@ -284,17 +284,37 @@ function GoldenChicken() {
 // ---------------------------------------------------------------------------
 // A present floating by on a balloon
 
+/** The present floats this far (m) above whatever is under it: the grass, a roof, a wall. */
+const PRESENT_ABOVE = 2.3;
+/** Looking down for what's under the present: from this high, at its middle and four points round it this far out. */
+const LOOK_FROM = 40;
+const PRESENT_R = 0.7;
+const downRay = { origin: { x: 0, y: 0, z: 0 }, dir: { x: 0, y: -1, z: 0 } };
+
+/** The top of the highest solid thing (or the ground) under (x, z), round about. */
+function topUnder(x: number, z: number) {
+  let top = groundHeight(x, z);
+  const { world, rapier } = physics;
+  if (!world || !rapier) return top;
+  for (const [dx, dz] of [[0, 0], [PRESENT_R, 0], [-PRESENT_R, 0], [0, PRESENT_R], [0, -PRESENT_R]]) {
+    downRay.origin = { x: x + dx, y: top + LOOK_FROM, z: z + dz };
+    const hit = world.castRay(downRay as never, LOOK_FROM + 5, true, rapier.QueryFilterFlags.EXCLUDE_SENSORS | rapier.QueryFilterFlags.EXCLUDE_DYNAMIC);
+    if (hit) top = Math.max(top, downRay.origin.y - hit.timeOfImpact);
+  }
+  return top;
+}
+
 function PresentBalloon() {
   const group = useRef<THREE.Group>(null);
   const balloon = useRef<THREE.Group>(null);
   const pos = useMemo(() => {
     const at = spotNearPlayers(22, new THREE.Vector3());
-    at.y += 2.3;
+    at.y = topUnder(at.x, at.z) + PRESENT_ABOVE;
     eventSpot.present.copy(at);
     return at;
   }, []);
   const startedAt = useEvents((s) => s.startedAt);
-  const st = useRef({ angle: random() * Math.PI * 2, done: false, leaving: false });
+  const st = useRef({ angle: random() * Math.PI * 2, done: false, leaving: false, floor: pos.y });
   const color = useMemo(() => ['#ff4d5e', '#3b82f6', '#a855f7', '#22c55e'][Math.floor(random() * 4)], []);
 
   const burst = (by: PlayerRuntime | null) => {
@@ -347,7 +367,11 @@ function PresentBalloon() {
         pos.x += (dx / d) * step;
         pos.z += (dz / d) * step;
       }
-      pos.y = groundHeight(pos.x, pos.z) + 2.3 + Math.sin(gameClock.time * 1.6) * 0.25;
+      // over whatever is under it (never through a building): up quickly, down gently
+      const want = topUnder(pos.x, pos.z) + PRESENT_ABOVE;
+      s.floor += Math.max(-dt * 2, Math.min(dt * 8, want - s.floor));
+      if (s.floor < want - 0.6) s.floor = want - 0.6;
+      pos.y = s.floor + Math.sin(gameClock.time * 1.6) * 0.25;
       players.forEach((p) => {
         if (p.position.distanceTo(pos) < 1.35) burst(p);
       });

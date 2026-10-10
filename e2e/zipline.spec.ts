@@ -133,3 +133,34 @@ test('zipline: friends ride it together, one just behind the other, and both spl
   expect((await zip(game)).rides).toBe(2);
   game.expectNoErrors();
 });
+
+test('playing alone, the buddy grabs the next handle after you and whizzes down behind you', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const Z = await page.evaluate(() => (window as any).__silly.layout.ZIPLINE);
+  // the buddy on the ground a few steps from the platform; the child grabs a handle
+  await game.teleport(1, Z.from[0] + 3, 1, Z.from[1] - 3);
+  await onPlatform(game, 0, 1);
+  await game.seconds(1);
+  expect((await ridden(game, 0))?.mode).toBe('ride');
+  // up the buddy comes, and off it goes too
+  let theirs = await ridden(game, 1);
+  for (let k = 0; k < 30 && !theirs; k += 1) {
+    await game.seconds(0.5);
+    theirs = await ridden(game, 1);
+  }
+  expect(theirs?.mode).toBe('ride');
+  // all the way down (it doesn't let go halfway), and it doesn't count as the child's ride
+  let t = 0;
+  for (let k = 0; k < 40 && (await ridden(game, 1)); k += 1) {
+    t = (await ridden(game, 1))!.t;
+    await game.seconds(0.5);
+  }
+  expect(t).toBeGreaterThan(0.9);
+  expect((await zip(game)).rides).toBe(1);
+  game.expectNoErrors();
+});

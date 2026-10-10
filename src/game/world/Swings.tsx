@@ -22,7 +22,8 @@ const random = randomStream('swings');
 // push the stick (any way) and it swings higher and higher. A friend can headbutt the seat for
 // a big push (so can a snowball). Jump and you fly off the way the seat is going: at the top of
 // a big forwards swing, a long way. A seat swinging hard bonks anyone standing in its way.
-// Playing alone, the buddy comes round behind you and gives you pushes (with a little hop).
+// Playing alone, the buddy sits on the swing next to you and swings along (at least nicely high,
+// and as high as you), and when you jump off, it jumps off too.
 
 /** The rider sits this far below the beam (the seat, less half an animal). */
 const SIT = SWING_LENGTH - RADIUS - 0.08;
@@ -41,12 +42,11 @@ const KNOCK_SPEED = 3.5;
 const KNOCK_REACH = 0.9;
 /** Jumping off swinging at least this high (rad) earns the sticker. */
 const STICKER_SWING = (40 * Math.PI) / 180;
-/** The buddy pushes until the swing goes this high (rad), each push this strong (rad/s). */
-const BUDDY_MAX = (50 * Math.PI) / 180;
-const BUDDY_PUSH = 1.2;
-/** Seconds sitting before the buddy comes to push, and how long it may take to get there. */
-const BUDDY_AFTER = 0.6;
-const BUDDY_GIVE_UP = 8;
+/** Where a friend stands to push: behind the seat as it swings back, as far as it does up to this high (rad). */
+const PUSH_MAX = (50 * Math.PI) / 180;
+/** The buddy on its swing swings at least this high (rad), and as high as the child; it jumps off this long (s) after the child. */
+const BUDDY_SWING = (30 * Math.PI) / 180;
+const BUDDY_OFF_AFTER = 0.35;
 const SEAT_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#ffd23f'];
 /** Help for a friend: once a child has sat this long (s), paw prints behind the swing show another
  * child (within PUSH_HELP_NEAR m, who's never pushed one yet) where to stand to give a push. */
@@ -55,13 +55,13 @@ const PUSH_HELP_NEAR = 12;
 
 /** Where to stand to push seat `s` (hanging at x): just behind where it swings back to. */
 function pushSpot(s: Swing, x: number, g: number, cz: number, out: THREE.Vector3) {
-  return out.set(x, g, cz - SWING_LENGTH * Math.sin(Math.min(amplitude(s), BUDDY_MAX)) - 1.05);
+  return out.set(x, g, cz - SWING_LENGTH * Math.sin(Math.min(amplitude(s), PUSH_MAX)) - 1.05);
 }
 
 type Seat = Swing & { rider: number | null; since: number; prev: number; knocked: Map<number, number>; lastWhoosh: number };
 
-/** The buddy pushing a child on a swing: where to stand (read by the buddy's brain). */
-export const swingHelp = { slot: null as number | null, seat: -1, spot: new THREE.Vector3(), goto: new THREE.Vector3(), since: 0, nextTry: 0, pushes: 0 };
+/** For the buddy: where each seat hangs and who's on it. */
+export const swingSeats = { x: [] as number[], z: 0, riders: [] as (number | null)[] };
 
 export function Swings() {
   const [cx, cz] = SWINGS.center;
@@ -79,10 +79,13 @@ export function Swings() {
     /** For the tests: how far the push-here prints are shown at each seat, and for whom. */
     help: [] as { shown: number; slots: number[]; mask: number }[],
     knocks: 0,
+    /** When a child was last on a swing (game ms): the buddy jumps off after them. */
+    kidOnAt: -1e9,
     last: null as null | { amp: number; along: number; seat: number }
   });
   debugInfo.swings = st.current;
-  debugInfo.swingHelp = swingHelp;
+  swingSeats.x = xs;
+  swingSeats.z = cz;
   const arms = useRef<(THREE.Group | null)[]>([]);
   const tmp = useMemo(() => ({ seat: new THREE.Vector3(), target: new THREE.Vector3() }), []);
   const seatAt = (i: number, out: THREE.Vector3, down = SWING_LENGTH) => {
@@ -151,19 +154,27 @@ export function Swings() {
     const z = st.current;
     const now = gameNow();
     const onASwing = (p: PlayerRuntime) => z.seats.some((s) => s.rider === p.slot);
+    /** A child (not the buddy) on a swing, and their seat. */
+    const kidSeat = z.seats.find((s) => {
+      const k = rider(s.rider);
+      return k && !k.bot;
+    });
+    if (kidSeat) z.kidOnAt = now;
 
     z.seats.forEach((s, i) => {
       // sit down: walk into a seat that isn't swinging much
       if (s.rider == null && seatSpeed(s) < BOARD_SPEED) {
         seatAt(i, tmp.seat);
         for (const p of players.values()) {
-          if (p.bot || !canBoard(p) || onASwing(p)) continue;
+          if (!canBoard(p) || onASwing(p)) continue;
+          // (the buddy only sits next to a child who's swinging, if the grown-ups let it join in)
+          if (p.bot && (!kidSeat || !buddyMay('join'))) continue;
           if (now - (z.offAt.get(p.slot) ?? -1e9) < REBOARD * 1000) continue;
           if (distXZ(p.position.x, p.position.z, tmp.seat.x, tmp.seat.z) > BOARD_REACH) continue;
           if (p.position.y > tmp.seat.y + 1.3 || p.position.y < g - 0.5) continue;
           s.rider = p.slot;
           s.since = now;
-          z.rides += 1;
+          if (!p.bot) z.rides += 1;
           playBoing(tmp.seat, 0.8);
           rumble(p.source as SourceId, 0.3, 0.3, 120);
           break;
@@ -174,9 +185,10 @@ export function Swings() {
       const p = rider(s.rider);
       if (s.rider != null && !p) s.rider = null;
       const input = p ? getInput(p.source as SourceId) : null;
-      const pump = !!input && Math.hypot(input.x, input.z) > 0.35;
+      // (the buddy swings along with the child: at least nicely high, and as high as they are)
+      const pump = p?.bot ? !!kidSeat && amplitude(s) < Math.max(BUDDY_SWING, amplitude(kidSeat)) : !!input && Math.hypot(input.x, input.z) > 0.35;
       s.prev = s.omega;
-      stepSwing(s, dt, pump, !!p, input && Math.abs(input.z) > 0.3 ? Math.sign(input.z) : 1);
+      stepSwing(s, dt, pump, !!p, !p?.bot && input && Math.abs(input.z) > 0.3 ? Math.sign(input.z) : 1);
       if (Math.abs(s.theta) < 0.15 && Math.abs(s.omega) > 2.6 && now - s.lastWhoosh > 600) {
         s.lastWhoosh = now;
         playWhoosh(bonkSpots[i]);
@@ -185,7 +197,8 @@ export function Swings() {
 
       if (p && input) {
         seatAt(i, tmp.seat, SIT);
-        if (input.pressed.jump) {
+        // (the buddy: off when the child is, a moment after)
+        if (p.bot ? now - z.kidOnAt > BUDDY_OFF_AFTER * 1000 : input.pressed.jump) {
           // off! along the way the seat is going
           const amp = amplitude(s);
           const ground = groundHeight(tmp.seat.x, tmp.seat.z);
@@ -199,7 +212,7 @@ export function Swings() {
           z.offAt.set(p.slot, now);
           z.flights += 1;
           z.last = { amp, along: f.along, seat: i };
-          if (amp >= STICKER_SWING) {
+          if (amp >= STICKER_SWING && !p.bot) {
             earnSticker('swing');
             emit('confetti', tmp.seat, { count: 18, speed: 4, up: 4 });
           }
@@ -252,9 +265,8 @@ export function Swings() {
         );
       help.paws.update(slots.length > 0, dt, help.slots);
       z.help[i] = { shown: help.paws.shown, slots: help.slots, mask: help.paws.mask };
+      swingSeats.riders[i] = s.rider;
     });
-
-    buddyPushes(z.seats, xs, g, cz, now);
   });
 
   const legTilt = Math.atan2(1.7, SWING_PIVOT);
@@ -301,66 +313,4 @@ export function Swings() {
       ))}
     </group>
   );
-}
-
-/**
- * Playing alone: when the child sits on a swing, the buddy comes round behind it and pushes
- * each time the seat comes back to it (a hop and a boing), until it's swinging nicely.
- */
-function buddyPushes(seats: Seat[], xs: number[], g: number, cz: number, now: number) {
-  const h = swingHelp;
-  const buddy = h.slot != null ? players.get(h.slot) : undefined;
-  const seat = h.seat >= 0 ? seats[h.seat] : undefined;
-  const kid = seat ? rider(seat.rider) : undefined;
-  if (h.slot != null && (!buddy || !buddy.bot || !kid || kid.bot)) {
-    h.slot = null;
-    h.seat = -1;
-  }
-  if (h.slot == null) {
-    if (now < h.nextTry || !buddyMay('join')) return;
-    const i = seats.findIndex((s) => {
-      const k = rider(s.rider);
-      return k && !k.bot && now - s.since > BUDDY_AFTER * 1000;
-    });
-    if (i < 0) return;
-    for (const p of players.values()) {
-      if (!p.bot || p.isLaunched() || p.ridingOn != null || p.grabbedBy != null || p.flopped) continue;
-      if (distXZ(p.position.x, p.position.z, xs[i], cz) > 30) continue;
-      h.slot = p.slot;
-      h.seat = i;
-      h.since = now;
-      break;
-    }
-    if (h.slot == null) return;
-  }
-  const s = seats[h.seat];
-  const b = players.get(h.slot!)!;
-  // stand just behind where the seat swings back to (further back as it swings higher)
-  const amp = amplitude(s);
-  pushSpot(s, xs[h.seat], g, cz, h.spot);
-  // coming from the front: round by the gap next to the seat, not through the swing's way
-  const middle = (xs[0] + xs[xs.length - 1]) / 2;
-  if (b.position.z > cz - 0.3) h.goto.set(middle + Math.sign(xs[h.seat] - middle) * SWINGS.spacing, g, cz - 0.9);
-  else h.goto.copy(h.spot);
-  const there = distXZ(b.position.x, b.position.z, h.spot.x, h.spot.z) < 0.7 && !b.isLaunched();
-  if (!there) {
-    if (now - h.since > BUDDY_GIVE_UP * 1000) {
-      // can't get there: try again later
-      h.slot = null;
-      h.seat = -1;
-      h.nextTry = now + 10000;
-    }
-    return;
-  }
-  h.since = now;
-  // the seat has come back to us (it's stopped at the back, or it's hanging still): push!
-  const back = s.prev < 0 && s.omega >= 0 && s.theta < 0;
-  const still = amp < 0.04;
-  if ((back || still) && amp < BUDDY_MAX && b.grounded) {
-    pushSwing(s, 1, BUDDY_PUSH);
-    h.pushes += 1;
-    b.hop(4);
-    playBoing(b.position, 1.1);
-    emit('star', [b.position.x, b.position.y + 0.6, b.position.z + 0.6], { count: 6, color: ['#ffd23f', '#ffffff'], speed: 2, up: 1.5 });
-  }
 }

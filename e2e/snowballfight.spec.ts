@@ -80,9 +80,20 @@ test('playing alone: hit the buddy with a snowball and it throws one back', asyn
   await game.seconds(0.8);
   expect((await fight(game)).hits).toBe(1);
   expect((await paint(game, bot)).color).toBe(SNOW);
-  // and back it comes
-  await game.seconds(2.5);
-  const f = await fight(game);
+  // and back it comes: off it goes to a pile for a snowball (no snowball out of nowhere), and throws it
+  await page.evaluate(() => ((window as any).__silly.buddyControl.think = true));
+  const piles = await page.evaluate(() => (window as any).__silly.layout.SNOW_PILES as [number, number][]);
+  let f = await fight(game);
+  let nearest = Infinity;
+  for (let k = 0; k < 40 && f.buddyThrows < 1; k += 1) {
+    await game.seconds(0.1);
+    f = await fight(game);
+    const b = await game.player(bot);
+    nearest = Math.min(nearest, ...piles.map(([x, z]) => Math.hypot(b.x - x, b.z - z)));
+  }
+  expect(nearest).toBeLessThan(3); // (it went to a pile for it)
+  await game.seconds(1.5);
+  f = await fight(game);
   expect(f.buddyThrows).toBe(1);
   expect(f.hits).toBe(2);
   expect((await paint(game, 0)).color).toBe(SNOW);

@@ -25,6 +25,12 @@ export function layoutRects(n: number): Rect[] {
  */
 export const SPLIT_AT = 30;
 export const JOIN_AT = 23;
+/**
+ * Joining up again waits until the children have been close for this long (s), and nobody is
+ * whizzing along the zipline or flying through the air (zooming past each other, the views would
+ * join for a moment and split again: very disorienting).
+ */
+export const JOIN_AFTER = 3;
 
 export type View = { slot: number; cam: THREE.PerspectiveCamera; focus: THREE.Vector3; look: THREE.Vector3; rect: Rect };
 

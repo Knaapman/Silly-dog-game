@@ -11,6 +11,7 @@ import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { StaticBox, StaticCylinder, useHint } from './common';
+import { buddyMay } from '../settings';
 import { randomStream } from '../rng';
 
 const random = randomStream('zipline');
@@ -19,6 +20,7 @@ const random = randomStream('zipline');
 // you go, whizzing over the whole park, faster and faster, down to the lagoon, where you let go
 // with a splash. Jump to let go sooner (wherever you are!). An empty handle slides back up by
 // itself. There's a handle for every child, so friends can go one after the other in a line.
+// Playing alone, the buddy grabs the next handle after you and whizzes down behind you.
 
 /** How far under the cable a rider hangs. */
 const HANG = 1.35;
@@ -41,6 +43,9 @@ const BACK = 1.1;
 type Mode = 'wait' | 'ride' | 'return';
 type Handle = { mode: Mode; t: number; v: number; rider: number | null };
 
+/** For the buddy: where you grab a handle, and who's riding. */
+export const zipline = { at: new THREE.Vector3(), riders: () => [] as number[] };
+
 export function Zipline() {
   const [ax, az] = ZIPLINE.from;
   const [bx, bz] = ZIPLINE.to;
@@ -52,6 +57,8 @@ export function Zipline() {
   const facing = Math.atan2(dir.x, dir.z);
   const st = useRef({ handles: Array.from({ length: HANDLES }, (): Handle => ({ mode: 'wait', t: 0, v: 0, rider: null })), lastStart: -1e9, letGoAt: new Map<number, number>(), rides: 0, together: 0 });
   debugInfo.zipline = st.current;
+  zipline.at = a;
+  zipline.riders = () => st.current.handles.filter((h) => h.mode === 'ride' && h.rider != null).map((h) => h.rider!);
   const handles = useRef<(THREE.Group | null)[]>([]);
   const tmp = useMemo(() => ({ p: new THREE.Vector3(), seat: new THREE.Vector3() }), []);
   useHint([ax, deck + 0.6, az], 'walk', 3);
@@ -72,10 +79,12 @@ export function Zipline() {
 
     // step up to a handle and grab it (one child at a time, a moment apart)
     if (now - z.lastStart >= GAP * 1000) {
+      // (the buddy only goes after a child who's already on their way, if the grown-ups let it join in)
+      const kidRiding = z.handles.some((h) => h.mode === 'ride' && !rider(h.rider)?.bot);
       for (const p of players.values()) {
         const free = z.handles.find((h) => h.mode === 'wait');
         if (!free) break;
-        if (p.bot || !canBoard(p) || riding(p.slot)) continue;
+        if (!canBoard(p) || riding(p.slot) || (p.bot && (!kidRiding || !buddyMay('join')))) continue;
         if (now - (z.letGoAt.get(p.slot) ?? -1e9) < REGRAB * 1000) continue;
         if (Math.hypot(p.position.x - a.x, p.position.z - a.z) > 1.2 || p.position.y < deck || p.position.y > deck + 2.2) continue;
         free.mode = 'ride';
@@ -83,8 +92,8 @@ export function Zipline() {
         free.t = 0;
         free.v = START_SPEED;
         z.lastStart = now;
-        z.rides += 1;
-        if (z.handles.filter((h) => h.mode === 'ride').length >= 2) z.together += 1;
+        if (!p.bot) z.rides += 1;
+        if (z.handles.filter((h) => h.mode === 'ride' && !rider(h.rider)?.bot).length >= 2) z.together += 1;
         playSlideWhistle('down', p.position);
         rumble(p.source as SourceId, 0.4, 0.4, 200);
         break;
@@ -115,10 +124,11 @@ export function Zipline() {
           if (random() < dt * 6) emit('star', [tmp.p.x, tmp.p.y, tmp.p.z], { count: 1, color: ['#ffd23f', '#ffffff'], speed: 1, up: 0.5, size: 0.12, life: 0.6 });
           if (h.t >= 1) {
             // the end, over the lagoon: let go, splash
-            earnSticker('zipline');
+            if (!p.bot) earnSticker('zipline');
             playWhoosh(p.position);
             letGo(4);
-          } else if (getInput(p.source as SourceId).pressed.jump) {
+          } else if (!p.bot && getInput(p.source as SourceId).pressed.jump) {
+            // (the buddy holds on all the way down)
             if (h.t > 0.5) earnSticker('zipline');
             letGo(5);
           }

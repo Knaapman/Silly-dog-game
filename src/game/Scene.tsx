@@ -19,7 +19,8 @@ import { PHOTO_SIZE, usePhotos } from './photo';
 import { startMusic } from './music';
 import { Player } from './player/Player';
 import { camera as camState, keepAwake, physics, players, props as runtimeProps, type PlayerRuntime } from './runtime';
-import { cameraFoci, JOIN_AT, layoutRects, lightRig, renderViews, seeOwnHelp, SPLIT_AT, useViews, views, type View } from './views';
+import { cameraFoci, JOIN_AFTER, JOIN_AT, layoutRects, lightRig, renderViews, seeOwnHelp, SPLIT_AT, useViews, views, type View } from './views';
+import { zipline } from './world/Zipline';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
 import { systemOff, TEST_MODE } from './testMode';
@@ -161,6 +162,8 @@ function CameraRig() {
   const lookAt = useMemo(() => new THREE.Vector3(0, 0, 4), []);
   const orbit = useRef(0);
   const viewOf = useMemo(() => new Map<number, View>(), []);
+  /** How long (s) the children have been close enough to join up again, with nobody flying. */
+  const joinFor = useRef(0);
   const tmp = useMemo(() => ({ kid: new THREE.Vector3(), pos: new THREE.Vector3() }), []);
 
   /** How far apart the children (not the buddy, not anyone napping) are, as the camera sees it. */
@@ -179,7 +182,11 @@ function CameraRig() {
   const updateSplit = (camera: THREE.Camera, width: number, height: number, dt: number) => {
     const kids = [...players.values()].filter((p) => !p.bot && !p.asleep).sort((a, b) => a.slot - b.slot);
     const reach = kids.length >= 2 ? kidSpread(kids) : 0;
-    const want = useSettings.getState().split && kids.length >= 2 && !(TEST_MODE && camState.override) && (views.split ? reach > JOIN_AT : reach > SPLIT_AT);
+    const apart = views.split ? reach > JOIN_AT : reach > SPLIT_AT;
+    // (on the zipline or flying through the air, they're only passing by: don't join up yet)
+    const passing = kids.some((p) => p.isLaunched() || zipline.riders().includes(p.slot));
+    joinFor.current = views.split && !apart && !passing ? joinFor.current + dt : 0;
+    const want = useSettings.getState().split && kids.length >= 2 && !(TEST_MODE && camState.override) && (views.split ? joinFor.current < JOIN_AFTER : apart);
     if (!want) {
       if (views.split) {
         views.split = false;

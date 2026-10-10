@@ -2,7 +2,7 @@ import { BallCollider, CylinderCollider, RigidBody, type RapierRigidBody } from 
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { playCrumble, playSplat, playThrow } from '../audio';
-import { after, gameNow, useGameFrame } from '../clock';
+import { gameNow, useGameFrame } from '../clock';
 import { PARTY_POINTS } from '../config';
 import { emit, poof } from '../fx';
 import { rumble, type SourceId } from '../input';
@@ -21,7 +21,7 @@ import { buddyMay } from '../settings';
 // Snowball fight: two snow piles with little snowballs on top. Lick one to pick it up, lick again
 // to throw it. A friend it hits gets a splat, a hop and a dusting of snow (white paw prints!) that
 // soon melts; a snowman, a tree or a paint bucket it hits gets it just like a headbutt. Hit the
-// buddy and it throws one back. Nothing is counted: it's just for fun.
+// buddy and it fetches one from a pile and throws it back. Nothing is counted: it's just for fun.
 
 const BALL_R = 0.2;
 const PER_PILE = 5;
@@ -32,14 +32,14 @@ const REGROW_MS = 800;
 /** A ball knocked off the pile goes back after this long (ms). */
 const AWAY_MS = 6000;
 /** The buddy only throws back at someone this close. */
-const THROW_BACK_RANGE = 14;
+export const THROW_BACK_RANGE = 14;
 
 type BallState = { holder: number | null; thrownBy: number | null; thrownAt: number; awaySince: number; regrowAt: number };
 type Ball = { st: BallState; body: () => RapierRigidBody | null; entry: PropEntry; home: THREE.Vector3; regrow: (now: number) => void };
 
 const balls: Ball[] = [];
-/** For tests: hits so far and the buddy's throws back. */
-export const snowballFight = { hits: 0, buddyThrows: 0, balls };
+/** For tests: hits so far and the buddy's throws. throwBack: the buddy was hit, by whom and when (game ms), and owes them one. */
+export const snowballFight = { hits: 0, buddyThrows: 0, balls, throwBack: null as null | { by: number; at: number } };
 /** When each player last threw a snowball (game ms). */
 const lastThrow = new Map<number, number>();
 
@@ -58,40 +58,51 @@ function hitAnimal(p: PlayerRuntime, by: number) {
   const thrower = players.get(by);
   if (thrower && !thrower.bot) {
     earnSticker('snowballfight');
-    if (p.bot && buddyMay('join')) after(0.9, () => throwBack(p.slot, by));
+    if (p.bot && buddyMay('join')) snowballFight.throwBack = { by, at: gameNow() };
   }
 }
 
-/** The buddy got hit: a snowball appears in its mouth and off it goes, at whoever threw it. */
-function throwBack(botSlot: number, targetSlot: number) {
-  const bot = players.get(botSlot);
-  const target = players.get(targetSlot);
-  if (!bot || !target || distXZ(bot.position.x, bot.position.z, target.position.x, target.position.z) > THROW_BACK_RANGE) return;
-  const to = target.position.clone();
-  to.y += 0.2;
-  buddyThrow(botSlot, to);
-}
-
-/** The buddy throws a snowball at `to` (one appears in its mouth): false if it can't just now. */
+/** The buddy lobs the snowball it's holding at `to` (aiming well): false if it isn't holding one. */
 export function buddyThrow(botSlot: number, to: THREE.Vector3) {
   const bot = players.get(botSlot);
-  if (!bot || bot.isLaunched()) return false;
-  const ball = balls.find((b) => b.entry.heldBy == null && b.entry.enabled && b.st.thrownBy == null);
+  const ball = balls.find((b) => b.entry.heldBy === botSlot);
   const rb = ball?.body();
-  if (!ball || !rb) return false;
+  if (!bot || bot.isLaunched() || !ball || !rb) return false;
+  // off the tongue (the buddy's tongue sees it's gone and lets go: see actions.ts)
+  ball.entry.heldBy = null;
+  ball.entry.onRelease?.(true);
+  // (round to the side facing where it's going, clear of the buddy's own head)
   const from = new THREE.Vector3().subVectors(to, bot.position).setY(0).normalize().multiplyScalar(0.7).add(bot.position);
   from.y += 0.9;
   const v = new THREE.Vector3();
   ballistic(from, to, Math.max(from.y, to.y) + 1.4, v);
   rb.setTranslation(from, true);
   rb.setLinvel(v, true);
-  ball.st.thrownBy = botSlot;
-  ball.st.thrownAt = gameNow();
-  ball.st.awaySince = -1;
+  rb.setAngvel({ x: 0, y: 0, z: 0 }, true);
   playThrow(from);
   snowballFight.buddyThrows += 1;
   return true;
 }
+
+/** A snowball lying on a pile (or about) ready to pick up, the nearest to (x, z) within `max` m. */
+export function nearestBall(x: number, z: number, max: number): THREE.Vector3 | null {
+  let best: THREE.Vector3 | null = null;
+  let bd = max;
+  for (const b of balls) {
+    const rb = b.body();
+    if (!rb || b.entry.heldBy != null || !b.entry.enabled || b.st.thrownBy != null) continue;
+    const t = rb.translation();
+    const d = Math.hypot(t.x - x, t.z - z);
+    if (d < bd) {
+      bd = d;
+      best = (best ?? new THREE.Vector3()).set(t.x, t.y, t.z);
+    }
+  }
+  return best;
+}
+
+/** Is the buddy (or anyone) holding a snowball? */
+export const holdingBall = (slot: number) => balls.some((b) => b.entry.heldBy === slot);
 
 /** Has this child thrown a snowball in the last `ms`? */
 export function threwLately(slot: number, now: number, ms: number) {
