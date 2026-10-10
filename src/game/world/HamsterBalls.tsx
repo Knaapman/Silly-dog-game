@@ -15,6 +15,7 @@ import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
 import { liftIfUnder } from './ground';
+import { buddyMay } from '../settings';
 
 // Hamster balls: four giant clear balls in a row at the top of the bowling lane. Walk into one and
 // you're inside; push the stick and it rolls (down the lane into the pins!). Roll into a friend
@@ -124,7 +125,7 @@ function HamsterBall({ index }: { index: number }) {
         playBoing([t.x, t.y, t.z], 1.1);
         rumble(p.source as SourceId, 0.3, 0.3, 120);
         // playing alone: the buddy gets in the next free ball
-        if (!p.bot) {
+        if (!p.bot && buddyMay('join')) {
           const free = hamster.balls.find((b) => b && b !== state && b.rider == null);
           const fb = free?.body();
           if (free && fb) {

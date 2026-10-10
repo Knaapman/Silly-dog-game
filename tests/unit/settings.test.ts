@@ -48,6 +48,19 @@ describe('settings', () => {
     expect(s.split).toBe(true);
     expect((await loadSettings('{"split":false}')).settings().split).toBe(false);
     expect((await loadSettings('{"split":"no"}')).settings().split).toBe(true);
+    expect(s.buddyHelp).toBe(2);
+    expect((await loadSettings('{"buddyHelp":0}')).settings().buddyHelp).toBe(0);
+    expect((await loadSettings('{"buddyHelp":5}')).settings().buddyHelp).toBe(2);
+  });
+
+  it('what the buddy may do follows the setting: keeping up always, joining in from 1, helping at 2', async () => {
+    const { buddyMay, useSettings } = await loadSettings();
+    const may = () => (['core', 'join', 'help'] as const).map((k) => buddyMay(k));
+    expect(may()).toEqual([true, true, true]);
+    useSettings.getState().set({ buddyHelp: 1 });
+    expect(may()).toEqual([true, true, false]);
+    useSettings.getState().set({ buddyHelp: 0 });
+    expect(may()).toEqual([true, false, false]);
   });
 
   it('survives unreadable storage', async () => {

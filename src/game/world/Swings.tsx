@@ -14,6 +14,7 @@ import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
 import { HelpPaws, Learned } from './helpPaws';
 import { randomStream } from '../rng';
+import { buddyMay } from '../settings';
 
 const random = randomStream('swings');
 
@@ -316,7 +317,7 @@ function buddyPushes(seats: Seat[], xs: number[], g: number, cz: number, now: nu
     h.seat = -1;
   }
   if (h.slot == null) {
-    if (now < h.nextTry) return;
+    if (now < h.nextTry || !buddyMay('join')) return;
     const i = seats.findIndex((s) => {
       const k = rider(s.rider);
       return k && !k.bot && now - s.since > BUDDY_AFTER * 1000;

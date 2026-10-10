@@ -13,6 +13,7 @@ import { useSurface } from './surface';
 import { gameClock, gameNow, useGameFrame } from '../clock';
 import { ballistic } from '../player/physics';
 import { earnSticker } from '../stickers';
+import { buddyMay } from '../settings';
 
 // ---------------------------------------------------------------------------
 // Ferris wheel: 8 gondolas you can jump into. The one at the top passes a golden star.
@@ -143,7 +144,7 @@ function FerrisWheel() {
     players.forEach((p) => {
       if (!canBoard(p) || now - (hopped.current.get(p.slot) ?? -1e9) < BOARD_AGAIN) return;
       // (the buddy goes up after a child, never on its own)
-      if (p.bot && !kidRiding) return;
+      if (p.bot && (!kidRiding || !buddyMay('join'))) return;
       const { x, y, z } = p.position;
       if (Math.abs(x - cx) > BOARD_FROM.halfWidth || z < cz + BOARD_FROM.near || z > cz + BOARD_FROM.far || y < 0.9 || y > 1.8) return;
       for (let i = 0; i < FERRIS.gondolas; i += 1) {

@@ -12,6 +12,7 @@ import { groundHeight } from '../terrain';
 import { Ramp, StaticBox, StaticCylinder, useHint } from './common';
 import { useSeeThrough } from './seeThrough';
 import { randomStream } from '../rng';
+import { buddyMay } from '../settings';
 
 const random = randomStream('waterSlide');
 
@@ -151,7 +152,7 @@ export function WaterSlide() {
         playSlideWhistle('down', p.position);
         if (buddyComing.current?.slot === p.slot) buddyComing.current = null;
         // playing alone? the buddy hops into the other slide
-        if (!p.bot && other.rider == null && !buddyComing.current) {
+        if (!p.bot && other.rider == null && !buddyComing.current && buddyMay('join')) {
           players.forEach((b) => {
             if (!b.bot || buddyComing.current || b.isLaunched() || b.position.distanceTo(top) > 28) return;
             const ot = lanes[1 - i].pts[0];

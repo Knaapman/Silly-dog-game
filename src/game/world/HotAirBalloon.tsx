@@ -11,6 +11,7 @@ import { canBoard, debugInfo, players, rider } from '../runtime';
 import { earnSticker } from '../stickers';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
+import { buddyMay } from '../settings';
 
 // The hot air balloon on the grass by the T-rex. Climb into the basket (there's room for
 // four); a moment later the burner roars and up it goes, high over the park, floating slowly
@@ -116,7 +117,7 @@ export function HotAirBalloon() {
         }
       }
       // playing alone: the buddy hops in too (and tries again if it was busy mid-jump or missed)
-      if (z.mode === 'boarding' && kidsAboard() > 0 && z.riders.includes(null) && now - z.buddyAt > BUDDY_RETRY) {
+      if (z.mode === 'boarding' && kidsAboard() > 0 && z.riders.includes(null) && now - z.buddyAt > BUDDY_RETRY && buddyMay('join')) {
         for (const b of players.values()) {
           if (!b.bot || z.riders.includes(b.slot) || b.isLaunched() || b.ridingOn != null || b.grabbedBy != null || distXZ(b.position.x, b.position.z, px, pz) > 30) continue;
           z.buddyAt = now;

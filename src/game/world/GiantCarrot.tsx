@@ -14,6 +14,7 @@ import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
 import { randomStream } from '../rng';
+import { buddyMay } from '../settings';
 
 const random = randomStream('giantCarrot');
 
@@ -161,7 +162,7 @@ export function GiantCarrot() {
         playSlurp(p.position);
         playBoing(SPOTS[spot].at, 1.3);
         // playing alone? the buddy comes to help
-        if (!p.bot && !s.botComing) {
+        if (!p.bot && !s.botComing && buddyMay('help')) {
           players.forEach((b) => {
             if (!b.bot || s.pullers.has(b.slot) || s.botComing || b.position.distanceTo(foodPos) > 30) return;
             const bs = freeSpotNear(CX * 2 - p.position.x, CZ * 2 - p.position.z);

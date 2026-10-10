@@ -5,30 +5,17 @@ import { playBoing } from '../audio';
 import { gameClock, gameNow, useSafeFrame } from '../clock';
 import { poof } from '../fx';
 import { getInput, makeInputFrame, setInputFrame, NO_INPUT, type ActionName } from '../input';
-import { BRONTO, CHICKEN_COOP, distXZ, PENGUIN_SHY, SNOW, SNOWMAN_BUILD, TUBE_RIDE, isInMud, MOLES, ROUNDABOUT, SEESAWS } from '../layout';
+import { distXZ } from '../layout';
 import { RADIUS } from '../player/constants';
-import { launchSpots, physics, players, seesawLow, type PlayerRuntime } from '../runtime';
-import { parkCats } from '../chase';
+import { launchSpots, physics, players, type PlayerRuntime } from '../runtime';
 import { groundHeight } from '../terrain';
-import { settings } from '../settings';
+import { buddyMay, settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
-import { swingHelp } from './Swings';
 import { hamster } from './HamsterBalls';
-import { moles } from './Moles';
-import { blocks, kidBuilding } from './Blocks';
-import { roundabout } from './Roundabout';
 import { ferris } from './Carnival';
-import { herd, type HerdChicken } from './Chickens';
-import { onTube, riverTubes, sleds, TUBE_BOARD, TUBE_COURSE } from './Rides';
-import { tickling } from './DinoPark';
-import { kites } from './Kites';
-import { onCar, train } from './Train';
-import { shy } from './PenguinShy';
-import { buddyThrow, threwLately } from './SnowballFight';
-import { rolling } from './Winter';
-import { SNOWMAN_MIN, useSnowman } from '../snowman';
-import { GATE_IN, GATE_OUT, inCoop, useCoop } from '../coop';
+import type { HerdChicken } from './Chickens';
+import { PLAYS, RUN_UP, type PlayCtx } from './buddyPlay';
 import { randomStream } from '../rng';
 
 const random = randomStream('buddy');
@@ -50,8 +37,6 @@ const CATCH_UP = 24;
 const OUT_OF_REACH = 2;
 /** Seconds the child is out of reach before the buddy boings over to them. */
 const BOING_AFTER = 2.5;
-/** Boing from at least this far out, or it bonks its head on whatever the child stands on. */
-const RUN_UP = 7;
 /** Standing this high the child is up on something: follow in their footsteps, not round them. */
 const UP_HIGH = 2.6;
 /** How many of the child's recent footsteps to remember. */
@@ -64,7 +49,7 @@ const TRAIL = 24;
  */
 export const buddyControl = { auto: !TEST_MODE, think: true, boings: 0 };
 
-type Brain = {
+export type Brain = {
   /** Caught up with what the child did before the buddy arrived. */
   synced: boolean;
   aloneSince: number;
@@ -94,12 +79,6 @@ type Brain = {
 };
 
 const scratch = { target: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3() };
-
-/** A point along see-saw `i`, `along` metres from the hinge towards end `side` (+1 / -1). */
-const seesawEnd = (i: number, side: number, out: THREE.Vector3, along = 2.4) => {
-  const { center, angle } = SEESAWS[i];
-  return out.set(center[0] + side * along * Math.cos(angle), 0, center[1] - side * along * Math.sin(angle));
-};
 
 export function Buddy() {
   const brain = useRef<Brain>({
@@ -295,29 +274,6 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       return makeInputFrame();
     }
 
-    // the child is off down the sled run: the other sled, if it's close by, to race them down
-    const raceSled = sleds.some((s) => s && s.rider === kid.slot) ? sleds.find((s) => s && s.mode === 'park' && distXZ(s.x, s.z, me.position.x, me.position.z) < 12) : undefined;
-    // on a river tube: stay on it; the child on one: the one waiting at the jetty, to float after them
-    const myTube = riverTubes.list.find((t) => t.mode === 'ride' && onTube(me, t));
-    const tubing = !myTube && riverTubes.list.some((t) => onTube(kid, t)) && distXZ(me.position.x, me.position.z, JETTY_END.x, JETTY_END.z) < 15;
-    const nextTube = tubing ? riverTubes.list.find((t) => t.mode === 'wait' && Math.abs(t.s - TUBE_BOARD) < 0.3) : undefined;
-    // the child is on the train: on the next wagon while it waits at the station, and sit tight
-    const kidCar = onCar(kid);
-    const myCar = kidCar >= 0 ? onCar(me) : -1;
-    // the child is building a snowman: roll a snowball for it too (the bottom or the middle: the
-    // head is always the child's)
-    const pieces = useSnowman.getState().pieces.length;
-    const [rx, rz] = SNOWMAN_BUILD.center;
-    const kidRing = distXZ(kid.position.x, kid.position.z, rx, rz);
-    if (pieces < 2 && kidRing < SNOW_NEAR && (pieces > 0 || rolling.some((sb) => sb.entry()?.heldBy === kid.slot || pushing(sb, kid)))) b.snowmanAt = now;
-    const snowman = pieces < 2 && now - b.snowmanAt < SNOW_KEEP;
-    const myBall = rolling.find((sb) => sb.entry()?.heldBy === me.slot);
-    // the child is flying a kite: fly another one beside them
-    const kidKite = kites.list.some((k) => k.holder === kid.slot);
-    const myKite = kites.list.some((k) => k.holder === me.slot);
-    // the child is rounding up chickens by the coop: a loose one to walk in
-    const stray = kidStanding ? strayChicken(kid, me, b, now) : null;
-
     const fx = Math.sin(me.facing);
     const fz = Math.cos(me.facing);
     /** How the tongue would rate something (lower is better, Infinity: out of reach), like actions.ts does. */
@@ -327,320 +283,52 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
       return reach > 2.6 || (facing < 0.15 && reach > 0.8) ? Infinity : reach - facing + 1;
     };
-    /** Walk up to `p` and stop a step short, facing it; lick when there (and it's the thing the tongue would get, not the child). */
-    const fetch = (p: THREE.Vector3, grab: boolean, radius = 0.55) => {
-      const d = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
-      target.set(p.x + ((me.position.x - p.x) / d) * 1.1, 0, p.z + ((me.position.z - p.z) / d) * 1.1);
-      stopAt = 0.25;
-      const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / d;
-      const ok = !grab || tongue(p, radius) < tongue(kid.position, RADIUS) - 0.2;
-      if (ok && d < 1.7 && facing > 0.8 && now > b.nextHop) {
-        b.nextHop = now + 1000;
-        press.lick = true;
+    const c: PlayCtx = {
+      b,
+      me,
+      kid,
+      now,
+      dt,
+      kidStanding,
+      kidOnWheel,
+      d,
+      kidAbove,
+      runUp,
+      target,
+      stopAt: 1.2,
+      tmp,
+      press,
+      fetch: (p, grab, radius = 0.55) => {
+        const pd = Math.max(0.01, distXZ(me.position.x, me.position.z, p.x, p.z));
+        target.set(p.x + ((me.position.x - p.x) / pd) * 1.1, 0, p.z + ((me.position.z - p.z) / pd) * 1.1);
+        c.stopAt = 0.25;
+        const facing = ((p.x - me.position.x) * fx + (p.z - me.position.z) * fz) / pd;
+        const ok = !grab || tongue(p, radius) < tongue(kid.position, RADIUS) - 0.2;
+        if (ok && pd < 1.7 && facing > 0.8 && now > b.nextHop) {
+          b.nextHop = now + 1000;
+          press.lick = true;
+        }
       }
     };
-
-    let stopAt = 1.2;
+    // the attractions (buddyPlay.ts): the first that applies, and that the grown-ups allow, takes over
+    // (sense and tidy always run: keeping track, and putting down what we no longer want)
+    for (const play of PLAYS) play.sense?.(c);
     /** Standing somewhere on purpose (no wandering, no silliness). */
     let busy = false;
+    for (const play of PLAYS) {
+      if (buddyMay(play.kind) && play.act(c)) {
+        busy = true;
+        break;
+      }
+    }
     /** Trotting along beside the child. */
     let circling = false;
-    if (b.via) {
-      // off to the launcher the child took; wait on it (a geyser takes a moment), and if it
-      // doesn't take us, boing over instead
-      busy = true;
-      stopAt = 0.15;
-      target.set(b.via.x, 0, b.via.z);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      if (distXZ(me.position.x, me.position.z, b.via.x, b.via.z) < 1) {
-        b.via.waited += dt;
-        if (b.via.waited > 7) b.via = null;
-      }
-    } else if (kidOnWheel) {
-      // the child is on the ferris wheel: wait at the front of the deck, and the next gondola
-      // down takes us up too
-      busy = true;
-      stopAt = 0.15;
-      target.set(ferris.boardAt[0], 0, ferris.boardAt[1]);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-    } else if (kidAbove) {
-      // the child is up above us: stand back for a run-up (see the boing above) and get ready
-      busy = true;
-      stopAt = 0.2;
-      if (!runUp) target.copy(me.position);
-      else if (d < 0.3) target.set(kid.position.x + RUN_UP, 0, kid.position.z);
-      else target.set(kid.position.x + ((me.position.x - kid.position.x) / d) * RUN_UP, 0, kid.position.z + ((me.position.z - kid.position.z) / d) * RUN_UP);
-    } else if (swingHelp.slot === me.slot) {
-      // the child is on a swing: stand behind it (the swing does the pushing, with our hop)
-      busy = true;
-      stopAt = 0.25;
-      target.copy(swingHelp.goto);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-    } else if (myCar >= 0) {
-      // riding the train with the child: stay on the wagon
-      busy = true;
-      stopAt = 0.5;
-      target.set(train.cars[myCar].x, 0, train.cars[myCar].z);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-    } else if (kidCar >= 0 && train.speed < 0.3) {
-      // hop onto the wagon next to the child's (not the engine: its cab fills the deck)
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const pick = [kidCar - 1, kidCar + 1].filter((j) => j >= 1 && j < train.cars.length).sort((i, j) => distXZ(me.position.x, me.position.z, train.cars[i].x, train.cars[i].z) - distXZ(me.position.x, me.position.z, train.cars[j].x, train.cars[j].z))[0];
-      const car = train.cars[pick];
-      target.set(car.x, 0, car.z);
-      stopAt = 0.3;
-      if (distXZ(me.position.x, me.position.z, car.x, car.z) < 2.4 && me.grounded && now > b.nextHop) {
-        b.nextHop = now + 800;
-        press.jump = true;
-      }
-    } else if (myTube) {
-      // riding the river: sit tight in the middle of the ring
-      busy = true;
-      stopAt = 0.3;
-      target.set(myTube.x, 0, myTube.z);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-    } else if (tubing) {
-      // step off the jetty onto the tube waiting there (the child's own, if it hasn't gone yet: we
-      // share), or wait at the end of the jetty for the next one to come up (not swim after them)
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      if (nextTube) {
-        stopAt = 0;
-        target.set(nextTube.x, 0, nextTube.z);
-      } else {
-        stopAt = 0.3;
-        target.copy(JETTY_END);
-      }
-    } else if (raceSled) {
-      // walk into it, and down we go a moment behind the child
-      busy = true;
-      stopAt = 0;
-      target.set(raceSled.x, 0, raceSled.z);
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-    } else if (snowman && !myBall) {
-      // a snowball to roll: one lying about, not the child's
-      let pick: (typeof rolling)[number] | undefined;
-      let pd = SNOW_FROM;
-      for (const sb of rolling) {
-        const e = sb.entry();
-        const at = sb.at();
-        if (!e || !at || !e.enabled || e.heldBy != null || pushing(sb, kid)) continue;
-        const d = distXZ(me.position.x, me.position.z, at.x, at.z);
-        if (d < pd) {
-          pd = d;
-          pick = sb;
-        }
-      }
-      const at = pick?.at();
-      if (pick && at) {
-        busy = true;
-        b.pending = b.pending.filter((p) => p.action !== 'jump');
-        fetch(tmp.set(at.x, at.y, at.z), true, pick.r());
-      }
-    } else if (snowman && myBall) {
-      // carrying it: round and round through the snow till it's big enough, then into the ring
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      if (myBall.r() < SNOWMAN_MIN[pieces] + 0.08) {
-        // (round a patch of open snow south of the piles: clear of the ring, the ice, the snowmen)
-        const cx = SNOW.center[0] + SNOW_LAPS[0];
-        const cz = SNOW.center[1] + SNOW_LAPS[1];
-        const a = Math.atan2(me.position.z - cz, me.position.x - cx) + 0.9;
-        target.set(cx + Math.cos(a) * SNOW_LAP, 0, cz + Math.sin(a) * SNOW_LAP);
-        stopAt = 0;
-      } else {
-        target.set(rx, 0, rz);
-        stopAt = 0.2;
-      }
-    } else if (kidKite && !myKite) {
-      // pick up a spool lying about (not too far off: the child's on the hill with theirs)
-      let pick = -1;
-      let pd = KITE_FROM;
-      kites.list.forEach((k, j) => {
-        const p = kites.spool[j];
-        if (k.holder != null || !p) return;
-        const d = distXZ(me.position.x, me.position.z, p.x, p.z);
-        if (d < pd) {
-          pd = d;
-          pick = j;
-        }
-      });
-      if (pick >= 0) {
-        busy = true;
-        b.pending = b.pending.filter((p) => p.action !== 'jump');
-        fetch(kites.spool[pick], true, 0.3);
-      }
-    } else if (kidKite && myKite) {
-      // run round the child, fast: up goes the kite (and the child's up there with theirs)
-      busy = true;
-      const kd = distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z);
-      const a = Math.atan2(me.position.z - kid.position.z, me.position.x - kid.position.x) + (kd > KITE_LAP + 2 ? 0 : 0.8);
-      target.set(kid.position.x + Math.cos(a) * KITE_LAP, 0, kid.position.z + Math.sin(a) * KITE_LAP);
-      stopAt = 0;
-    } else if (stray && inCoop(me.position.x, me.position.z, -0.4)) {
-      // in the coop (followed one in): out through the gate first, not pushing at the fence from inside
-      busy = true;
-      target.set(GATE_OUT.x, 0, GATE_OUT.z - 1);
-      stopAt = 0.3;
-    } else if (stray) {
-      // circle round behind it and walk it in: chickens run from us just as they do from the
-      // child. Lined up with the gate: on in through it; anywhere else: round to the front of the
-      // gate first (straight at the coop it would only be pushed into the fence beside the gate)
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const lined = Math.abs(stray.pos.x - GATE_IN.x) < CHICKEN_COOP.gate / 2 - 0.2 && stray.pos.z < GATE_IN.z && stray.pos.z > GATE_OUT.z - 3;
-      const goal = lined ? GATE_IN : GATE_OUT;
-      const gd = Math.max(0.01, distXZ(stray.pos.x, stray.pos.z, goal.x, goal.z));
-      const ax = (stray.pos.x - goal.x) / gd;
-      const az = (stray.pos.z - goal.z) / gd;
-      const md = Math.max(0.01, distXZ(me.position.x, me.position.z, stray.pos.x, stray.pos.z));
-      const behind = ((me.position.x - stray.pos.x) * ax + (me.position.z - stray.pos.z) * az) / md;
-      // not behind it yet: round at a distance (close by, it would run off the wrong way); then in
-      const back = behind > 0.7 ? HERD_CLOSE : HERD_ROUND;
-      target.set(stray.pos.x + ax * back, 0, stray.pos.z + az * back);
-      stopAt = 0.3;
-    } else if (threwLately(kid.slot, now, SHY_HELP) && distXZ(kid.position.x, kid.position.z, PENGUIN_SHY.center[0], PENGUIN_SHY.center[1]) < SHY_NEAR) {
-      // the child is throwing snowballs at the penguins: throw some too, from in front of the
-      // counter, off to the child's other side. Never the last one standing: that's the child's.
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const [px, pz] = PENGUIN_SHY.center;
-      const side = kid.position.z > pz ? -1 : 1;
-      target.set(px - SHY_FROM, 0, pz + side * 1.6);
-      stopAt = 0.5;
-      const up = shy.list.map((p, i) => (p.down ? -1 : i)).filter((i) => i >= 0);
-      if (up.length > 1 && distXZ(me.position.x, me.position.z, target.x, target.z) < 1 && me.grounded && now > b.nextHop) {
-        // (the nearest one standing on our side)
-        const pick = up.reduce((a, i) => (Math.abs(shy.at[i].z - me.position.z) < Math.abs(shy.at[a].z - me.position.z) ? i : a), up[0]);
-        if (buddyThrow(me.slot, shy.at[pick])) b.nextHop = now + SHY_EVERY;
-      }
-    } else if (now - tickling.childAt < TICKLE_HELP && !tickling.sneezing && distXZ(kid.position.x, kid.position.z, BRONTO.center[0], BRONTO.center[1]) < 6) {
-      // the child is tickling the brontosaurus: tickle it too (from across its tummy, not bonking
-      // the child), and it sneezes all the sooner
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const [tx, tz] = BRONTO.center;
-      const kd = Math.max(0.01, distXZ(kid.position.x, kid.position.z, tx, tz));
-      const md = distXZ(me.position.x, me.position.z, tx, tz);
-      target.set(tx - ((kid.position.x - tx) / kd) * TICKLE_FROM, 0, tz - ((kid.position.z - tz) / kd) * TICKLE_FROM);
-      stopAt = 0.4;
-      if (md < TICKLE_FROM + 0.4 && distXZ(me.position.x, me.position.z, kid.position.x, kid.position.z) > 2.5 && now > b.nextHop) {
-        b.nextHop = now + 1100;
-        press.bonk = true;
-      }
-    } else if (moles.active && distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]) < 6) {
-      // the child is bonking moles: bonk some too. Not the ones right by the child (those are
-      // theirs), not one that's only just come up, and never the golden one: that's for the child.
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      let best = -1;
-      let bd = 1e9;
-      moles.list.forEach((m, i) => {
-        const [hx, hz] = MOLES.holes[i];
-        if (m.state !== 'up' || m.golden || m.t < 0.5 || distXZ(kid.position.x, kid.position.z, hx, hz) < 1.5) return;
-        const md = distXZ(me.position.x, me.position.z, hx, hz);
-        if (md < bd) {
-          bd = md;
-          best = i;
-        }
-      });
-      if (best >= 0) {
-        target.set(MOLES.holes[best][0], 0, MOLES.holes[best][1]);
-        stopAt = 0.1;
-        if (bd < 1.5 && now > b.nextHop) {
-          b.nextHop = now + 900;
-          press.bonk = true;
-        }
-      } else {
-        // waiting at the edge of the molehills, across from the child
-        const kd = Math.max(0.01, distXZ(kid.position.x, kid.position.z, MOLES.center[0], MOLES.center[1]));
-        target.set(MOLES.center[0] - ((kid.position.x - MOLES.center[0]) / kd) * 3, 0, MOLES.center[1] - ((kid.position.z - MOLES.center[1]) / kd) * 3);
-        stopAt = 0.5;
-      }
-    } else if (roundabout.riders.includes(kid.slot) && !roundabout.riders.includes(me.slot)) {
-      // the child is riding the roundabout: run round beside it, pushing it faster and faster
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const [rx, rz] = ROUNDABOUT.center;
-      const a = Math.atan2(me.position.z - rz, me.position.x - rx);
-      // (it turns the way the angle goes down: run that way, a little way ahead)
-      const ahead = a - (roundabout.spin >= 0 ? 0.7 : -0.7);
-      const r = ROUNDABOUT.radius + 0.6;
-      target.set(rx + Math.cos(ahead) * r, 0, rz + Math.sin(ahead) * r);
-      stopAt = 0.05;
-    } else if (kidBuilding(kid, now)) {
-      // the child is building a tower: fetch blocks for it
-      busy = true;
-      b.pending = b.pending.filter((p) => p.action !== 'jump');
-      const mine = blocks.list.findIndex((bl) => bl.holder === me.slot);
-      const tower = blocks.kidTop;
-      if (mine >= 0) {
-        // carrying one: onto the child's tower (if there's room up there for one more)
-        if (tower >= 0 && tower !== mine) fetch(blocks.pos[tower], false);
-        else target.copy(me.position);
-      } else {
-        // a block lying loose (not in the child's tower, nothing on it), nearest first
-        let pick = -1;
-        let pd = 1e9;
-        const base = tower >= 0 ? blocks.pos[tower] : kid.position;
-        blocks.list.forEach((bl, j) => {
-          const p = blocks.pos[j];
-          if (bl.holder != null || bl.height > 1 || bl.above >= 0 || distXZ(p.x, p.z, base.x, base.z) < 1.5) return;
-          const d = distXZ(me.position.x, me.position.z, p.x, p.z);
-          if (d < pd && d < 14) {
-            pd = d;
-            pick = j;
-          }
-        });
-        if (pick >= 0) fetch(blocks.pos[pick], true);
-      }
-    } else {
-      // near a see-saw? get onto the far end (pushing it down if it's up) so the child can
-      // land on the other end and fling us
-      for (let i = 0; i < SEESAWS.length; i += 1) {
-        const c = SEESAWS[i].center;
-        if (distXZ(kid.position.x, kid.position.z, c[0], c[1]) > 7) continue;
-        const a = seesawEnd(i, 1, tmp);
-        const ad = distXZ(kid.position.x, kid.position.z, a.x, a.z);
-        const bEnd = seesawEnd(i, -1, target);
-        const bd = distXZ(kid.position.x, kid.position.z, bEnd.x, bEnd.z);
-        const far = ad > bd ? 1 : -1;
-        busy = true;
-        stopAt = 0.35;
-        if (seesawLow[i] === far || now < b.hopInUntil) {
-          // our end is down (or we're jumping onto it): stand on it and wait
-          seesawEnd(i, far, target, 2.3);
-        } else {
-          // our end is up in the air: line up just past its tip, then jump in onto it
-          seesawEnd(i, far, target, 3.9);
-          if (distXZ(me.position.x, me.position.z, target.x, target.z) < 0.7 && now > b.nextHop) {
-            b.nextHop = now + 1500;
-            b.hopInUntil = now + 900;
-            press.jump = true;
-          }
-        }
-        break;
-      }
-    }
-    if (!busy) {
-      // the child is chasing a cat: run round ahead of it, so it turns back towards the child
-      for (const cat of parkCats) {
-        if (!cat || (cat.mode !== 'flee' && cat.mode !== 'alert')) continue;
-        const cd = distXZ(cat.position.x, cat.position.z, kid.position.x, kid.position.z);
-        if (cd > 14 || cd < 0.5) continue;
-        target.set(cat.position.x + ((cat.position.x - kid.position.x) / cd) * 3, 0, cat.position.z + ((cat.position.z - kid.position.z) / cd) * 3);
-        stopAt = 0.5;
-        busy = true;
-        break;
-      }
-    }
     if (!busy) {
       const spot = kidHigh ? footstep(b.trail, kid, 1.5, 4) : null;
       if (spot) {
         // up on something (a roof, a tower): follow in the child's footsteps, not into thin air
         target.copy(spot);
-        stopAt = 0.6;
+        c.stopAt = 0.6;
       } else if (kidHigh) {
         // nowhere known to stand but right where the child is: stay close, or come closer
         target.copy(d < 3 ? me.position : kid.position);
@@ -657,21 +345,8 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
         target.set(kid.position.x + Math.cos(b.circle) * r, 0, kid.position.z + Math.sin(b.circle) * r);
       }
     }
-    // carrying a snowball, and the snowman's not ours to help with now: put it down
-    if (myBall && !snowman && now > b.nextHop) {
-      b.nextHop = now + 1000;
-      press.lick = true;
-    }
-    // flying a kite, and the child's put theirs down: ours down too
-    if (myKite && !kidKite && now > b.nextHop) {
-      b.nextHop = now + 1000;
-      press.lick = true;
-    }
-    // still carrying a block, and the child's stopped building: put it down
-    if (!kidBuilding(kid, now) && blocks.list.some((bl) => bl.holder === me.slot) && now > b.nextHop) {
-      b.nextHop = now + 1000;
-      press.lick = true;
-    }
+    for (const play of PLAYS) play.tidy?.(c);
+    const stopAt = c.stopAt;
     const td = distXZ(me.position.x, me.position.z, target.x, target.z);
     if (td > stopAt && !me.isLaunched()) {
       const k = Math.min(1, (td - stopAt * 0.5) / 2.5);
@@ -702,84 +377,6 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
   b.pending = b.pending.filter((p) => p.at > now);
   for (const p of due) press[p.action] = true;
   return makeInputFrame(x, z, press);
-}
-
-/** The end of the tube jetty, where the buddy waits for its tube. */
-const JETTY_END = (() => {
-  const p = TUBE_COURSE.at(TUBE_BOARD);
-  return new THREE.Vector3(p.x - TUBE_RIDE.radius - 0.6, 0, p.z);
-})();
-
-/** Snowman: the child this close to the ring (m) counts as building, for this long (ms) after; snowballs this close to fetch; laps this far out. */
-const SNOW_NEAR = 12;
-const SNOW_KEEP = 8000;
-const SNOW_FROM = 16;
-const SNOW_LAP = 3.5;
-/** Where those laps go round, from the middle of the snow. */
-const SNOW_LAPS = [1, -9.5] as const;
-
-/** Is the child pushing (or right up against) this snowball? */
-function pushing(sb: (typeof rolling)[number], kid: PlayerRuntime) {
-  const at = sb.at();
-  return !!at && distXZ(at.x, at.z, kid.position.x, kid.position.z) < sb.r() + 1.2;
-}
-
-/** Kites: a spool this close (m) to fetch; laps round the child this far out. */
-const KITE_FROM = 14;
-const KITE_LAP = 4.5;
-
-/** Penguin shy: the child threw this recently (ms) this close by (m): throw too, from this far in front, this often (ms). */
-const SHY_HELP = 8000;
-const SHY_NEAR = 10;
-const SHY_FROM = 5.5;
-const SHY_EVERY = 2600;
-
-/** Tickling: a child's tickle this recent (ms) and the buddy joins in, from this far out from the middle. */
-const TICKLE_HELP = 4000;
-const TICKLE_FROM = 2.6;
-
-/** Herding: the child this close to the coop's gate, and loose chickens this close to it, count. */
-const HERD_NEAR = 16;
-const HERD_FROM = 24;
-/** Behind a chicken: this close pushes it on (it runs from 3.6 m); going round, this far. */
-const HERD_CLOSE = 2;
-const HERD_ROUND = 4.6;
-/** Not moved this far (m) in this long (ms): it isn't going anywhere; leave it alone this long. */
-const HERD_BUDGE = 1.5;
-const HERD_STUCK = 8000;
-const HERD_SKIP = 20000;
-
-/** A loose chicken near the coop for the buddy to walk in, while the child is about there. */
-function strayChicken(kid: PlayerRuntime, me: PlayerRuntime, b: Brain, now: number): HerdChicken | null {
-  if (useCoop.getState().doneAt >= 0) return null;
-  if (distXZ(kid.position.x, kid.position.z, GATE_OUT.x, GATE_OUT.z) > HERD_NEAR) return null;
-  let best: HerdChicken | null = null;
-  let bd = Infinity;
-  for (const c of herd) {
-    if (!c || c.penned || c.leaving || c.mode === 'held' || c.mode === 'tumble' || inCoop(c.pos.x, c.pos.z, -0.6) || (b.herding.skip.get(c) ?? 0) > now) continue;
-    if (distXZ(c.pos.x, c.pos.z, GATE_OUT.x, GATE_OUT.z) > HERD_FROM) continue;
-    // (one in the mud last: we'd only get stuck in it)
-    const d = distXZ(c.pos.x, c.pos.z, me.position.x, me.position.z) + (isInMud(c.pos.x, c.pos.z) ? 30 : 0);
-    if (d < bd) {
-      bd = d;
-      best = c;
-    }
-  }
-  // one that hasn't gone anywhere for a while with us right by it (wedged somewhere): another one
-  const h = b.herding;
-  if (best !== h.chicken) {
-    h.chicken = best;
-    h.since = now;
-    if (best) h.from.copy(best.pos);
-  } else if (best && (distXZ(best.pos.x, best.pos.z, h.from.x, h.from.z) > HERD_BUDGE || distXZ(best.pos.x, best.pos.z, me.position.x, me.position.z) > HERD_ROUND + 1)) {
-    // (it's only stuck if it stays put with us right there)
-    h.since = now;
-    h.from.copy(best.pos);
-  } else if (best && now - h.since > HERD_STUCK) {
-    h.skip.set(best, now + HERD_SKIP);
-    h.chicken = null;
-  }
-  return best;
 }
 
 /**

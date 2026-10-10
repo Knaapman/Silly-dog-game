@@ -12,6 +12,7 @@ import { GrownUpMenu } from './ui/GrownUpMenu';
 import { Hud } from './ui/Hud';
 import { TitleScreen } from './ui/TitleScreen';
 import { SplitFrames } from './ui/SplitFrames';
+import { FriendArrows } from './ui/FriendArrows';
 import { StickerAlbum } from './ui/Stickers';
 import { TouchControls } from './ui/TouchControls';
 
@@ -105,6 +106,11 @@ export default function App() {
       {phase === 'play' && (
         <Safe name="split-screen frames">
           <SplitFrames />
+        </Safe>
+      )}
+      {phase === 'play' && (
+        <Safe name="friend arrows">
+          <FriendArrows />
         </Safe>
       )}
       {phase === 'play' && (

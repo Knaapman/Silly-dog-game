@@ -118,3 +118,41 @@ test('split screen off (grown-ups menu): one view, and friends are gently pulled
   expect(await apart(game, 0, 1)).toBeLessThan(far - 6);
   game.expectNoErrors();
 });
+
+test('split screen: an arrow at the edge of each view points the way to the friend; together again, no arrows', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await game.join('kb2');
+  const arrow = (view: number, friend: number) => page.getByTestId(`friend-arrow-${view}-${friend}`);
+  // together: everybody's on screen, so no arrows
+  await game.teleport(0, -6, 1, 6);
+  await game.teleport(1, -3, 1, 6);
+  await game.seconds(1, true);
+  await expect(arrow(-1, 0)).toHaveAttribute('data-visible', 'false');
+  await expect(arrow(-1, 1)).toHaveAttribute('data-visible', 'false');
+  // far apart: a view each, and in each an arrow pointing to the other child
+  await game.teleport(1, 34, 1, 6);
+  await game.seconds(2, true);
+  expect((await views(game)).split).toBe(true);
+  await expect(arrow(0, 1)).toHaveAttribute('data-visible', 'true');
+  await expect(arrow(1, 0)).toHaveAttribute('data-visible', 'true');
+  // (the two point opposite ways, and each sits on the side of its view the friend is on)
+  const angle = async (view: number, friend: number) => Number(await arrow(view, friend).getAttribute('data-angle'));
+  const [a, b] = [await angle(0, 1), await angle(1, 0)];
+  expect(Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))).toBeGreaterThan(Math.PI - 0.6);
+  const W = page.viewportSize()!.width;
+  const box0 = (await arrow(0, 1).boundingBox())!;
+  const box1 = (await arrow(1, 0).boundingBox())!;
+  expect(box0.x + box0.width / 2).toBeLessThan(W / 2); // in the left view
+  expect(box1.x + box1.width / 2).toBeGreaterThan(W / 2); // in the right view
+  expect(Math.cos(await angle(0, 1))).toBeGreaterThan(0.3); // the friend is off to the east: pointing right
+  expect(Math.cos(await angle(1, 0))).toBeLessThan(-0.3); // and back west: pointing left
+  await game.screenshot('test-results/friend-arrows.png');
+  // back together: one view, no arrows
+  await game.teleport(1, -3, 1, 6);
+  await game.seconds(2, true);
+  expect((await views(game)).split).toBe(false);
+  await expect(arrow(-1, 1)).toHaveAttribute('data-visible', 'false');
+  game.expectNoErrors();
+});

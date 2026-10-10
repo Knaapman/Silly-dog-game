@@ -14,6 +14,7 @@ import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { StaticBox, useHint } from './common';
 import { randomStream } from '../rng';
+import { buddyMay } from '../settings';
 
 const random = randomStream('bumperCars');
 
@@ -65,7 +66,7 @@ export function BumperCars() {
       if (c.driver != null) return;
       players.forEach((p) => {
         if (c.driver != null || !canBoard(p)) return;
-        if (p.bot && !kidDriving) return;
+        if (p.bot && (!kidDriving || !buddyMay('join'))) return;
         if (list.some((o) => o.driver === p.slot)) return;
         if (Math.hypot(p.position.x - c.x, p.position.z - c.z) > R + 0.2 || p.position.y > floor + 1.8) return;
         c.driver = p.slot;

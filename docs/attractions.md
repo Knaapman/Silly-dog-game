@@ -28,7 +28,11 @@ Five-year-olds carry a rule from one attraction to the next, so every exception 
 
 ## The table
 
-Co-op: what a friend adds. Buddy: what the computer buddy does when one child plays alone.
+Co-op: what a friend adds. Buddy: what the computer buddy does when one child plays alone. The grown-ups'
+"What the buddy does" setting decides how much of that it does: on rides and playthings (sled, tubes, train, kite,
+balloon, swings, roundabout, see-saw, cars, balls, slide, ferris wheel, snowball throw-back) it joins in from "Joins
+in" up; in the games (chickens, penguins, snowman, moles, blocks, tickling, cats, carrot) it helps only on "Helps".
+Each behaviour is one entry in `src/game/world/buddyPlay.ts`, marked `join` or `help`.
 
 ### Rides that hold you
 

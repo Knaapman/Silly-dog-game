@@ -246,7 +246,9 @@ so friends can drop in and out at any time. All players share one camera that zo
 splits, a view each that follows their own animal (two side by side; three: two on top and one along the bottom;
 four: a 2×2 grid), framed in the child's colour with their shape in the corner. Come back together and it joins up
 again (it waits until they're clearly closer, so it doesn't flick back and forth). The buddy never gets a view of
-its own. Grown-ups can turn split screen off; then friends are gently pulled back together instead.
+its own. In each view, a friend who's out of sight gets a little arrow at the edge, in their colour with their
+shape on it, pointing the way to them like a compass (gone again as soon as you can see them; never for the buddy,
+which always comes to you). Grown-ups can turn split screen off; then friends are gently pulled back together instead.
 Each player has a colour *and* a shape (red ▼, blue ●, green ◆, yellow ★), shown over their animal and on their
 badge, so colour-blind kids can tell who is who.
 
@@ -301,7 +303,7 @@ tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), split screen when far apart
   (on / off), how far apart friends can wander before they are gently pulled together (only with split screen off), how long magic food lasts, how soon poops turn into flowers, controller
-  a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off and what it does (just follows / joins in: rides, kites, pushes / helps: with the games too, the default), catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just
