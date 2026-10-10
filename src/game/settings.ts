@@ -23,6 +23,8 @@ export type Settings = {
   surprises: boolean;
   /** A computer buddy keeps a child playing alone company. */
   buddy: boolean;
+  /** What the buddy does: just follows (0), also joins in (rides, kites, pushes: 1), also helps with the games (2). */
+  buddyHelp: Level;
   /** How hard the park cats are to catch; 'auto' adapts to each child as they play. */
   chase: Level | 'auto';
   /** 'auto' picks from the graphics card. */
@@ -40,7 +42,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, split: true, rumble: true, surprises: true, buddy: true, chase: 'auto', quality: 'auto', zoom: 1 };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, split: true, rumble: true, surprises: true, buddy: true, buddyHelp: 2, chase: 'auto', quality: 'auto', zoom: 1 };
 
 const KEY = 'settings:v1';
 
@@ -56,6 +58,7 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     rumble: typeof raw?.rumble === 'boolean' ? raw.rumble : DEFAULT_SETTINGS.rumble,
     surprises: typeof raw?.surprises === 'boolean' ? raw.surprises : DEFAULT_SETTINGS.surprises,
     buddy: typeof raw?.buddy === 'boolean' ? raw.buddy : DEFAULT_SETTINGS.buddy,
+    buddyHelp: level(raw?.buddyHelp, DEFAULT_SETTINGS.buddyHelp),
     chase: raw?.chase === 'auto' ? 'auto' : level(raw?.chase, 1) === raw?.chase ? (raw.chase as Level) : DEFAULT_SETTINGS.chase,
     quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality,
     zoom: typeof raw?.zoom === 'number' && Number.isFinite(raw.zoom) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, raw.zoom)) : DEFAULT_SETTINGS.zoom
@@ -121,4 +124,14 @@ export function qualityDpr(quality: Quality, screenRatio: number, cssWidth: numb
   if (quality === 'high') return [1, 1.75];
   const native = Math.min(screenRatio || 1, 2);
   return Math.max(native, Math.min(2, 3840 / Math.max(1, cssWidth)));
+}
+
+/**
+ * May the buddy do this kind of thing (see buddyPlay.ts)? 'join': along with the child (a ride, a
+ * kite, a push on the swing); 'help': towards what the child is trying to do (chickens in the
+ * coop, penguins off the counter). Keeping up with the child it always does.
+ */
+export function buddyMay(kind: 'core' | 'join' | 'help') {
+  const help = useSettings.getState().buddyHelp;
+  return kind === 'core' || (kind === 'join' ? help >= 1 : help >= 2);
 }

@@ -159,6 +159,7 @@ function settingRows(autoLevel: Quality): ChoiceRow[] {
         { value: true, label: 'On' }
       ]
     },
+    { key: 'buddyHelp', icon: '🤲', label: 'What the buddy does', options: LEVELS('Just follows', 'Joins in', 'Helps') },
     {
       key: 'rumble',
       icon: '📳',

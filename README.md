@@ -303,7 +303,7 @@ tester**, the sticker album, a picture of all controls, and:
 
 - **Settings** (remembered on this device): running speed (calm / normal / zoomy), split screen when far apart
   (on / off), how far apart friends can wander before they are gently pulled together (only with split screen off), how long magic food lasts, how soon poops turn into flowers, controller
-  a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off, catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
+  a zoom slider (closer in, or more of the park on screen), rumble on/off, surprises on/off, the buddy on/off and what it does (just follows / joins in: rides, kites, pushes / helps: with the games too, the default), catching the cats (auto / easy / normal / tricky), and graphics (auto / low / high / ultra). *Auto* starts from the graphics card (a
   software renderer gets low, a dedicated gaming card such as RTX, Radeon RX 5000+, Arc or Apple M2+ gets ultra) and
   then follows the frame rate: after a few seconds below 48 fps it steps down a level, and after 20 s of smooth play
   it steps back up (never above what the card was judged capable of, and not straight back to a level that just

@@ -9,7 +9,7 @@ import { distXZ } from '../layout';
 import { RADIUS } from '../player/constants';
 import { launchSpots, physics, players, type PlayerRuntime } from '../runtime';
 import { groundHeight } from '../terrain';
-import { settings } from '../settings';
+import { buddyMay, settings } from '../settings';
 import { isPaused, useGame } from '../store';
 import { TEST_MODE } from '../testMode';
 import { hamster } from './HamsterBalls';
@@ -311,11 +311,12 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       }
     };
     // the attractions (buddyPlay.ts): the first that applies, and that the grown-ups allow, takes over
+    // (sense and tidy always run: keeping track, and putting down what we no longer want)
     for (const play of PLAYS) play.sense?.(c);
     /** Standing somewhere on purpose (no wandering, no silliness). */
     let busy = false;
     for (const play of PLAYS) {
-      if (play.act(c)) {
+      if (buddyMay(play.kind) && play.act(c)) {
         busy = true;
         break;
       }

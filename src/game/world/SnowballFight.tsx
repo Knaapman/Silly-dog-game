@@ -16,6 +16,7 @@ import { useGame } from '../store';
 import { groundHeight } from '../terrain';
 import { useHint } from './common';
 import { liftIfUnder } from './ground';
+import { buddyMay } from '../settings';
 
 // Snowball fight: two snow piles with little snowballs on top. Lick one to pick it up, lick again
 // to throw it. A friend it hits gets a splat, a hop and a dusting of snow (white paw prints!) that
@@ -57,7 +58,7 @@ function hitAnimal(p: PlayerRuntime, by: number) {
   const thrower = players.get(by);
   if (thrower && !thrower.bot) {
     earnSticker('snowballfight');
-    if (p.bot) after(0.9, () => throwBack(p.slot, by));
+    if (p.bot && buddyMay('join')) after(0.9, () => throwBack(p.slot, by));
   }
 }
 
