@@ -11,3 +11,13 @@ const OFF = new Set(TEST_MODE ? (params.get('off') ?? '').split(',').filter(Bool
 export function systemOff(system: TestSystem) {
   return OFF.has(system);
 }
+
+/**
+ * And parts that are off in test mode unless a test asks for them ("?test=1&on=secrets"): the
+ * secrets would surprise tests that stand still a while or count stickers. Always on in play.
+ */
+export type OptInSystem = 'secrets';
+const ON = new Set(TEST_MODE ? (params.get('on') ?? '').split(',').filter(Boolean) : []);
+export function systemOn(system: OptInSystem) {
+  return !TEST_MODE || ON.has(system);
+}

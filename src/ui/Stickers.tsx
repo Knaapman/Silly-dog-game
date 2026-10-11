@@ -4,8 +4,23 @@ import { STICKERS, stickerById, useStickers, type Sticker } from '../game/sticke
 import { FRIEND_STICKERS, hasGuide, useGuide } from '../game/guide';
 import { useGame } from '../game/store';
 
-/** One round sticker. Not found yet: a grey shadow of it, so kids can see what's still to do. */
+/** One round sticker. Not found yet: a grey shadow of it, so kids can see what's still to do (a secret one: just a "?"). */
 export function StickerFace({ sticker, got = true, size = 64 }: { sticker: Sticker; got?: boolean; size?: number }) {
+  if (sticker.secret && !got) {
+    return (
+      <div
+        className="relative flex shrink-0 items-center justify-center rounded-full border-4 border-dashed border-white/30 shadow-md"
+        style={{ width: size, height: size, background: 'rgba(99,102,241,0.18)' }}
+        data-sticker={sticker.id}
+        data-got={false}
+        data-secret=""
+      >
+        <span className="emoji leading-none" style={{ fontSize: size * 0.5, opacity: 0.7 }}>
+          ❓
+        </span>
+      </div>
+    );
+  }
   return (
     <div
       className={`relative flex shrink-0 items-center justify-center rounded-full border-4 shadow-md ${got ? 'border-white' : 'border-white/20'}`}

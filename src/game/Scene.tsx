@@ -23,8 +23,9 @@ import { cameraFoci, JOIN_AFTER, JOIN_AT, layoutRects, lightRig, renderViews, se
 import { zipline } from './world/Zipline';
 import { effectiveQuality, QUALITY, useSettings } from './settings';
 import { isPartyTime, isPaused, useGame } from './store';
-import { systemOff, TEST_MODE } from './testMode';
+import { systemOff, systemOn, TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
+import { Secrets } from './world/Secrets';
 import { Carnival } from './world/Carnival';
 import { SkyCourse } from './world/SkyCourse';
 import { BumperCars } from './world/BumperCars';
@@ -540,6 +541,7 @@ export function Scene() {
           <GoldenStars />
           <Treasures />
           <ParkEvents />
+          {systemOn('secrets') && <Secrets />}
         </Contained>
         <Players />
       </Physics>
