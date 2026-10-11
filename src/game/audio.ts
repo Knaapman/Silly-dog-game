@@ -984,6 +984,37 @@ export function playSpin(position?: AudioPosition) {
   v.finish();
 }
 
+/** The whale: a long, low, wobbly song from under the sea. */
+export function playWhaleSong(position?: AudioPosition) {
+  const v = voice('world', { position, gain: 1.2 });
+  if (!v) return;
+  v.tone({ type: 'sine', from: 180, to: 320, dur: 0.9, gain: 0.12, attack: 0.2, vibrato: [5, 12] });
+  v.tone({ type: 'sine', from: 320, to: 140, at: 0.85, dur: 1.2, gain: 0.1, vibrato: [4, 10] });
+  v.tone({ type: 'triangle', from: 90, to: 70, dur: 2, gain: 0.06, attack: 0.3 });
+  v.finish();
+}
+
+/** A frog: "rib-bit". */
+export function playRibbit(position?: AudioPosition) {
+  if (throttled('ribbit', 250)) return;
+  const v = voice('world', { position });
+  if (!v) return;
+  for (let i = 0; i < 2; i += 1) {
+    v.tone({ type: 'square', from: i ? 260 : 220, to: i ? 180 : 160, at: i * 0.16, dur: 0.1, gain: 0.07, tremolo: [40, 0.8], filter: { type: 'bandpass', freq: 700, q: 3 } });
+  }
+  v.finish();
+}
+
+/** A sleepy animal: a soft snore in, a little whistle out. */
+export function playSnore(position?: AudioPosition) {
+  if (throttled('snore', 1500)) return;
+  const v = voice('world', { position, gain: 0.7 });
+  if (!v) return;
+  v.noise({ dur: 0.7, gain: 0.08, attack: 0.3, filter: { type: 'lowpass', freq: 380, q: 2 }, wobble: [22, 40] });
+  v.tone({ type: 'sine', from: 900, to: 1300, at: 0.85, dur: 0.35, gain: 0.025, attack: 0.1 });
+  v.finish();
+}
+
 /** The giant xylophone's notes: a C major scale, low to high. */
 export const XYLO_NOTES = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.5];
 

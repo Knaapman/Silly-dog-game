@@ -7,7 +7,8 @@ import { loadJson, removeKey, saveJson } from './storage';
 // The sticker album: a picture for every silly thing there is to do. It doubles as a "things
 // to try" list for kids who can't read: the stickers still to find are grey shadows.
 
-export type Sticker = { id: string; icon: string; badge?: string; color: string };
+/** `secret`: a hidden thing to find: until it's found the album shows a "?" (and no help to get there). */
+export type Sticker = { id: string; icon: string; badge?: string; color: string; secret?: boolean };
 
 const TUMMY = '#8d5a36';
 const FLY = '#3b82f6';
@@ -19,6 +20,7 @@ const CHASE = '#ef4444';
 const TRICKS = '#65a30d';
 const TREASURE = '#f97316';
 const CHALLENGE = '#0ea5e9';
+const SECRET = '#6366f1';
 
 export const STICKERS = [
   // the chase
@@ -126,7 +128,12 @@ export const STICKERS = [
   { id: 'roundabout', icon: '🎠', badge: '💨', color: CHALLENGE },
   { id: 'roundaboutfriends', icon: '🎠', badge: '👫', color: CHALLENGE },
   { id: 'kite', icon: '🪁', badge: '☁️', color: CHALLENGE },
-  { id: 'kitefriends', icon: '🪁', badge: '👫', color: CHALLENGE }
+  { id: 'kitefriends', icon: '🪁', badge: '👫', color: CHALLENGE },
+  // secrets: nothing points the way to these
+  { id: 'whale', icon: '🐋', color: SECRET, secret: true },
+  { id: 'frog', icon: '🐸', badge: '👑', color: SECRET, secret: true },
+  { id: 'summit', icon: '🏔️', badge: '🎆', color: SECRET, secret: true },
+  { id: 'nap', icon: '💤', badge: '🦋', color: SECRET, secret: true }
 ] as const satisfies readonly Sticker[];
 
 export type StickerId = (typeof STICKERS)[number]['id'];

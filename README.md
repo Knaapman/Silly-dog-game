@@ -415,16 +415,22 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   mushrooms, the barn and the lighthouse).
 - **Mud** makes you muddy. Swim in the lake or the fountain to wash it off.
 - When two friends make their animal noise together, hearts appear.
-- **The sticker album** 📒: 95 stickers, one for each silly thing there is to do (first poop, golden poop, getting
+- **The sticker album** 📒: 99 stickers, one for each silly thing there is to do (first poop, golden poop, getting
   flushed, the volcano, a piggyback tower, throwing a friend, all stars, a strike, hatching a dino, catching the golden
   chicken, jumping in a puddle, a tube ride, a sled ride, every animal's trick, a treasure, a whole treasure hunt, the
   bell on top of the sky course, all three sled hoops in one run, flying past the red line, driving the tractor, a
   friend in the trailer, the zipline, a bumper car crash, all the chickens in the coop, a snowman you built, the bluebird's tune, the giant carrot, the water slide, being painted, a snowball on a friend, a bubble ride, a dive into the ball pit, flying off a swing, dominoes all the way to the bell, a balloon ride, a roll in a hamster ball, a fish caught with your tongue, a fish for a cat, all five penguins off the counter, the golden mole, a tower of five blocks, the brontosaurus's sneeze, a headbutt on the giant beach ball, flying off the roundabout, a kite way up...). A new sticker slaps onto the screen when you earn it. Stickers still to find are
-  grey shadows, so the album doubles as a picture list of things to try. It is shared by everyone playing and
+  grey shadows, so the album doubles as a picture list of things to try (except the four **secrets**: they're just a
+  ❓ until found, and "show me where" won't help with those). It is shared by everyone playing and
   remembered on this device. Sixteen stickers need a friend (they have a little 👫 on them). Playing alone, the buddy
   counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
   rest (the three-animal tower, the tractor's trailer, pushing a swing, the balloon together, hamster balls bumping,
   a fish slap, the moles together, a tower of blocks built together, a push off the roundabout and two kites up together) need two children.
+- **Secrets** (spoilers for grown-ups, nothing in the game points the way): swim right out to the buoys and a whale
+  comes up under you and spouts you back to the beach; lick the frog on a lily pad in the lagoon and it rides on your
+  head for a while, croaking; stand by the flag on the very top of the snowy summit for fireworks; and stand still,
+  doing nothing, for about ten seconds: your animal dozes off with sleepy bubbles and a snore, and a butterfly comes
+  to sit on its head.
 - **"Show me where"**: in the album, move to a sticker you haven't got (D-pad / stick / arrow keys, or tap it) and
   press jump (**A**, `Space`, `Enter`). A big yellow arrow appears over every animal pointing the way, with a beam of
   light where the sticker can be earned (for stars: the geyser, launch pad or cannon that gets you up there; for

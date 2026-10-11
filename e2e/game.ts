@@ -37,8 +37,8 @@ export class Game {
   }
 
   /** Open the park in test mode (off: parts of the park to leave out, when they'd only get in the way). */
-  async open(seed = 1, { off = [] as ('cats' | 'birds' | 'chickens')[] } = {}) {
-    await this.page.goto(`/?test=${seed}${off.length ? `&off=${off.join(',')}` : ''}`);
+  async open(seed = 1, { off = [] as ('cats' | 'birds' | 'chickens')[], on = [] as 'secrets'[] } = {}) {
+    await this.page.goto(`/?test=${seed}${off.length ? `&off=${off.join(',')}` : ''}${on.length ? `&on=${on.join(',')}` : ''}`);
     await this.page.waitForFunction(() => typeof (window as unknown as { __silly?: { step?: unknown } }).__silly?.step === 'function', null, { timeout: 60_000 });
     // The physics engine loads asynchronously and the park mounts after it: wait until the
     // world is populated (props registered, star and food spots in place) before stepping.
