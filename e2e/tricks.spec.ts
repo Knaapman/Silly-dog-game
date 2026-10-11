@@ -46,7 +46,7 @@ test('duck: swims fast, and glides down holding jump', async ({ page }) => {
   game.expectNoErrors();
 });
 
-test('unicorn: a third jump; sheep: bouncy landings; pig: a fart jump', async ({ page }) => {
+test('unicorn: a third jump; sheep and unisheep: bouncy landings; pig: a fart jump', async ({ page }) => {
   const game = await fresh(page);
   const g = await ground(game, 12, -4);
   const jumps = async (species: string) => {
@@ -87,6 +87,7 @@ test('unicorn: a third jump; sheep: bouncy landings; pig: a fart jump', async ({
   };
   expect(await bounce('dog')).toBeLessThan(0.5);
   expect(await bounce('sheep')).toBeGreaterThan(1.5);
+  expect(await bounce('unisheep')).toBeGreaterThan(1.5);
   // (just dropping in doesn't earn the sticker: a double jump does)
   expect(await stickers(game)).not.toContain('sheepbounce');
   await game.teleport(0, 12, 1, -4);

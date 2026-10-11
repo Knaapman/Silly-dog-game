@@ -88,6 +88,18 @@ export const SPECIES_SPECS: Record<Species, SpeciesSpec> = {
     hatAnchor: [0, 0.24, -0.02],
     collar: { pos: [0, 0.8, 0.4], tilt: 1.0, r: 0.2 }
   },
+  unisheep: {
+    bodyY: 0.66,
+    hipY: 0.44,
+    hipX: 0.14,
+    hipZ: 0.24,
+    legRadius: 0.055,
+    head: [0, 0.92, 0.5],
+    eyes: { x: 0.09, y: 0.06, z: 0.15, r: 0.075, iris: '#ffffff', pupil: 'round' },
+    // (a little further back than the sheep's, behind the horn)
+    hatAnchor: [0, 0.24, -0.1],
+    collar: { pos: [0, 0.8, 0.4], tilt: 1.0, r: 0.2 }
+  },
   cat: {
     bodyY: 0.55,
     hipY: 0.42,
@@ -473,10 +485,7 @@ function Pig({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
   );
 }
 
-function Sheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
-  const spec = SPECIES_SPECS.sheep;
-  const { fur: wool, mark: face } = coat;
-  const puffs: [number, number, number, number][] = [
+const SHEEP_PUFFS: [number, number, number, number][] = [
     [0, 0.72, 0, 0.32],
     [0.19, 0.66, 0.2, 0.23],
     [-0.19, 0.66, 0.2, 0.23],
@@ -486,11 +495,15 @@ function Sheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
     [0, 0.86, -0.2, 0.22],
     [0, 0.62, 0.34, 0.2],
     [0, 0.62, -0.36, 0.21]
-  ];
+];
+
+function Sheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
+  const spec = SPECIES_SPECS.sheep;
+  const { fur: wool, mark: face } = coat;
   return (
     <>
       <group ref={(g) => { rig.current.body = g; }}>
-        {puffs.map(([x, y, z, r], i) => (
+        {SHEEP_PUFFS.map(([x, y, z, r], i) => (
           <Mesh key={i} color={wool} position={[x, y, z]}>
             <icosahedronGeometry args={[r, 1]} />
           </Mesh>
@@ -525,6 +538,77 @@ function Sheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
           <Mesh color={wool}>
             <icosahedronGeometry args={[0.1, 1]} />
           </Mesh>
+        </group>
+        <MudSplotches rig={rig} spots={[[0.3, 0.7, 0.1, 0.12], [-0.3, 0.65, -0.2, 0.13], [0, 1.02, -0.2, 0.11], [0.16, 0.5, 0.4, 0.1], [-0.12, 0.95, 0.3, 0.1]]} />
+      </group>
+      <Legs spec={spec} coat={coat} rig={rig} length={0.42} />
+    </>
+  );
+}
+
+/** Half sheep, half unicorn: the sheep's wool and face, with a golden horn and a rainbow mane and tail of wool. */
+function Unisheep({ rig, hat, color, coat }: Omit<ModelProps, 'species'>) {
+  const spec = SPECIES_SPECS.unisheep;
+  const { fur: wool, mark: face } = coat;
+  const mane = coat.mane ?? [coat.mark];
+  const horn = coat.extra ?? '#f5c542';
+  return (
+    <>
+      <group ref={(g) => { rig.current.body = g; }}>
+        {SHEEP_PUFFS.map(([x, y, z, r], i) => (
+          <Mesh key={i} color={wool} position={[x, y, z]}>
+            <icosahedronGeometry args={[r, 1]} />
+          </Mesh>
+        ))}
+        {/* ...and a rainbow mane all along its back (you see it best from above, the way the camera looks) */}
+        {mane.map((c, i) => (
+          <Mesh key={`back${i}`} color={c} position={[0, 1.07 - Math.abs(i - 2.5) * 0.012, 0.3 - i * 0.12]}>
+            <icosahedronGeometry args={[0.085, 1]} />
+          </Mesh>
+        ))}
+        <Collar spec={spec} color={color} bell />
+        <Belly spec={spec} rig={rig} radius={0.35} color={wool} />
+        <HeadExtras spec={spec} hat={hat} rig={rig}>
+          <Mesh color={face} scale={[0.9, 1, 1.2]}>
+            <sphereGeometry args={[0.19, 14, 10]} />
+          </Mesh>
+          {/* a rainbow forelock of wool behind the horn... */}
+          {mane.slice(0, 3).map((c, i) => (
+            <Mesh key={`mane${i}`} color={c} position={[0, 0.19 - i * 0.03, -0.04 - i * 0.07]}>
+              <icosahedronGeometry args={[0.08, 1]} />
+            </Mesh>
+          ))}
+          {/* the golden horn */}
+          <Mesh color={horn} position={[0, 0.34, 0.12]} rotation={[0.35, 0, 0]}>
+            <coneGeometry args={[0.06, 0.4, 10]} />
+          </Mesh>
+          {[0, 1, 2].map((i) => (
+            <Mesh key={`band${i}`} color="#fff3a8" position={[0, 0.22 + i * 0.09, 0.075 + i * 0.033]} rotation={[0.35, 0, 0]}>
+              <torusGeometry args={[0.05 - i * 0.012, 0.011, 6, 12]} />
+            </Mesh>
+          ))}
+          {[-1, 1].map((sx, i) => (
+            <group
+              key={`ear${sx}`}
+              position={[sx * 0.15, 0.05, -0.02]}
+              rotation={[0, 0, sx * -0.4]}
+              ref={(g) => {
+                rig.current.ears[i] = g;
+              }}
+            >
+              <Mesh color={face} position={[sx * 0.08, 0, 0]} scale={[1, 0.4, 0.6]}>
+                <sphereGeometry args={[0.1, 10, 8]} />
+              </Mesh>
+            </group>
+          ))}
+        </HeadExtras>
+        {/* a rainbow tail of wool */}
+        <group position={[0, 0.76, -0.56]} ref={(g) => { rig.current.tail = g; }}>
+          {mane.map((c, i) => (
+            <Mesh key={i} color={c} position={[0, -i * 0.045, -0.02 - i * 0.03]}>
+              <icosahedronGeometry args={[0.075 - i * 0.004, 1]} />
+            </Mesh>
+          ))}
         </group>
         <MudSplotches rig={rig} spots={[[0.3, 0.7, 0.1, 0.12], [-0.3, 0.65, -0.2, 0.13], [0, 1.02, -0.2, 0.11], [0.16, 0.5, 0.4, 0.1], [-0.12, 0.95, 0.3, 0.1]]} />
       </group>
@@ -834,6 +918,8 @@ export function AnimalModel({ species, hat, color, coat, rig }: ModelProps) {
       return <Pig rig={rig} hat={hat} color={color} coat={coat} />;
     case 'sheep':
       return <Sheep rig={rig} hat={hat} color={color} coat={coat} />;
+    case 'unisheep':
+      return <Unisheep rig={rig} hat={hat} color={color} coat={coat} />;
     case 'cat':
       return <Cat rig={rig} hat={hat} color={color} coat={coat} />;
     case 'duck':

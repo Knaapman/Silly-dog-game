@@ -1,6 +1,7 @@
 import { playTap } from '../game/audio';
 import { COATS } from '../game/coats';
 import { PLAYER_SHAPES, SPECIES, SPECIES_EMOJI, SPECIES_TRICK, type Species } from '../game/config';
+import { SpeciesIcon } from './SpeciesIcon';
 import { useGame, type PlayerInfo } from '../game/store';
 import { unlockedSpecies, useStickers } from '../game/stickers';
 import { ACTION_UI } from './actions';
@@ -66,7 +67,7 @@ function PickerRow({ player, open }: { player: PlayerInfo; open: Species[] }) {
                 className={`emoji leading-none ${on ? 'animate-hop' : ''}`}
                 style={can ? undefined : { filter: 'brightness(0)', opacity: 0.2 }}
               >
-                {SPECIES_EMOJI[s]}
+                <SpeciesIcon species={s} />
               </span>
               {/* its trick, small in the corner */}
               {can && <span className="emoji absolute -bottom-1 -right-1 text-[min(3.2vw,1.05rem)] leading-none drop-shadow">{SPECIES_TRICK[s]}</span>}

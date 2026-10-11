@@ -5,10 +5,10 @@ export const PLAYER_COLORS = ['#ff4d5e', '#3b82f6', '#22c55e', '#fbbf24'] as con
 export const PLAYER_SHAPES = ['triangle', 'circle', 'diamond', 'star'] as const;
 export type PlayerShape = (typeof PLAYER_SHAPES)[number];
 
-export const SPECIES = ['dog', 'goat', 'pig', 'sheep', 'cat', 'duck', 'cow', 'unicorn'] as const;
+export const SPECIES = ['dog', 'goat', 'pig', 'sheep', 'unisheep', 'cat', 'duck', 'cow', 'unicorn'] as const;
 export type Species = (typeof SPECIES)[number];
-/** Always there from the start. */
-export const BASE_SPECIES: Species[] = ['dog', 'goat', 'pig', 'sheep'];
+/** Always there from the start (the first four are who players one to four start as). */
+export const BASE_SPECIES: Species[] = ['dog', 'goat', 'pig', 'sheep', 'unisheep'];
 /** The others join as the sticker album fills up (number of stickers needed). */
 export const SPECIES_UNLOCKS: Partial<Record<Species, number>> = { cat: 3, duck: 7, cow: 12, unicorn: 18 };
 
@@ -17,6 +17,8 @@ export const SPECIES_EMOJI: Record<Species, string> = {
   goat: '🐐',
   pig: '🐷',
   sheep: '🐑',
+  // (there's no emoji for a unisheep: the faces show a sheep with a little unicorn, see SpeciesIcon)
+  unisheep: '🐑',
   cat: '🐱',
   duck: '🦆',
   cow: '🐮',
@@ -29,6 +31,7 @@ export const SPECIES_TRICK: Record<Species, string> = {
   goat: '💥',
   pig: '💨',
   sheep: '🦘',
+  unisheep: '🦘',
   cat: '🌳',
   duck: '🪂',
   cow: '📢',

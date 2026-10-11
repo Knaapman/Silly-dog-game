@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { PLAYER_COLORS, SPECIES_EMOJI } from '../game/config';
+import { PLAYER_COLORS } from '../game/config';
+import { SpeciesIcon } from './SpeciesIcon';
 import { unlockedSpecies, useStickers } from '../game/stickers';
 import { getConnectedPads } from '../game/input';
 import { ButtonDiamond } from './actions';
@@ -35,7 +36,7 @@ export function TitleScreen({ onPlay }: { onPlay: () => void }) {
             className={`emoji animate-hop drop-shadow-lg ${animals.length > 4 ? 'text-5xl sm:text-7xl' : 'text-6xl sm:text-8xl'} [@media(max-height:500px)]:text-4xl`}
             style={{ animationDelay: `${i * 0.18}s` }}
           >
-            {SPECIES_EMOJI[s]}
+            <SpeciesIcon species={s} />
           </span>
         ))}
       </div>

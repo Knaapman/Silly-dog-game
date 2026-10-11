@@ -200,8 +200,8 @@ export function animate(f: FrameCtx, vis: PlayerVisuals) {
     }
   }
 
-  // a unicorn leaves a little rainbow of sparkles behind when it runs
-  if (species === 'unicorn' && hSpeed > 2 && !s.hidden && random() < 0.4) {
+  // a unicorn (or a unisheep) leaves a little rainbow of sparkles behind when it runs
+  if ((species === 'unicorn' || species === 'unisheep') && hSpeed > 2 && !s.hidden && random() < 0.4) {
     tmp.c.copy(s.pos).addScaledVector(tmp.fwd, -0.6 * s.size);
     emit('star', [tmp.c.x, t.y - 0.1, tmp.c.z], { count: 1, color: ['#ff4d5e', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'], speed: 0.6, up: 1, size: 0.1, life: 0.9 });
   }

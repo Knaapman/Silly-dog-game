@@ -371,7 +371,8 @@ export function playAnimalNoise(species: Species, position?: AudioPosition) {
     v.tone({ type: 'sawtooth', from: 980 * p, to: 520 * p, dur: 0.7, gain: 0.09, attack: 0.02, vibrato: [17, 70], filter: { type: 'bandpass', freq: 1500, q: 1.5 } });
     [1568, 2093, 2637, 3136].forEach((f, i) => v.tone({ type: 'triangle', from: f, at: 0.55 + i * 0.07, dur: 0.3, gain: 0.05 }));
   } else {
-    // "baaaa"
+    // "baaaa" (and a unisheep's ends in a magic twinkle)
+    if (species === 'unisheep') [1568, 2093, 2637, 3136].forEach((f, i) => v.tone({ type: 'triangle', from: f, at: 0.7 + i * 0.07, dur: 0.3, gain: 0.05 }));
     v.tone({ type: 'sawtooth', from: 330 * p, to: 300 * p, dur: 0.8, gain: 0.13, attack: 0.05, vibrato: [6, 14], tremolo: [7, 0.4], filter: { type: 'bandpass', freq: 950, q: 1.2 } });
     v.tone({ type: 'sawtooth', from: 660 * p, to: 600 * p, dur: 0.8, gain: 0.05, attack: 0.05, vibrato: [6, 20], filter: { type: 'bandpass', freq: 1500, q: 2 } });
   }
