@@ -164,3 +164,31 @@ test('playing alone, the buddy grabs the next handle after you and whizzes down 
   expect((await zip(game)).rides).toBe(1);
   game.expectNoErrors();
 });
+
+test('playing alone: jump off the zipline on the way down and the buddy lets go too (it doesn\'t fly on alone)', async ({ page }) => {
+  test.setTimeout(120_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  const Z = await page.evaluate(() => (window as any).__silly.layout.ZIPLINE);
+  await game.teleport(1, Z.from[0] + 3, 1, Z.from[1] - 3);
+  await onPlatform(game, 0, 1);
+  await game.seconds(1);
+  let theirs = await ridden(game, 1);
+  for (let k = 0; k < 30 && !theirs; k += 1) {
+    await game.seconds(0.5);
+    theirs = await ridden(game, 1);
+  }
+  expect(theirs?.mode).toBe('ride');
+  // the child jumps off: a moment later the buddy lets go too, and comes down near the child
+  await game.tap('Space');
+  expect(await ridden(game, 0)).toBeUndefined();
+  await game.seconds(1);
+  expect(await ridden(game, 1)).toBeUndefined();
+  await game.seconds(4);
+  const [kid, bot] = [await game.player(0), await game.player(1)];
+  expect(Math.hypot(kid.x - bot.x, kid.z - bot.z)).toBeLessThan(8);
+  game.expectNoErrors();
+});
