@@ -22,6 +22,7 @@ const random = randomStream('player.tricks');
 //   goat     a much stronger headbutt
 //   pig      a toot on an empty tummy is a fart jump
 //   sheep    bouncy wool: a big landing bounces back up
+//   unisheep the same bouncy wool, in a burst of rainbow
 //   cat      walk into a tree trunk to climb it (jump, or push away, to hop down)
 //   duck     swims fast; hold jump while falling to glide
 //   cow      the moo is a shockwave that knocks things over
@@ -69,10 +70,10 @@ export function glide(f: FrameCtx, controlling: boolean) {
   s.gliding = gliding;
 }
 
-/** Sheep: bouncy wool. A big landing (a double jump, a jump off something high) bounces back up. */
+/** Sheep (and unisheep): bouncy wool. A big landing (a double jump, a jump off something high) bounces back up. */
 export function woolBounce(f: FrameCtx) {
   const { s, v, t, surface } = f;
-  if (f.species !== 'sheep' || !s.grounded || f.wasGrounded || surface?.bounce || s.swimming || s.flopped) return;
+  if ((f.species !== 'sheep' && f.species !== 'unisheep') || !s.grounded || f.wasGrounded || surface?.bounce || s.swimming || s.flopped) return;
   const impact = -s.lastVy;
   if (impact < TRICK.sheepMin) return;
   v.y = Math.min(TRICK.sheepMax, impact * TRICK.sheepKeep);
@@ -80,6 +81,10 @@ export function woolBounce(f: FrameCtx) {
   s.squash = 0.45;
   playBoing(s.pos, 0.7 + random() * 0.2);
   emit('puff', [t.x, s.groundY + 0.2, t.z], { count: 10, color: ['#ffffff', '#f3efe6'], speed: 2.5, up: 1, size: 0.35 });
+  if (f.species === 'unisheep') {
+    ring([t.x, s.groundY + 0.1, t.z], { color: '#ff8fd8', radius: 1.8, duration: 0.45 });
+    emit('star', [t.x, s.groundY + 0.3, t.z], { count: 14, color: RAINBOW_SPARKS, speed: 3.5, up: 2 });
+  }
   rumble(f.source, 0.2, 0.5, 100);
   // (the sticker wants a real jump: dropping in when joining bounces too, but doesn't count)
   if (impact > 11 && s.jumpedAt > 0 && gameNow() - s.jumpedAt < 2500) {
@@ -87,6 +92,8 @@ export function woolBounce(f: FrameCtx) {
     useGame.getState().addParty(PARTY_POINTS.trick);
   }
 }
+
+const RAINBOW_SPARKS = ['#ff4d5e', '#ff9f1c', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'];
 
 /** Unicorn: a third jump in the air, in a burst of rainbow. */
 export function rainbowJump(f: FrameCtx) {
@@ -96,7 +103,7 @@ export function rainbowJump(f: FrameCtx) {
   startFlip(f, 'y', 0.6);
   playSpin(s.pos);
   ring([t.x, t.y - 0.4, t.z], { color: '#ff8fd8', radius: 2, duration: 0.45 });
-  emit('star', [t.x, t.y - 0.3, t.z], { count: 18, color: ['#ff4d5e', '#ff9f1c', '#ffd23f', '#22c55e', '#3b82f6', '#a855f7'], speed: 4, up: -1 });
+  emit('star', [t.x, t.y - 0.3, t.z], { count: 18, color: RAINBOW_SPARKS, speed: 4, up: -1 });
   earnSticker('unijump');
   useGame.getState().addParty(PARTY_POINTS.trick);
 }

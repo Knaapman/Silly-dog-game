@@ -4,7 +4,7 @@
 > Node.js LTS, get this repository, and double-click `play.bat` (Windows) or run `npm install && npm run play`.
 
 A Goat Simulator–style physics sandbox made for **young kids (around 5 years old)**, with local co-op for up to **4 players**.
-You play a dog, goat, pig or sheep (and later a cat, duck, cow or unicorn) in a big, busy theme park with eight themed areas. You can headbutt things, grab and
+You play a dog, goat, pig, sheep or unisheep (half sheep, half unicorn; and later a cat, duck, cow or unicorn) in a big, busy theme park with eight themed areas. You can headbutt things, grab and
 drag them with a sticky tongue, eat until your tummy is round and then poop it all back out, flop over like a ragdoll,
 ride the rides and get flung around by geysers, cannons, see-saws and volcanoes. Magic food turns you into a giant, a
 fire-breathing speedster or a fart-powered rocket, the giant toilet flushes you across the park, friends can stack
@@ -219,6 +219,7 @@ the animal picker, and each trick has a sticker):
 | 🐐 goat 💥 | mighty headbutt | headbutt: balls, crates and friends fly almost twice as far |
 | 🐷 pig 💨 | fart jump | poop with an empty tummy: the toot throws the pig into the air (once more in the air) |
 | 🐑 sheep 🦘 | bouncy wool | land from high up (a double jump, a fall) and it bounces back up |
+| 🐑🦄 unisheep 🦘 | rainbow bouncy wool | the sheep's bounce, in a burst of rainbow (and it leaves rainbow sparkles when it runs, like the unicorn) |
 | 🐱 cat 🌳 | climbs trees | walk into a tree trunk: up onto a branch; jump (or push the stick) to hop down. A park cat in that tree gets a fright and jumps down |
 | 🦆 duck 🪂 | glides and swims fast | hold jump while falling to float down; swims as fast as it runs |
 | 🐮 cow 📢 | shockwave moo | the moo knocks things over all around and makes friends hop |

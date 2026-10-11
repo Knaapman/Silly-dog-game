@@ -17,13 +17,15 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
   expect(await picking(game)).toBe(true);
   await expect(picker).toBeVisible();
   expect(await species(game)).toBe('dog');
-  // Select again: the next one. At first: dog, goat, pig, sheep, and round again
+  // Select again: the next one. At first: dog, goat, pig, sheep, unisheep, and round again
   const seen: string[] = [await species(game)];
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < 5; i += 1) {
     await game.tap('Digit1');
     seen.push(await species(game));
   }
-  expect(seen).toEqual(['dog', 'goat', 'pig', 'sheep', 'dog']);
+  expect(seen).toEqual(['dog', 'goat', 'pig', 'sheep', 'unisheep', 'dog']);
+  // (the unisheep has no emoji of its own: its face is a sheep with a little unicorn)
+  await expect(picker.locator('[data-species="unisheep"] [data-icon="unisheep"]')).toContainText('🦄');
   await expect(picker.locator('[data-species][data-selected="true"]')).toHaveAttribute('data-species', 'dog');
   // the ones still to earn are there, but can't be picked yet
   await expect(picker.locator('[data-species="cat"]')).toBeDisabled();
@@ -31,7 +33,7 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
   // the stick looks through them too, one step per push either way; the animal waits meanwhile
   const x0 = (await game.player()).x;
   await game.tap('KeyA');
-  expect(await species(game)).toBe('sheep');
+  expect(await species(game)).toBe('unisheep');
   await game.tap('KeyD');
   await game.hold('KeyD', 0.8);
   await game.seconds(0.1);
@@ -74,15 +76,15 @@ test('new animals join as the sticker album fills up', async ({ page }) => {
   await game.seconds(11);
   expect(await picking(game)).toBe(false);
 
-  // 18 stickers: all eight animals
+  // 18 stickers: all nine animals
   await earn(game, ['poop', 'toot', 'full', 'flower', 'flush', 'geyser', 'pad', 'cannon', 'volcano', 'seesaw', 'bellyflop', 'giant', 'rocket', 'fire', 'ride']);
   await game.tap('Digit1');
   const all: string[] = [];
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < 9; i += 1) {
     await game.tap('Digit1');
     all.push(await species(game));
   }
-  expect(new Set(all)).toEqual(new Set(['dog', 'goat', 'pig', 'sheep', 'cat', 'duck', 'cow', 'unicorn']));
+  expect(new Set(all)).toEqual(new Set(['dog', 'goat', 'pig', 'sheep', 'unisheep', 'cat', 'duck', 'cow', 'unicorn']));
   await game.seconds(0.6);
   await game.tap('Space');
 

@@ -12,9 +12,9 @@ export type Coat = {
   light: string;
   legs: string;
   feet: string;
-  /** The goat's and the unicorn's horns, the duck's bill, the cow's nose. */
+  /** The goat's, the unicorn's and the unisheep's horns, the duck's bill, the cow's nose. */
   extra?: string;
-  /** The unicorn's mane and tail, top to bottom. */
+  /** The unicorn's (and the unisheep's) mane and tail, top to bottom. */
   mane?: string[];
 };
 
@@ -48,6 +48,14 @@ export const COATS: Record<Species, Coat[]> = {
     { fur: '#b88b5e', mark: '#4a3a2e', light: '#c9a077', legs: '#4a3a2e', feet: '#2a211a' },
     { fur: '#ffc4e4', mark: '#2f2a28', light: '#ffd9ee', legs: '#2f2a28', feet: '#1a1716' },
     { fur: '#b3dcff', mark: '#2f2a28', light: '#d2ebff', legs: '#2f2a28', feet: '#1a1716' }
+  ],
+  // half sheep, half unicorn: a woolly sheep with a golden horn and a rainbow mane and tail
+  unisheep: [
+    { fur: '#fffafc', mark: '#fbe3ee', light: '#fffafc', legs: '#fbe3ee', feet: '#f5c542', extra: '#f5c542', mane: RAINBOW },
+    { fur: '#ffc6e3', mark: '#fff2f8', light: '#ffd9ee', legs: '#fff2f8', feet: '#f5c542', extra: '#f5c542', mane: ['#ff9fc4', '#ffd6a0', '#fff3a8', '#b8f5c8', '#a8d8ff', '#d6b8ff'] },
+    { fur: '#dcc6ff', mark: '#2f2a28', light: '#e9dcff', legs: '#2f2a28', feet: '#f5c542', extra: '#f5c542', mane: ['#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#06b6d4', '#22d3ee'] },
+    { fur: '#2d2a3a', mark: '#4a4560', light: '#3a3650', legs: '#4a4560', feet: '#c0c4ff', extra: '#c0c4ff', mane: ['#f5c542', '#ec4899', '#a855f7', '#6366f1', '#22d3ee', '#ffffff'] },
+    { fur: '#c4f5de', mark: '#fffafc', light: '#dcfaec', legs: '#fffafc', feet: '#f5c542', extra: '#f5c542', mane: RAINBOW }
   ],
   cat: [
     { fur: '#f29b3a', mark: '#c8641c', light: '#fff1e0', legs: '#f29b3a', feet: '#fff1e0' },

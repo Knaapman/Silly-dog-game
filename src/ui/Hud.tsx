@@ -2,7 +2,8 @@ import { useChase } from '../game/chase';
 import { CAT_COLORS } from '../game/world/Cats';
 import { useEffect, useState } from 'react';
 import { getAudioState, playTap, setMuted, subscribeAudio, unlockAudio } from '../game/audio';
-import { MAX_PLAYERS, PLAYER_COLORS, PLAYER_SHAPES, SPECIES_EMOJI, type HatId } from '../game/config';
+import { MAX_PLAYERS, PLAYER_COLORS, PLAYER_SHAPES, type HatId } from '../game/config';
+import { SpeciesIcon } from './SpeciesIcon';
 import { PlayerShapeIcon } from './PlayerShapeIcon';
 import { getConnectedPads } from '../game/input';
 import { isPartyTime, useGame } from '../game/store';
@@ -82,7 +83,7 @@ function PlayerBadges() {
             title="Choose your animal"
             data-testid={`player-badge-${slot}`}
           >
-            <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}>{SPECIES_EMOJI[p.species]}</span>
+            <span className={`emoji text-3xl leading-none ${p.asleep ? 'opacity-40' : ''}`}><SpeciesIcon species={p.species} /></span>
             {HAT_EMOJI[p.hat] && <span className="emoji absolute -right-2 -top-2 text-xl">{HAT_EMOJI[p.hat]}</span>}
             {p.asleep && <span className="emoji absolute -bottom-2 -right-2 animate-pulse text-xl">💤</span>}
             {p.bot && <span className="emoji absolute -bottom-2 -right-2 text-lg" title="Buddy">💛</span>}
@@ -343,7 +344,7 @@ function AnimalFlash() {
   if (!joined || age < 1800 || age > 4400) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" data-testid="animal-unlock">
-      <span className="emoji animate-party text-[30vmin] drop-shadow-2xl">{SPECIES_EMOJI[joined.species]}</span>
+      <span className="emoji animate-party text-[30vmin] drop-shadow-2xl"><SpeciesIcon species={joined.species} /></span>
     </div>
   );
 }
