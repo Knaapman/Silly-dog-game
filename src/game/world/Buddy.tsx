@@ -260,7 +260,10 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
     const dy = kidUp - meUp;
     const settled = kidStanding && !b.via && !me.isLaunched();
     const kidAbove = settled && dy > OUT_OF_REACH;
-    const outOfReach = (kidAbove && me.velocity.y < 0.5) || (settled && dy < -OUT_OF_REACH && b.stuckFor > 0.3);
+    // (below us: also when they're swimming, and when they're right underneath, say in the river
+    // under a bridge, where standing still "close by" up here gets us no nearer)
+    const kidBelow = (settled || (kid.swimming && !b.via && !me.isLaunched())) && dy < -OUT_OF_REACH;
+    const outOfReach = (kidAbove && me.velocity.y < 0.5) || (kidBelow && (b.stuckFor > 0.3 || d < FOLLOW + 1));
     b.apartFor = outOfReach && !kidOnWheel ? b.apartFor + dt : Math.max(0, b.apartFor - dt * 2);
     const runUp = kidAbove && d < RUN_UP - 0.5;
     if (b.apartFor > BOING_AFTER && now > b.nextBoing && (!runUp || b.apartFor > BOING_AFTER + 3)) {

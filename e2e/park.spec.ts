@@ -246,3 +246,23 @@ test('playing alone, the buddy hops on the next wagon and rides the train with t
   expect(s.buddy).toBeGreaterThan(0);
   game.expectNoErrors();
 });
+
+test('playing alone: jump off the train on the river bridge and the buddy comes down after you (it doesn\'t wait up there)', async ({ page }) => {
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  const c = await page.evaluate(() => (window as any).__silly.runtime.debugInfo.train.map((x: any) => [x.x, x.y, x.z]) as number[][]);
+  await game.teleport(0, c[2][0], c[2][1] + 1.6, c[2][2]);
+  await game.teleport(1, 31.6, 1.5, c[1][2] - 2);
+  // a few seconds down the line the train is on the river bridge: the child jumps off into the river
+  await game.seconds(10);
+  await game.tap('Space');
+  await game.hold('KeyA', 1.2);
+  const kid = await game.player(0);
+  expect(kid.y).toBeLessThan(0.5);
+  // the buddy gets off too, and doesn't stand about up on the bridge right above the child: down it comes
+  await game.seconds(5);
+  expect((await game.player(1)).y).toBeLessThan(1.5);
+  game.expectNoErrors();
+});

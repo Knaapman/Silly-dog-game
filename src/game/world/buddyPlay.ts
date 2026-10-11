@@ -236,20 +236,26 @@ const JETTY_END = (() => {
   return new THREE.Vector3(p.x - TUBE_RIDE.radius - 0.6, 0, p.z);
 })();
 
+/** The child this close to where the tubes tip you out (m) has come to the end of the ride, not jumped off. */
+const TUBE_LANDING_NEAR = 12;
+
 const tubes: Play = {
   name: 'tubes',
   kind: 'join',
   act: (c) => {
     const { me, kid } = c;
     const myTube = riverTubes.list.find((t) => t.mode === 'ride' && onTube(me, t));
-    if (myTube) {
+    const kidOn = riverTubes.list.some((t) => onTube(kid, t));
+    // (the child jumped off on the way down, not tipped out at the end: off we hop too, and after
+    // them, rather than float on alone)
+    if (myTube && (kidOn || distXZ(kid.position.x, kid.position.z, TUBE_RIDE.landing[0], TUBE_RIDE.landing[1]) < TUBE_LANDING_NEAR)) {
       // riding the river: sit tight in the middle of the ring
       c.stopAt = 0.3;
       c.target.set(myTube.x, 0, myTube.z);
       calm(c.b);
       return true;
     }
-    if (!riverTubes.list.some((t) => onTube(kid, t)) || distXZ(me.position.x, me.position.z, JETTY_END.x, JETTY_END.z) >= 15) return false;
+    if (!kidOn || distXZ(me.position.x, me.position.z, JETTY_END.x, JETTY_END.z) >= 15) return false;
     // the child is on a tube: step off the jetty onto the one waiting there (the child's own, if it
     // hasn't gone yet: we share), or wait at the end of the jetty for the next one to come up (not
     // swim after them)

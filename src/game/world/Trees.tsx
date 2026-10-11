@@ -22,7 +22,7 @@ type Part = { geometry: THREE.BufferGeometry; color: string; matrix: THREE.Matri
 const m4 = (x: number, y: number, z: number, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) =>
   new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
 
-function buildParts(kind: TreeKind): Part[] {
+export function buildParts(kind: TreeKind): Part[] {
   const blob = (r: number) => new THREE.IcosahedronGeometry(r, 1);
   const trunk = (h: number, rTop = 0.28, rBottom = 0.4) => new THREE.CylinderGeometry(rTop, rBottom, h, 8);
   switch (kind) {
@@ -61,25 +61,38 @@ function buildParts(kind: TreeKind): Part[] {
       return parts;
     }
     case 'palm': {
-      const parts: Part[] = [
-        { geometry: trunk(1.6, 0.22, 0.3), color: '#a0784a', matrix: m4(0, 0.8, 0, 0, 0, 0.08), canopy: false, shadow: true },
-        { geometry: trunk(1.6, 0.2, 0.24), color: '#b08a58', matrix: m4(0.2, 2.3, 0, 0, 0, 0.16), canopy: false, shadow: true },
-        { geometry: trunk(1.4, 0.18, 0.21), color: '#a0784a', matrix: m4(0.55, 3.7, 0, 0, 0, 0.26), canopy: false, shadow: true }
+      // a curved trunk: three pieces, each starting where the one below ends and leaning a little
+      // more towards +x (a touch longer than the gap, so the joins don't show)
+      const parts: Part[] = [];
+      const segs: [h: number, lean: number, rTop: number, rBottom: number, color: string][] = [
+        [1.6, 0.08, 0.22, 0.3, '#a0784a'],
+        [1.6, 0.16, 0.2, 0.24, '#b08a58'],
+        [1.4, 0.26, 0.18, 0.21, '#a0784a']
       ];
+      let bx = 0;
+      let by = 0;
+      for (const [h, lean, rTop, rBottom, color] of segs) {
+        const dx = Math.sin(lean);
+        const dy = Math.cos(lean);
+        parts.push({ geometry: trunk(h + 0.12, rTop, rBottom), color, matrix: m4(bx + (dx * h) / 2, by + (dy * h) / 2, 0, 0, 0, -lean), canopy: false, shadow: true });
+        bx += dx * h;
+        by += dy * h;
+      }
+      // the leaves and the coconuts round the top of it
       const leaf = new THREE.SphereGeometry(1, 8, 6);
       for (let i = 0; i < 7; i += 1) {
         const a = (i / 7) * Math.PI * 2;
         parts.push({
           geometry: leaf,
           color: i % 2 ? '#3fa34d' : '#4caf50',
-          matrix: m4(0.75 + Math.cos(a) * 1.1, 4.3, Math.sin(a) * 1.1, 0, -a, -0.45, 1.5, 0.12, 0.4),
+          matrix: m4(bx + Math.cos(a) * 1.1, by - 0.1, Math.sin(a) * 1.1, 0, -a, -0.45, 1.5, 0.12, 0.4),
           canopy: true,
           shadow: true
         });
       }
       const nut = new THREE.SphereGeometry(0.2, 8, 6);
-      [[0.95, 4.05, 0.25], [0.55, 4.05, -0.25], [0.8, 3.95, -0.05]].forEach(([x, y, z]) =>
-        parts.push({ geometry: nut, color: '#6d4c2f', matrix: m4(x, y, z), canopy: true, shadow: false })
+      [[0.2, -0.35, 0.25], [-0.2, -0.35, -0.25], [0.05, -0.45, -0.05]].forEach(([x, y, z]) =>
+        parts.push({ geometry: nut, color: '#6d4c2f', matrix: m4(bx + x, by + y, z), canopy: true, shadow: false })
       );
       return parts;
     }

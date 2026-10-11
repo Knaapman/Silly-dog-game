@@ -157,3 +157,36 @@ test('the arched footbridge: up, over the river, down again, dry feet', async ({
   expect((await game.player(0)).x).toBeGreaterThan(31);
   game.expectNoErrors();
 });
+
+test('playing alone: jump off your tube halfway down and the buddy hops off its own and comes after you', async ({ page }) => {
+  test.setTimeout(240_000);
+  const game = new Game(page);
+  await game.open(1, { off: ['cats', 'birds'] });
+  await game.start();
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(1);
+  await game.teleport(1, 14, 1, -17);
+  await game.teleport(0, 18, 1, -13);
+  await game.seconds(0.5);
+  await game.hold('KeyD', 0.7);
+  let riding = 0;
+  for (let k = 0; k < 40 && riding < 2; k += 1) {
+    await game.seconds(0.5);
+    riding = (await tubes(game)).filter((x) => x.mode === 'ride').length;
+  }
+  expect(riding).toBe(2);
+  await game.seconds(3);
+  // off, and onto the bank: the buddy doesn't float on down the river alone
+  await game.tap('Space');
+  await game.hold('KeyA', 2);
+  let far = 0;
+  for (let k = 0; k < 8; k += 1) {
+    await game.seconds(1);
+    const [kid, bot] = [await game.player(0), await game.player(1)];
+    far = Math.max(far, Math.hypot(kid.x - bot.x, kid.z - bot.z));
+  }
+  expect(far).toBeLessThan(18);
+  const [kid, bot] = [await game.player(0), await game.player(1)];
+  expect(Math.hypot(kid.x - bot.x, kid.z - bot.z)).toBeLessThan(5);
+  game.expectNoErrors();
+});
