@@ -200,7 +200,7 @@ Playing alone, the buddy throws at them too once you've started, but it always l
 handles and you're off: over the railway, the plaza and the beach, faster and faster, and at the end you let go over
 the lagoon with a splash. Jump to let go sooner (wherever you are!). There's a handle for every child (four, each bar
 in a player colour), so friends go one just behind the other; empty handles slide back up by themselves. Playing
-alone, the buddy grabs the next handle and whizzes down behind you.
+alone, the buddy grabs the next handle and whizzes down behind you (jump off on the way and it lets go too).
 
 **The sky course** (in the north-west corner, behind the carnival) is the hard one: a climb up into the sky. Three
 tree stumps, a platform, a spinning rainbow disc (it carries you round: jump off at the right moment), a platform, one
