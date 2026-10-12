@@ -82,8 +82,10 @@ export function woolBounce(f: FrameCtx) {
   playBoing(s.pos, 0.7 + random() * 0.2);
   emit('puff', [t.x, s.groundY + 0.2, t.z], { count: 10, color: ['#ffffff', '#f3efe6'], speed: 2.5, up: 1, size: 0.35 });
   if (f.species === 'unisheep') {
-    ring([t.x, s.groundY + 0.1, t.z], { color: '#ff8fd8', radius: 1.8, duration: 0.45 });
-    emit('star', [t.x, s.groundY + 0.3, t.z], { count: 14, color: RAINBOW_SPARKS, speed: 3.5, up: 2 });
+    // (big and bright, so it shows over the white puff of wool)
+    ring([t.x, s.groundY + 0.1, t.z], { color: '#ff4fa3', radius: 2.2, duration: 0.5 });
+    ring([t.x, s.groundY + 0.15, t.z], { color: '#ffd23f', radius: 1.4, duration: 0.4 });
+    emit('star', [t.x, s.groundY + 0.6, t.z], { count: 26, color: RAINBOW_SPARKS, speed: 4, up: 4, size: 0.3 });
   }
   rumble(f.source, 0.2, 0.5, 100);
   // (the sticker wants a real jump: dropping in when joining bounces too, but doesn't count)
