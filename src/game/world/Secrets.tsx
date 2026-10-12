@@ -63,7 +63,7 @@ export function Secrets() {
 
 /** Swimming this far out (z), near the buoys, brings the whale. */
 export const WHALE_Z = WORLD_HALF_Z - 5;
-const WHALE = { deep: WATER_LEVEL - 3.2, up: WATER_LEVEL - 0.55, rise: 1.4, spout: 1.6, sink: 1.8, again: 20000, reach: 3.2 };
+const WHALE = { deep: WATER_LEVEL - 3.2, up: WATER_LEVEL - 0.1, rise: 1.4, spout: 1.6, sink: 1.8, again: 20000, reach: 3.2 };
 
 function Whale() {
   const group = useRef<THREE.Group>(null);
@@ -127,7 +127,8 @@ function Whale() {
       g.position.set(w.x, THREE.MathUtils.lerp(WHALE.deep, WHALE.up, THREE.MathUtils.smoothstep(k, 0, 1)), w.z);
       g.rotation.z = Math.sin(gameNow() / 700) * 0.05;
     }
-    if (tail.current) tail.current.rotation.z = Math.sin(gameNow() / 300) * 0.35;
+    // (the tail flicks up out of the water)
+    if (tail.current) tail.current.rotation.z = -0.55 + Math.sin(gameNow() / 300) * 0.3;
   });
   return (
     <group ref={group} visible={false}>
@@ -139,22 +140,26 @@ function Whale() {
         <sphereGeometry args={[1, 18, 12]} />
       </mesh>
       {[-1, 1].map((s) => (
-        <group key={s} position={[2.2, 0.35, s * 1.05]}>
+        <group key={s} position={[2.2, 0.5, s * 0.92]}>
           <mesh material={lambert('#ffffff')}>
-            <sphereGeometry args={[0.2, 10, 8]} />
+            <sphereGeometry args={[0.26, 12, 10]} />
           </mesh>
-          <mesh position={[0.08, 0.02, s * 0.12]} material={lambert('#111111')}>
-            <sphereGeometry args={[0.11, 8, 6]} />
+          <mesh position={[0.08, 0.03, s * 0.17]} material={lambert('#111111')}>
+            <sphereGeometry args={[0.14, 10, 8]} />
           </mesh>
         </group>
       ))}
+      {/* a big smile, on the side you see */}
+      <mesh position={[2.55, 0.35, 0.95]} rotation={[0, 0.5, Math.PI]} material={lambert('#1d2f4d')}>
+        <torusGeometry args={[0.32, 0.045, 6, 16, Math.PI]} />
+      </mesh>
       {/* the blowhole, right in the middle of its back */}
       <mesh position={[0, 1.12, 0]} scale={[1, 0.3, 1]} material={lambert('#2f4b73')}>
         <sphereGeometry args={[0.18, 10, 6]} />
       </mesh>
-      <group ref={tail} position={[-3.2, 0.2, 0]}>
+      <group ref={tail} position={[-3.1, 0.5, 0]}>
         {[-1, 1].map((s) => (
-          <mesh key={s} position={[-0.5, 0.15, s * 0.55]} rotation={[0, s * 0.5, 0]} scale={[0.9, 0.12, 0.5]} material={lambert('#4a6fa5')}>
+          <mesh key={s} position={[-0.6, 0.1, s * 0.6]} rotation={[0, s * 0.5, 0]} scale={[0.95, 0.14, 0.55]} material={lambert('#4a6fa5')}>
             <sphereGeometry args={[1, 12, 8]} />
           </mesh>
         ))}
@@ -296,11 +301,13 @@ function Summit() {
       secrets.summit.parties += 1;
       earnSticker('summit');
       playFanfare();
-      // fireworks: bursts of confetti high over the top of the world, one after the other
+      // fireworks: bursts of confetti all round, one after the other (in front of the animal and
+      // not too high: the camera looks down from behind, and higher up would be off the screen)
+      const [px, py, pz] = [p.position.x, p.position.y, p.position.z];
       for (let i = 0; i < 5; i += 1) {
         after(i * 0.45, () => {
           const a = i * 2.4;
-          const at: [number, number, number] = [fx + Math.cos(a) * 2.5, top + 6 + (i % 2) * 1.5, fz + Math.sin(a) * 2.5];
+          const at: [number, number, number] = [px + Math.cos(a) * 2.2, py + 1.4 + (i % 2) * 0.6, pz + 2 + Math.sin(a) * 1.2];
           burstConfetti(at, 40, 6);
           ring(at, { color: ['#ff4d5e', '#ffd23f', '#3b82f6', '#a855f7', '#22c55e'][i], radius: 3, duration: 0.6 });
         });
@@ -401,13 +408,13 @@ function Naps() {
         >
           {[-1, 1].map((s) => (
             <group key={s}>
-              <mesh position={[s * 0.13, 0, 0]} scale={[1, 0.15, 0.8]} material={lambert(['#ff8fd8', '#ffd23f', '#7dd3fc', '#c4b5fd'][i])}>
-                <sphereGeometry args={[0.12, 10, 6]} />
+              <mesh position={[s * 0.22, 0, 0]} scale={[1, 0.15, 0.85]} material={lambert(['#ff3d9a', '#ffb703', '#22a6f2', '#9b4dff'][i])}>
+                <sphereGeometry args={[0.22, 12, 8]} />
               </mesh>
             </group>
           ))}
-          <mesh scale={[0.25, 0.25, 1]} material={lambert('#3b2f2f')}>
-            <sphereGeometry args={[0.08, 8, 6]} />
+          <mesh scale={[0.3, 0.3, 1]} material={lambert('#2b2020')}>
+            <sphereGeometry args={[0.13, 8, 6]} />
           </mesh>
         </group>
       ))}
