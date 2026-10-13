@@ -321,6 +321,11 @@ function Summit() {
 
 /** Seconds of standing still before the sleepy bubbles, and before the butterfly comes. */
 const DOZE = 6;
+
+/** This child has dozed off (the buddy keeps still beside them, and dozes too). */
+export function kidDozing(slot: number) {
+  return (secrets.naps.get(slot)?.still ?? 0) > DOZE;
+}
 const BUTTERFLY = 9;
 const BUTTERFLY_FLY = 2;
 
@@ -332,8 +337,8 @@ function Naps() {
     if (dt <= 0) return;
     const slots = new Set<number>();
     players.forEach((p) => {
-      if (p.bot) return;
-      slots.add(p.slot);
+      // (the buddy dozes off too, but the butterfly and the sticker are the child's)
+      if (!p.bot) slots.add(p.slot);
       let n = secrets.naps.get(p.slot);
       if (!n) secrets.naps.set(p.slot, (n = { still: 0, butterfly: 'none', t: 0 }));
       const prev = last.get(p.slot) ?? p.position.clone();
@@ -356,6 +361,7 @@ function Naps() {
         if ((n.still % 1.2) < dt) emit('puff', tmp.head, { count: 1, color: ['#ffffff', '#dfe9ff'], speed: 0.2, up: 0.7, size: 0.18, gravity: -0.3, life: 1.6 });
         if ((n.still % 2.6) < dt) playSnore(p.position);
       }
+      if (p.bot) return;
       if (n.still > BUTTERFLY && n.butterfly === 'none') {
         n.butterfly = 'in';
         n.t = 0;

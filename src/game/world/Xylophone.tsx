@@ -15,6 +15,7 @@ import { groundHeight } from '../terrain';
 import { judge, KEYS, makeTune, TUNE_BIG, TUNE_MOST, TUNE_START } from '../tune';
 import { useHint } from './common';
 import { randomStream } from '../rng';
+import { systemOn } from '../testMode';
 
 const random = randomStream('xylophone');
 
@@ -59,6 +60,8 @@ function keyAt(x: number, z: number) {
 }
 
 const NOTE_POOL = 8;
+/** (the scale secret) The next key along within this long (ms) keeps the run going. */
+const SCALE_GAP = 1500;
 
 export function Xylophone() {
   const resetToken = useGame((s) => s.resetToken);
@@ -67,6 +70,8 @@ export function Xylophone() {
   const glow = useRef(new Float32Array(KEYS));
   const dip = useRef(new Float32Array(KEYS));
   const onKey = useRef(new Map<number, number>());
+  /** (a secret) Each child's run of keys one after the other, up or down the scale. */
+  const runs = useRef(new Map<number, { last: number; dir: number; len: number; at: number }>());
   const st = useRef({
     phase: 'wait' as Phase,
     phaseAt: 0,
@@ -82,7 +87,9 @@ export function Xylophone() {
     copied: 0,
     /** The key glowing to help (after two tries), or -1. */
     hint: -1,
-    struck: [] as number[]
+    struck: [] as number[],
+    /** Times the whole scale was run (a secret). */
+    scales: 0
   });
   const bird = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -158,6 +165,31 @@ export function Xylophone() {
     }
   };
 
+  /**
+   * A secret: run all the way along the keys, one after the other (either way), and they play the
+   * whole scale: the songbird sings it back, every key lights up, and confetti flies.
+   */
+  const scaleRun = (slot: number, key: number, now: number) => {
+    const r = runs.current.get(slot);
+    const step = r ? key - r.last : 0;
+    const goesOn = r && Math.abs(step) === 1 && (r.len === 1 || step === r.dir) && now - r.at < SCALE_GAP;
+    const next = goesOn ? { last: key, dir: step, len: r.len + 1, at: now } : { last: key, dir: 0, len: 1, at: now };
+    runs.current.set(slot, next);
+    if (next.len < KEYS) return;
+    runs.current.delete(slot);
+    st.current.scales += 1;
+    earnSticker('scale');
+    for (let i = 0; i < KEYS; i += 1) {
+      const n = next.dir > 0 ? i : KEYS - 1 - i;
+      after(0.25 + i * 0.09, () => {
+        playBirdNote(n, [BX, BIRD_Y, BZ]);
+        glow.current[n] = 1;
+        const k = KEY_SPECS[n];
+        emit('confetti', [k.x, Y0 + 0.6, k.z], { count: 12, speed: 3, up: 6 });
+      });
+    }
+  };
+
   useGameFrame((_, dt) => {
     const now = gameNow();
     const s = st.current;
@@ -170,7 +202,10 @@ export function Xylophone() {
       const h = p.position.y - (Y0 + XYLOPHONE.top);
       const on = i >= 0 && h > 0 && h < RADIUS + 0.3 ? i : -1;
       const before = onKey.current.get(p.slot) ?? -1;
-      if (on >= 0 && on !== before) strike(on, bot, now);
+      if (on >= 0 && on !== before) {
+        strike(on, bot, now);
+        if (!bot && systemOn('secrets')) scaleRun(p.slot, on, now);
+      }
       onKey.current.set(p.slot, on);
     });
 
