@@ -119,3 +119,44 @@ test('in the album the secrets are a "?" until found (and there is no help to fi
   await expect(page.locator('[data-sticker="whale"]').first()).toContainText('🐋');
   game.expectNoErrors();
 });
+
+test('the scale: run along the xylophone, every key one after the other, and it plays the whole scale back', async ({ page }) => {
+  const game = await park(page);
+  const L = await page.evaluate(() => (window as any).__silly.layout.XYLOPHONE as { center: [number, number]; pitch: number });
+  const scales = () => page.evaluate(() => (window as any).__silly.runtime.debugInfo.xylophone.scales as number);
+  // just a few keys: nothing
+  await game.teleport(0, L.center[0] - 4.5 * L.pitch - 0.6, 1, L.center[1]);
+  await game.seconds(0.5);
+  await game.hold('KeyD', 0.5);
+  await game.seconds(2);
+  expect(await scales()).toBe(0);
+  // all the way along
+  await game.teleport(0, L.center[0] - 4.5 * L.pitch - 0.6, 1, L.center[1]);
+  await game.seconds(0.5);
+  await game.hold('KeyD', 2.2);
+  await game.seconds(1.5);
+  expect(await scales()).toBe(1);
+  expect(await stickers(game)).toContain('scale');
+  game.expectNoErrors();
+});
+
+test('playing alone, the buddy dozes off beside you when you nap', async ({ page }) => {
+  const game = await park(page);
+  await game.teleport(0, 12, 1, -4);
+  await page.evaluate(() => (window as any).__silly.useGame.getState().addBuddy());
+  await game.seconds(4);
+  await game.teleport(1, 13.5, 1, -2.5);
+  await game.seconds(7);
+  expect(await secrets<boolean>(game, '(s) => s.naps.get(0).still > 6')).toBe(true);
+  // it keeps still beside us (and dozes too)
+  const a = await game.player(1);
+  await game.seconds(3);
+  const b = await game.player(1);
+  expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeLessThan(0.3);
+  expect(await secrets<number>(game, '(s) => s.naps.get(1)?.still ?? 0')).toBeGreaterThan(3);
+  // and only the child gets the butterfly
+  await game.seconds(2);
+  expect(await secrets<string>(game, '(s) => s.naps.get(0).butterfly')).not.toBe('none');
+  expect(await secrets<string>(game, '(s) => s.naps.get(1).butterfly')).toBe('none');
+  game.expectNoErrors();
+});

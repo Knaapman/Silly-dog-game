@@ -16,6 +16,7 @@ import { hamster } from './HamsterBalls';
 import { ferris } from './Carnival';
 import type { HerdChicken } from './Chickens';
 import { PLAYS, RUN_UP, type PlayCtx } from './buddyPlay';
+import { kidDozing } from './Secrets';
 import { randomStream } from '../rng';
 
 const random = randomStream('buddy');
@@ -276,6 +277,8 @@ function think(b: Brain, me: PlayerRuntime, kid: PlayerRuntime, kidSource: Param
       catchUp(me, kid, b.trail);
       return makeInputFrame();
     }
+    // the child has dozed off: keep still beside them (and nod off too)
+    if (kidDozing(kid.slot) && d < FOLLOW + 3 && me.grounded && !me.swimming) return makeInputFrame();
 
     const fx = Math.sin(me.facing);
     const fz = Math.cos(me.facing);
