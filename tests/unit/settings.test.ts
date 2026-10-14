@@ -88,6 +88,21 @@ describe('settings', () => {
     expect(JSON.parse(saved.get('silly-park:settings:v1')!)).toMatchObject({ together: 2, quality: 'ultra' });
   });
 
+  it('remembers what the buddy does and the play timer (the buddy setting used to be left out)', async () => {
+    const first = await loadSettings();
+    first.useSettings.getState().set({ buddyHelp: 0, bedtime: 30 });
+    const again = await loadSettings(first.saved.get('silly-park:settings:v1'));
+    expect(again.settings().buddyHelp).toBe(0);
+    expect(again.settings().bedtime).toBe(30);
+  });
+
+  it('the play timer is off by default and only takes its own steps', async () => {
+    expect((await loadSettings()).settings().bedtime).toBe(0);
+    expect((await loadSettings('{"bedtime":45}')).settings().bedtime).toBe(45);
+    expect((await loadSettings('{"bedtime":7}')).settings().bedtime).toBe(0);
+    expect((await loadSettings('{"bedtime":"soon"}')).settings().bedtime).toBe(0);
+  });
+
   it('auto uses what was detected', async () => {
     const { useSettings, effectiveQuality } = await loadSettings();
     useSettings.getState().setDetected('ultra', 'RTX');

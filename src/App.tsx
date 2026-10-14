@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber';
+import { FinaleOverlay } from './ui/FinaleOverlay';
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { unlockAudio } from './game/audio';
@@ -116,6 +117,11 @@ export default function App() {
       {phase === 'play' && (
         <Safe name="HUD">
           <Hud onOpenMenu={() => setMenuOpen(true)} />
+        </Safe>
+      )}
+      {phase === 'play' && (
+        <Safe name="finale">
+          <FinaleOverlay />
         </Safe>
       )}
       {phase === 'play' && touchUi && !menuOpen && !albumOpen && (

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setMusicEnabled, setMuted, setVolume, unlockAudio } from '../game/audio';
 import { KEYMAPS, onUiNav, type ActionName } from '../game/input';
-import { effectiveQuality, useSettings, type Level, type Quality, type Settings, ZOOM_MAX, ZOOM_MIN } from '../game/settings';
+import { BEDTIMES, effectiveQuality, useSettings, type Level, type Quality, type Settings, ZOOM_MAX, ZOOM_MIN } from '../game/settings';
+import { useFinale } from '../game/finale';
 import { installApp, useInstall } from '../game/install';
 import { perf } from '../game/perf';
 import { clearPlayLog, loadSessions, playLogFile } from '../game/playlog';
@@ -170,6 +171,12 @@ function settingRows(autoLevel: Quality): ChoiceRow[] {
       ]
     },
     {
+      key: 'bedtime',
+      icon: '🌙',
+      label: 'Play timer (then the goodnight show)',
+      options: BEDTIMES.map((m) => ({ value: m, label: m === 0 ? 'Off' : `${m} min` }))
+    },
+    {
       key: 'quality',
       icon: '🖥️',
       label: 'Graphics',
@@ -330,7 +337,7 @@ export function GrownUpMenu() {
   // Controller navigation, row by row: the round buttons, the volume, then each setting.
   // D-pad / stick up-down picks a row, left-right moves (or changes the setting), A presses,
   // B or Start closes.
-  const BUTTONS = 8;
+  const BUTTONS = 9;
   const SLIDER_ROW = 1;
   const ZOOM_ROW = 2;
   const FIRST_SETTING = 3;
@@ -407,7 +414,21 @@ export function GrownUpMenu() {
           <RoundButton buttonRef={btnRef(6)} focused={focused(6)} onClick={() => useGame.getState().setAlbumOpen(true)} title="Sticker album" color="bg-amber-500 text-white">
             <AlbumIcon size={30} />
           </RoundButton>
-          <RoundButton buttonRef={btnRef(7)} focused={focused(7)} onClick={() => setMenuOpen(false)} title="Close" color="bg-emerald-500 text-white">
+          <RoundButton
+            buttonRef={btnRef(7)}
+            focused={focused(7)}
+            onClick={() => {
+              setMenuOpen(false);
+              useFinale.getState().start('bedtime');
+            }}
+            title="Time to stop: a goodnight fireworks show, then the park sleeps"
+            color="bg-indigo-600 text-white"
+          >
+            <span className="emoji text-3xl" data-testid="bedtime-button">
+              🌙
+            </span>
+          </RoundButton>
+          <RoundButton buttonRef={btnRef(8)} focused={focused(8)} onClick={() => setMenuOpen(false)} title="Close" color="bg-emerald-500 text-white">
             <CloseIcon size={30} />
           </RoundButton>
         </div>

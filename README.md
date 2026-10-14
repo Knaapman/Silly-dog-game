@@ -324,6 +324,8 @@ tester**, the sticker album, a picture of all controls, and:
   noticed; **Clear** empties it. Nothing is sent anywhere by itself. Broken saved data (a half-written save, an
   old version) is ignored: a fresh park starts instead.
 - **Progress**: stars found, hats unlocked and stickers collected, with a "start over" button (tap twice).
+- **Time to stop** 🌙 and the **play timer**: the moon button starts the goodnight show, and the play timer (off,
+  15, 30, 45 or 60 minutes) starts it by itself. See **The grand finale** below.
 - **Install**: in a built game (`npm run play`) the browser can put Silly Park on the desktop as an app that works
   without internet.
 - **Photos**: every picture taken with the camera button (the newest 48 are kept on this device), to save or delete.
@@ -426,6 +428,14 @@ can wade up the river under the railway bridge or swim out of the lagoon under t
   counts for a piggyback ride, a throw, the see-saw, the giant carrot, sliding together and a snowball fight; the
   rest (the three-animal tower, the tractor's trailer, pushing a swing, the balloon together, hamster balls bumping,
   a fish slap, the moles together, a tower of blocks built together, a push off the roundabout and two kites up together) need two children.
+- **The grand finale** 🎆: everyone (the buddy too) pops over to the fountain for a big fireworks show. It comes in
+  two kinds:
+  - **Goodnight** (the moon button in the grown-ups menu, or the play timer): the sky turns to sunset, the fireworks
+    go off, then night falls and the animals get sleepy (bubbles, snores). A night screen follows, with the moon, the
+    stars, every animal asleep and a little lullaby on the xylophone. The park stays paused there; after a few
+    seconds a small ▶ button appears in the corner for a grown-up to play again. It's a gentle way to end playtime.
+  - **The full album**: the hundredth sticker brings the same fireworks, and then a golden crown for everyone, and
+    play goes on.
 - **Secrets** (spoilers for grown-ups, nothing in the game points the way): swim right out to the buoys and a whale
   comes up under you and spouts you back to the beach; lick the frog on a lily pad in the lagoon and it rides on your
   head for a while, croaking; stand by the flag on the very top of the snowy summit for fireworks; and stand still,
@@ -596,6 +606,8 @@ src/
       Toilet.tsx        the flushing toilet on the plaza
       HatRack.tsx       the hat rack (unlocked hats to wear, locked ones as shadows)
       Events.tsx        surprises: golden chicken, present balloon, rain and puddles
+      Secrets.tsx       the secrets: the whale, the frog, the summit fireworks, the nap and its butterfly
+      Finale.tsx        the grand finale's show at the fountain (finale.ts: its phases; ui/FinaleOverlay.tsx: sky and night screen)
       Treasures.tsx     the treasure hunt: hidden gems, the "ting" that gets faster, the chest by the plaza
       Cats.tsx          the park cats: nap, flee, get tagged, up a tree, barked down
       Birds.tsx         bird flocks: peck, scatter, fly to a new spot, peck at poops

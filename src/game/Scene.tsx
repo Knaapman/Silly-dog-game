@@ -26,6 +26,7 @@ import { isPartyTime, isPaused, useGame } from './store';
 import { systemOff, systemOn, TEST_MODE } from './testMode';
 import { Beach } from './world/Beach';
 import { Secrets } from './world/Secrets';
+import { Finale } from './world/Finale';
 import { Carnival } from './world/Carnival';
 import { SkyCourse } from './world/SkyCourse';
 import { BumperCars } from './world/BumperCars';
@@ -542,6 +543,7 @@ export function Scene() {
           <Treasures />
           <ParkEvents />
           {systemOn('secrets') && <Secrets />}
+          <Finale />
         </Contained>
         <Players />
       </Physics>

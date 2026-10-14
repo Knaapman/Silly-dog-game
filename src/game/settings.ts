@@ -31,7 +31,12 @@ export type Settings = {
   quality: Quality | 'auto';
   /** How far the camera stands back: 1 is normal, less is closer, more shows more of the park. */
   zoom: number;
+  /** Play timer (minutes; 0 = off): after this long the bedtime show ends the game nicely. */
+  bedtime: Bedtime;
 };
+
+export const BEDTIMES = [0, 15, 30, 45, 60] as const;
+export type Bedtime = (typeof BEDTIMES)[number];
 
 export const ZOOM_MIN = 0.6;
 export const ZOOM_MAX = 1.6;
@@ -42,7 +47,7 @@ export const MAGIC_FACTOR = [0.5, 1, 2] as const;
 export const SPROUT_SECONDS = [15, 35, 90] as const;
 export const LEASH_RADIUS = [20, 30, 42] as const;
 
-export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, split: true, rumble: true, surprises: true, buddy: true, buddyHelp: 2, chase: 'auto', quality: 'auto', zoom: 1 };
+export const DEFAULT_SETTINGS: Settings = { speed: 1, magic: 1, sprout: 1, together: 1, split: true, rumble: true, surprises: true, buddy: true, buddyHelp: 2, chase: 'auto', quality: 'auto', zoom: 1, bedtime: 0 };
 
 const KEY = 'settings:v1';
 
@@ -61,7 +66,8 @@ function sanitize(raw: Partial<Settings> | undefined): Settings {
     buddyHelp: level(raw?.buddyHelp, DEFAULT_SETTINGS.buddyHelp),
     chase: raw?.chase === 'auto' ? 'auto' : level(raw?.chase, 1) === raw?.chase ? (raw.chase as Level) : DEFAULT_SETTINGS.chase,
     quality: quality === 'low' || quality === 'high' || quality === 'ultra' || quality === 'auto' ? quality : DEFAULT_SETTINGS.quality,
-    zoom: typeof raw?.zoom === 'number' && Number.isFinite(raw.zoom) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, raw.zoom)) : DEFAULT_SETTINGS.zoom
+    zoom: typeof raw?.zoom === 'number' && Number.isFinite(raw.zoom) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, raw.zoom)) : DEFAULT_SETTINGS.zoom,
+    bedtime: (BEDTIMES as readonly unknown[]).includes(raw?.bedtime) ? (raw!.bedtime as Bedtime) : DEFAULT_SETTINGS.bedtime
   };
 }
 
@@ -82,8 +88,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
   autoLevel: 'high',
   set: (patch) => {
     set(sanitize({ ...get(), ...patch }));
-    const { speed, magic, sprout, together, split, rumble, surprises, buddy, chase, quality, zoom } = get();
-    saveJson(KEY, { speed, magic, sprout, together, split, rumble, surprises, buddy, chase, quality, zoom });
+    const { speed, magic, sprout, together, split, rumble, surprises, buddy, buddyHelp, chase, quality, zoom, bedtime } = get();
+    saveJson(KEY, { speed, magic, sprout, together, split, rumble, surprises, buddy, buddyHelp, chase, quality, zoom, bedtime });
   },
   setDetected: (detected, gpu) => set({ detected, gpu, autoLevel: detected })
 }));
