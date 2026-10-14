@@ -63,7 +63,9 @@ export function Finale() {
   useEffect(
     () =>
       useStickers.subscribe((s, prev) => {
-        if (s.got.length === STICKERS.length && prev.got.length < STICKERS.length) useFinale.getState().start('album');
+        // (a broken album, got not even a list, is the fault guard's business: not a show, not a crash)
+        if (!Array.isArray(s.got) || s.got.length !== STICKERS.length) return;
+        if (!Array.isArray(prev.got) || prev.got.length < STICKERS.length) useFinale.getState().start('album');
       }),
     []
   );
