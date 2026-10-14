@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { finaleAsleep } from './finale';
 import { MAX_PLAYERS, PARTY_DURATION_MS, PARTY_POINTS, PLAYER_COLORS, type HatId, type Species } from './config';
 import { favouriteCoat, favouriteSpecies, rememberCoat, rememberSpecies } from './animals';
 import { COAT_COUNT } from './coats';
@@ -274,5 +275,6 @@ export function isPartyTime() {
 
 /** The game waits while a grown-up menu or the sticker album is open. */
 export function isPaused(state: { menuOpen: boolean; albumOpen: boolean } = useGame.getState()) {
-  return state.menuOpen || state.albumOpen;
+  // (and the finale's night screen: the park sleeps until "play again")
+  return state.menuOpen || state.albumOpen || finaleAsleep();
 }

@@ -1,4 +1,5 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
+import { finaleOn } from './finale';
 import type { RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { gameNow } from './clock';
@@ -172,7 +173,7 @@ export function rider(slot: number | null | undefined): PlayerRuntime | undefine
  * not on a friend's back and not on the end of a tongue. Rides that hold their rider check this.
  */
 export function canBoard(p: PlayerRuntime) {
-  return !p.isLaunched() && !p.flopped && p.ridingOn == null && p.grabbedBy == null;
+  return !p.isLaunched() && !p.flopped && p.ridingOn == null && p.grabbedBy == null && !finaleOn();
 }
 
 /**

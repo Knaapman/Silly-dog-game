@@ -29,13 +29,15 @@ import * as guide from './game/guide';
 import { buddyControl } from './game/world/Buddy';
 import { useGame } from './game/store';
 import * as views from './game/views';
+import * as finale from './game/finale';
+import * as stickers from './game/stickers';
 
 if (TEST_MODE) Math.random = seededRandom(TEST_SEED);
 
 if (import.meta.env.DEV || TEST_MODE) {
   // Handy for poking at the game from the browser console / automated checks.
   const w = window as unknown as { __silly?: Record<string, unknown> };
-  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, useHunt, useSkyCourse, useSledding, useCoop, useSnowman, events, guide, buddyControl, perf, input, clock, views, playlog, faults, audio };
+  w.__silly = { ...w.__silly, runtime, chase, terrain, layout, useGame, useSettings, useProgress, usePhotos, useStickers, useHunt, useSkyCourse, useSledding, useCoop, useSnowman, events, guide, buddyControl, perf, input, clock, views, playlog, faults, audio, finale, stickers };
 }
 
 setupInstall();
